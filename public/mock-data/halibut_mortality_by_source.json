@@ -1,0 +1,8 @@
+[
+  {"source": "Directed commercial (O26)", "value": 17.2},
+  {"source": "Non-directed bycatch",       "value": 4.8},
+  {"source": "Recreational",               "value": 4.2},
+  {"source": "U26 discard mortality",      "value": 1.8},
+  {"source": "Subsistence",                "value": 0.5},
+  {"source": "Research + wastage",         "value": 0.3}
+]

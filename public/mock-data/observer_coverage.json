@@ -1,0 +1,43 @@
+[
+  {"year": 2019, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2019, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2019, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2019, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2019, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 18.5,  "category": "partial"},
+  {"year": 2019, "sector": "CV under-60 (groundfish)",       "coverage_pct": 15.2,  "category": "partial"},
+
+  {"year": 2020, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2020, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2020, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2020, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2020, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 16.8,  "category": "partial"},
+  {"year": 2020, "sector": "CV under-60 (groundfish)",       "coverage_pct": 13.9,  "category": "partial"},
+
+  {"year": 2021, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2021, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2021, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2021, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2021, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 19.2,  "category": "partial"},
+  {"year": 2021, "sector": "CV under-60 (groundfish)",       "coverage_pct": 14.5,  "category": "partial"},
+
+  {"year": 2022, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2022, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2022, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2022, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2022, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 21.0,  "category": "partial"},
+  {"year": 2022, "sector": "CV under-60 (groundfish)",       "coverage_pct": 16.8,  "category": "partial"},
+
+  {"year": 2023, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2023, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2023, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2023, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2023, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 22.5,  "category": "partial"},
+  {"year": 2023, "sector": "CV under-60 (groundfish)",       "coverage_pct": 18.3,  "category": "partial"},
+
+  {"year": 2024, "sector": "Pollock CP",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2024, "sector": "Pollock CV",                     "coverage_pct": 100.0, "category": "full"},
+  {"year": 2024, "sector": "Pollock Mothership",             "coverage_pct": 100.0, "category": "full"},
+  {"year": 2024, "sector": "Amendment 80",                   "coverage_pct": 100.0, "category": "full"},
+  {"year": 2024, "sector": "Halibut+Sablefish IFQ (longline)","coverage_pct": 24.1,  "category": "partial"},
+  {"year": 2024, "sector": "CV under-60 (groundfish)",       "coverage_pct": 17.5,  "category": "partial"}
+]

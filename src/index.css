@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-serif;
+  }
+  a {
+    @apply text-accent underline-offset-2 hover:underline;
+  }
+}
+
+@layer components {
+  .prose-mainsail {
+    @apply max-w-prose text-[1.05rem] leading-relaxed;
+  }
+  .prose-mainsail p {
+    @apply mb-4;
+  }
+  .prose-mainsail h2 {
+    @apply text-2xl font-semibold mt-10 mb-3;
+  }
+  .prose-mainsail h3 {
+    @apply text-xl font-semibold mt-8 mb-2;
+  }
+
+  .methodology-box {
+    @apply mt-8 p-5 border-l-4 border-line bg-white/60 text-sm text-muted;
+  }
+  .methodology-box h3 {
+    @apply text-base font-sans font-semibold text-ink mb-2;
+  }
+
+  .preliminary-flag {
+    @apply text-xs font-medium text-flag uppercase tracking-wide;
+  }
+
+  .chart-frame {
+    @apply mt-6 mb-2 p-4 bg-white border border-line rounded-sm;
+  }
+  .chart-caption {
+    @apply text-sm text-muted mt-3 max-w-prose;
+  }
+}

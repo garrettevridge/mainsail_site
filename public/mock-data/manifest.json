@@ -1,0 +1,85 @@
+{
+  "schema_version": "v1",
+  "generated_at": "2026-04-18T22:00:00+00:00",
+  "bucket": "mock-mainsail-public-data",
+  "region": "local-dev",
+  "datasets": [
+    {
+      "name": "salmon_commercial_harvest",
+      "json_url": "/mock-data/salmon_commercial_harvest.json",
+      "parquet_url": "/mock-data/salmon_commercial_harvest.parquet",
+      "schema_url": "/mock-data/salmon_commercial_harvest.schema.json",
+      "row_count": 35,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "chinook_mortality_summary",
+      "json_url": "/mock-data/chinook_mortality_summary.json",
+      "parquet_url": "/mock-data/chinook_mortality_summary.parquet",
+      "schema_url": "/mock-data/chinook_mortality_summary.schema.json",
+      "row_count": 60,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "salmon_escapement_ayk_chinook",
+      "json_url": "/mock-data/salmon_escapement_ayk_chinook.json",
+      "parquet_url": "/mock-data/salmon_escapement_ayk_chinook.parquet",
+      "schema_url": "/mock-data/salmon_escapement_ayk_chinook.schema.json",
+      "row_count": 60,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "chinook_gsi",
+      "json_url": "/mock-data/chinook_gsi.json",
+      "parquet_url": "/mock-data/chinook_gsi.parquet",
+      "schema_url": "/mock-data/chinook_gsi.schema.json",
+      "row_count": 6,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "halibut_mortality_by_source",
+      "json_url": "/mock-data/halibut_mortality_by_source.json",
+      "parquet_url": "/mock-data/halibut_mortality_by_source.parquet",
+      "schema_url": "/mock-data/halibut_mortality_by_source.schema.json",
+      "row_count": 7,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "discard_utilization",
+      "json_url": "/mock-data/discard_utilization.json",
+      "parquet_url": "/mock-data/discard_utilization.parquet",
+      "schema_url": "/mock-data/discard_utilization.schema.json",
+      "row_count": 10,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "observer_coverage",
+      "json_url": "/mock-data/observer_coverage.json",
+      "parquet_url": "/mock-data/observer_coverage.parquet",
+      "schema_url": "/mock-data/observer_coverage.schema.json",
+      "row_count": 36,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    }
+  ]
+}
