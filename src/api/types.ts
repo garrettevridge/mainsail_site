@@ -135,3 +135,165 @@ export interface FishCountsRow {
   daily_count: number | null;
   cumulative_count: number | null;
 }
+
+// ── S3-native row shapes (match actual published columns) ────────────────────
+// The earlier interfaces above were designed for pre-shaped mock datasets.
+// These interfaces match the real column names published by the pipeline.
+
+export interface TacSpecsRow {
+  spec_id: string;
+  year: number;
+  fmp_area: string;
+  species_complex: string;
+  species_code: string | null;
+  area_detail: string | null;
+  ofl_mt: number | null;
+  abc_mt: number | null;
+  tac_mt: number | null;
+  catch_mt: number | null;
+  percent_tac_taken: number | null;
+  status: string;
+}
+
+export interface PscWeeklyDataRow {
+  fact_id: string;
+  year: number;
+  stat_week: number;
+  week_end_date: string | null;
+  species_code: string;
+  species_name: string;
+  gear: string;
+  reporting_area: string;
+  target_fishery: string;
+  sector: string;
+  groundfish_mt: number | null;
+  psc_count: number | null;
+  psc_rate: number | null;
+  psc_weight_kg: number | null;
+  psc_mortality_mt: number | null;
+  is_confidential: 0 | 1;
+}
+
+export interface IphcSourceMortalityRow {
+  id: number;
+  year: number;
+  source: string;
+  mortality_mlb: number | null;
+  mortality_tonnes: number | null;
+  is_preliminary: 0 | 1;
+}
+
+export interface IphcAreaMortalityRow {
+  id: number;
+  year: number;
+  area: string;
+  mortality_mlb: number | null;
+  mortality_tonnes: number | null;
+  is_preliminary: 0 | 1;
+}
+
+export interface IphcSpawningBiomassRow {
+  id: number;
+  year: number;
+  model: string;
+  sb_mlb: number | null;
+  sb_low_ci_mlb: number | null;
+  sb_high_ci_mlb: number | null;
+  sb_tonnes: number | null;
+  sb_low_ci_tonnes: number | null;
+  sb_high_ci_tonnes: number | null;
+}
+
+export interface IphcTceyDataRow {
+  id: number;
+  year: number;
+  area: string;
+  tcey_type: string;
+  tcey_mlb: number | null;
+  tcey_tonnes: number | null;
+}
+
+export interface IfqLandingsRow {
+  fact_id: string;
+  year: number;
+  program: string;
+  species: string;
+  area: string;
+  vessel_landings: number | null;
+  catch_lbs: number | null;
+  allocation_lbs: number | null;
+  remaining_lbs: number | null;
+  pct_landed: number | null;
+  catch_mt: number | null;
+  allocation_mt: number | null;
+  is_confidential: 0 | 1;
+}
+
+export interface DiscardMortalityRateRow {
+  dmr_id: string;
+  fmp_area: string;
+  gear_type: string;
+  species: string;
+  dmr_value: number;
+  effective_year_start: number;
+  effective_year_end: number | null;
+  source: string;
+  notes: string | null;
+}
+
+export interface HatcheryReleasesRow {
+  country: string;
+  region: string;
+  facility: string;
+  species: string;
+  species_code: string;
+  release_year: number;
+  brood_year: number | null;
+  life_stage: string;
+  number_released: number | null;
+  avg_weight_g: number | null;
+  mark_type: string | null;
+  data_level: string;
+}
+
+export interface SubsistenceHarvestDataRow {
+  id: number;
+  year: number;
+  community_name: string;
+  district: string;
+  fishery: string;
+  permit_type: string;
+  gear_type: string;
+  chinook_harvest_fish: number | null;
+  sockeye_harvest_fish: number | null;
+  coho_harvest_fish: number | null;
+  chum_harvest_fish: number | null;
+  pink_harvest_fish: number | null;
+  total_salmon_harvest_fish: number | null;
+  halibut_harvest_fish: number | null;
+}
+
+export interface SportHarvestDataRow {
+  id: number;
+  year: number;
+  species_code: string;
+  species_name: string;
+  region: string;
+  area_code: string;
+  area_name: string;
+  record_type: string;
+  fish_count: number | null;
+}
+
+export interface SalmonCommercialHarvestDataRow {
+  fact_id: string;
+  year: number;
+  species: string;
+  region: string;
+  harvest_fish: number | null;
+  harvest_pounds: number | null;
+  exvessel_value_usd: number | null;
+  is_preliminary: 0 | 1;
+  source_document: string | null;
+  source_url: string | null;
+}

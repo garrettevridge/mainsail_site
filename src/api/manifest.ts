@@ -19,7 +19,14 @@ async function fetchJson<T>(url: string): Promise<T> {
   if (!r.ok) {
     throw new Error(`Fetch failed for ${url}: ${r.status}`);
   }
-  return (await r.json()) as T;
+  // Python's json.dumps emits bare NaN/Infinity for float('nan') — not valid JSON.
+  // Replace before parsing so browser JSON.parse doesn't throw.
+  const text = await r.text();
+  const sanitized = text
+    .replace(/:\s*NaN\b/g, ": null")
+    .replace(/:\s*Infinity\b/g, ": null")
+    .replace(/:\s*-Infinity\b/g, ": null");
+  return JSON.parse(sanitized) as T;
 }
 
 export function useManifest() {
