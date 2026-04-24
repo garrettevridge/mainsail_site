@@ -1,0 +1,101 @@
+[
+  {"year": 2005, "area": "Southeast",            "fish": 58000},
+  {"year": 2005, "area": "Cook Inlet",           "fish": 42000},
+  {"year": 2005, "area": "Prince William Sound", "fish": 7200},
+  {"year": 2005, "area": "Other",                "fish": 3400},
+
+  {"year": 2006, "area": "Southeast",            "fish": 55000},
+  {"year": 2006, "area": "Cook Inlet",           "fish": 44000},
+  {"year": 2006, "area": "Prince William Sound", "fish": 7600},
+  {"year": 2006, "area": "Other",                "fish": 3600},
+
+  {"year": 2007, "area": "Southeast",            "fish": 52000},
+  {"year": 2007, "area": "Cook Inlet",           "fish": 41000},
+  {"year": 2007, "area": "Prince William Sound", "fish": 6900},
+  {"year": 2007, "area": "Other",                "fish": 3200},
+
+  {"year": 2008, "area": "Southeast",            "fish": 48000},
+  {"year": 2008, "area": "Cook Inlet",           "fish": 38000},
+  {"year": 2008, "area": "Prince William Sound", "fish": 6500},
+  {"year": 2008, "area": "Other",                "fish": 3100},
+
+  {"year": 2009, "area": "Southeast",            "fish": 44000},
+  {"year": 2009, "area": "Cook Inlet",           "fish": 35000},
+  {"year": 2009, "area": "Prince William Sound", "fish": 6100},
+  {"year": 2009, "area": "Other",                "fish": 2900},
+
+  {"year": 2010, "area": "Southeast",            "fish": 42000},
+  {"year": 2010, "area": "Cook Inlet",           "fish": 32000},
+  {"year": 2010, "area": "Prince William Sound", "fish": 5900},
+  {"year": 2010, "area": "Other",                "fish": 2700},
+
+  {"year": 2011, "area": "Southeast",            "fish": 39000},
+  {"year": 2011, "area": "Cook Inlet",           "fish": 28000},
+  {"year": 2011, "area": "Prince William Sound", "fish": 5500},
+  {"year": 2011, "area": "Other",                "fish": 2500},
+
+  {"year": 2012, "area": "Southeast",            "fish": 35000},
+  {"year": 2012, "area": "Cook Inlet",           "fish": 22000},
+  {"year": 2012, "area": "Prince William Sound", "fish": 5100},
+  {"year": 2012, "area": "Other",                "fish": 2400},
+
+  {"year": 2013, "area": "Southeast",            "fish": 33000},
+  {"year": 2013, "area": "Cook Inlet",           "fish": 18000},
+  {"year": 2013, "area": "Prince William Sound", "fish": 4900},
+  {"year": 2013, "area": "Other",                "fish": 2300},
+
+  {"year": 2014, "area": "Southeast",            "fish": 31000},
+  {"year": 2014, "area": "Cook Inlet",           "fish": 15000},
+  {"year": 2014, "area": "Prince William Sound", "fish": 4600},
+  {"year": 2014, "area": "Other",                "fish": 2200},
+
+  {"year": 2015, "area": "Southeast",            "fish": 34000},
+  {"year": 2015, "area": "Cook Inlet",           "fish": 16500},
+  {"year": 2015, "area": "Prince William Sound", "fish": 4800},
+  {"year": 2015, "area": "Other",                "fish": 2300},
+
+  {"year": 2016, "area": "Southeast",            "fish": 36000},
+  {"year": 2016, "area": "Cook Inlet",           "fish": 17800},
+  {"year": 2016, "area": "Prince William Sound", "fish": 4900},
+  {"year": 2016, "area": "Other",                "fish": 2400},
+
+  {"year": 2017, "area": "Southeast",            "fish": 33000},
+  {"year": 2017, "area": "Cook Inlet",           "fish": 15500},
+  {"year": 2017, "area": "Prince William Sound", "fish": 4700},
+  {"year": 2017, "area": "Other",                "fish": 2300},
+
+  {"year": 2018, "area": "Southeast",            "fish": 29000},
+  {"year": 2018, "area": "Cook Inlet",           "fish": 13800},
+  {"year": 2018, "area": "Prince William Sound", "fish": 4400},
+  {"year": 2018, "area": "Other",                "fish": 2100},
+
+  {"year": 2019, "area": "Southeast",            "fish": 27000},
+  {"year": 2019, "area": "Cook Inlet",           "fish": 12000},
+  {"year": 2019, "area": "Prince William Sound", "fish": 4200},
+  {"year": 2019, "area": "Other",                "fish": 2000},
+
+  {"year": 2020, "area": "Southeast",            "fish": 24000},
+  {"year": 2020, "area": "Cook Inlet",           "fish": 9800},
+  {"year": 2020, "area": "Prince William Sound", "fish": 3900},
+  {"year": 2020, "area": "Other",                "fish": 1900},
+
+  {"year": 2021, "area": "Southeast",            "fish": 26000},
+  {"year": 2021, "area": "Cook Inlet",           "fish": 10500},
+  {"year": 2021, "area": "Prince William Sound", "fish": 4000},
+  {"year": 2021, "area": "Other",                "fish": 1950},
+
+  {"year": 2022, "area": "Southeast",            "fish": 28000},
+  {"year": 2022, "area": "Cook Inlet",           "fish": 11200},
+  {"year": 2022, "area": "Prince William Sound", "fish": 4100},
+  {"year": 2022, "area": "Other",                "fish": 2000},
+
+  {"year": 2023, "area": "Southeast",            "fish": 29500},
+  {"year": 2023, "area": "Cook Inlet",           "fish": 11800},
+  {"year": 2023, "area": "Prince William Sound", "fish": 4200},
+  {"year": 2023, "area": "Other",                "fish": 2050},
+
+  {"year": 2024, "area": "Southeast",            "fish": 30500},
+  {"year": 2024, "area": "Cook Inlet",           "fish": 12400},
+  {"year": 2024, "area": "Prince William Sound", "fish": 4300},
+  {"year": 2024, "area": "Other",                "fish": 2100}
+]

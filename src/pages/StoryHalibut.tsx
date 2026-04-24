@@ -1,13 +1,21 @@
 import { useDataset } from "../api/manifest";
 import SourcePie from "../components/charts/SourcePie";
+import TimeSeriesLine from "../components/charts/TimeSeriesLine";
 
 interface HalibutRow {
   source: string;
   value: number; // net million pounds
 }
 
+interface BiomassRow {
+  year: number;
+  value: number; // million pounds, coastwide female spawning biomass
+  [k: string]: string | number | null | undefined;
+}
+
 export default function StoryHalibut() {
   const { data, isLoading, error } = useDataset<HalibutRow>("halibut_mortality_by_source");
+  const biomass = useDataset<BiomassRow>("iphc_spawning_biomass");
   const total = (data ?? []).reduce((s, r) => s + r.value, 0);
 
   return (
@@ -45,6 +53,41 @@ export default function StoryHalibut() {
             unit="M lb"
           />
         )}
+      </section>
+
+      <section>
+        <h2>The stock behind the ledger</h2>
+        <p>
+          The annual mortality ledger above sits on top of a stock trajectory
+          that spans almost a century of assessment data. IPHC's coastwide
+          female spawning biomass (FSB) — the portion of the stock capable of
+          reproducing — rose through the 1970s and 1980s, peaked in the early
+          1990s, then declined through the 2000s and 2010s. Recent assessments
+          show the stock near its lowest modeled level since the 1970s, with a
+          modest uptick in the most recent years.
+        </p>
+        {biomass.isLoading && <p className="text-muted">Loading…</p>}
+        {biomass.error && (
+          <p className="text-flag">Data unavailable: {biomass.error.message}</p>
+        )}
+        {biomass.data && (
+          <TimeSeriesLine
+            data={biomass.data}
+            xKey="year"
+            yKey="value"
+            title="Pacific halibut — coastwide female spawning biomass, 1935–2025"
+            yLabel="million net lb"
+            lineName="Female spawning biomass"
+            unitSuffix="M lb"
+          />
+        )}
+        <p className="chart-caption">
+          Coastwide (Regulatory Areas 2A through 4CDE combined). Pre-1950
+          values are early-assessment reconstructions; methodology changed
+          several times across the series and is noted in IPHC assessment
+          documents. Current values are from the most recent stock
+          assessment.
+        </p>
       </section>
 
       <aside className="methodology-box">

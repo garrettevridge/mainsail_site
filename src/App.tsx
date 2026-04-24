@@ -1,11 +1,13 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
-import Home from "./pages/Home";
-import StoryChinook from "./pages/StoryChinook";
-import StoryHalibut from "./pages/StoryHalibut";
-import StoryDiscards from "./pages/StoryDiscards";
-import StoryObserver from "./pages/StoryObserver";
 import NotFound from "./pages/NotFound";
+import FisheriesManagement from "./topics/FisheriesManagement";
+import Biomass from "./topics/Biomass";
+import Observer from "./topics/Observer";
+import Halibut from "./topics/Halibut";
+import Chinook from "./topics/Chinook";
+import Chum from "./topics/Chum";
+import Discards from "./topics/Discards";
 
 const router = createBrowserRouter(
   [
@@ -13,11 +15,14 @@ const router = createBrowserRouter(
       path: "/",
       element: <Layout />,
       children: [
-        { index: true, element: <Home /> },
-        { path: "stories/chinook",  element: <StoryChinook /> },
-        { path: "stories/halibut",  element: <StoryHalibut /> },
-        { path: "stories/discards", element: <StoryDiscards /> },
-        { path: "stories/observer", element: <StoryObserver /> },
+        { index: true, element: <Navigate to="/topics/fisheries-management" replace /> },
+        { path: "topics/fisheries-management", element: <FisheriesManagement /> },
+        { path: "topics/biomass",              element: <Biomass /> },
+        { path: "topics/observer",             element: <Observer /> },
+        { path: "topics/halibut",              element: <Halibut /> },
+        { path: "topics/chinook",              element: <Chinook /> },
+        { path: "topics/chum",                 element: <Chum /> },
+        { path: "topics/discards",             element: <Discards /> },
         { path: "*", element: <NotFound /> },
       ],
     },

@@ -25,12 +25,59 @@ interface GsiRow {
   n_samples: number;
 }
 
+interface SubsistenceRow {
+  year: number;
+  region: string;
+  fish: number;
+}
+
+interface SportRow {
+  year: number;
+  area: string;
+  fish: number;
+}
+
 const HEADLINE_YEAR = 2024;
+
+function pivotByYear<T extends { year: number }>(
+  rows: T[],
+  groupKey: keyof T,
+  valueKey: keyof T
+): {
+  pivoted: Array<Record<string, number | string>>;
+  groups: string[];
+} {
+  const byYear = new Map<number, Record<string, number | string>>();
+  const groups = new Set<string>();
+  for (const r of rows) {
+    const g = String(r[groupKey]);
+    groups.add(g);
+    if (!byYear.has(r.year)) byYear.set(r.year, { year: r.year });
+    byYear.get(r.year)![g] = r[valueKey] as number;
+  }
+  return {
+    pivoted: [...byYear.values()].sort((a, b) => (a.year as number) - (b.year as number)),
+    groups: [...groups],
+  };
+}
 
 export default function StoryChinook() {
   const mortality = useDataset<ChinookMortalityRow>("chinook_mortality_summary");
   const escapement = useDataset<EscapementRow>("salmon_escapement_ayk_chinook");
   const gsi = useDataset<GsiRow>("chinook_gsi");
+  const subsistence = useDataset<SubsistenceRow>("subsistence_chinook_by_region");
+  const sport = useDataset<SportRow>("sport_chinook_by_area");
+
+  const { pivoted: subsistencePivoted, groups: subsistenceRegions } = pivotByYear(
+    subsistence.data ?? [],
+    "region",
+    "fish"
+  );
+  const { pivoted: sportPivoted, groups: sportAreas } = pivotByYear(
+    sport.data ?? [],
+    "area",
+    "fish"
+  );
 
   const headlineBars = (mortality.data ?? [])
     .filter((r) => r.year === HEADLINE_YEAR)
@@ -126,6 +173,68 @@ export default function StoryChinook() {
             yLabel="number of fish"
           />
         )}
+      </section>
+
+      <section>
+        <h2>Subsistence harvest, by region</h2>
+        <p>
+          Subsistence harvest is the community-level take reported through
+          ADF&G's Community Subsistence Information System. The AYK region —
+          the Arctic, Yukon, and Kuskokwim drainages — has historically been
+          the largest single component of Alaska's statewide Chinook
+          subsistence harvest. AYK harvest has declined substantially over the
+          past 15 years as run failures have prompted restrictions and, in
+          several years, closures.
+        </p>
+        {subsistence.isLoading && <p className="text-muted">Loading…</p>}
+        {subsistence.error && (
+          <p className="text-flag">Data unavailable: {subsistence.error.message}</p>
+        )}
+        {subsistence.data && subsistencePivoted.length > 0 && (
+          <StackedTrend
+            data={subsistencePivoted}
+            xKey="year"
+            stackKeys={subsistenceRegions}
+            title="Alaska Chinook subsistence harvest — by region, 2005–2022"
+            yLabel="number of fish"
+          />
+        )}
+        <p className="chart-caption">
+          State-reported subsistence only. Federal subsistence (USFWS) is
+          reported separately and is not included here. Gaps in the earliest
+          years reflect community-by-community survey cadence rather than zero
+          harvest.
+        </p>
+      </section>
+
+      <section>
+        <h2>Sport harvest, by area</h2>
+        <p>
+          Sport harvest is the retained catch reported through ADF&G's
+          Statewide Harvest Survey (SWHS). Southeast Alaska has historically
+          been the largest single sport-harvest area for Chinook, followed by
+          Cook Inlet. Cook Inlet sport harvest dropped sharply from 2012
+          onward under conservation-driven emergency orders; Southeast has
+          varied with the Pacific Salmon Treaty annual catch limit.
+        </p>
+        {sport.isLoading && <p className="text-muted">Loading…</p>}
+        {sport.error && (
+          <p className="text-flag">Data unavailable: {sport.error.message}</p>
+        )}
+        {sport.data && sportPivoted.length > 0 && (
+          <StackedTrend
+            data={sportPivoted}
+            xKey="year"
+            stackKeys={sportAreas}
+            title="Alaska Chinook sport harvest — by area, 2005–2024"
+            yLabel="number of fish (retained)"
+          />
+        )}
+        <p className="chart-caption">
+          Retained harvest only. Catch-and-release and associated hooking
+          mortality are not applied. SWHS publishes with a lag of roughly 18
+          months; the most recent year shown is the latest final release.
+        </p>
       </section>
 
       <section>

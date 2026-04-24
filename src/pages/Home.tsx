@@ -21,6 +21,11 @@ const STORIES = [
     title: "Who is watching Alaska's federal fisheries?",
     lede: "Observer coverage rates by sector, 2013 through the most recent year. The 2013 program restructure is a hard methodology break.",
   },
+  {
+    id: "season",
+    title: "Season tracker: what the fisheries look like right now",
+    lede: "In-season views of Chinook PSC, federal groundfish TAC utilization, and Kenai Chinook sonar passage — refreshed as NMFS and ADF&G publish.",
+  },
 ];
 
 export default function Home() {

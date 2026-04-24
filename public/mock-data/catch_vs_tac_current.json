@@ -1,0 +1,12 @@
+[
+  {"target_fishery": "BSAI pollock",        "tac_mt": 1375000, "catch_mt": 1305000, "utilization_pct": 94.9},
+  {"target_fishery": "GOA pollock",         "tac_mt":  120000, "catch_mt":  112000, "utilization_pct": 93.3},
+  {"target_fishery": "Pacific cod (BSAI)",  "tac_mt":  139000, "catch_mt":  124000, "utilization_pct": 89.2},
+  {"target_fishery": "Pacific cod (GOA)",   "tac_mt":   19200, "catch_mt":   16800, "utilization_pct": 87.5},
+  {"target_fishery": "Sablefish (IFQ)",     "tac_mt":   41500, "catch_mt":   34900, "utilization_pct": 84.1},
+  {"target_fishery": "Atka mackerel",       "tac_mt":   65000, "catch_mt":   59800, "utilization_pct": 92.0},
+  {"target_fishery": "Yellowfin sole",      "tac_mt":  220000, "catch_mt":  168000, "utilization_pct": 76.4},
+  {"target_fishery": "Rock sole",           "tac_mt":   47000, "catch_mt":   41000, "utilization_pct": 87.2},
+  {"target_fishery": "Arrowtooth flounder", "tac_mt":   90000, "catch_mt":   23500, "utilization_pct": 26.1},
+  {"target_fishery": "Rockfish (BSAI+GOA)", "tac_mt":   52000, "catch_mt":   48700, "utilization_pct": 93.7}
+]

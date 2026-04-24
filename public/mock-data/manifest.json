@@ -80,6 +80,72 @@
       "parquet_bytes": 0,
       "json_sha256": "mock",
       "parquet_sha256": "mock"
+    },
+    {
+      "name": "subsistence_chinook_by_region",
+      "json_url": "/mock-data/subsistence_chinook_by_region.json",
+      "parquet_url": "/mock-data/subsistence_chinook_by_region.parquet",
+      "schema_url": "/mock-data/subsistence_chinook_by_region.schema.json",
+      "row_count": 90,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "sport_chinook_by_area",
+      "json_url": "/mock-data/sport_chinook_by_area.json",
+      "parquet_url": "/mock-data/sport_chinook_by_area.parquet",
+      "schema_url": "/mock-data/sport_chinook_by_area.schema.json",
+      "row_count": 80,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "iphc_spawning_biomass",
+      "json_url": "/mock-data/iphc_spawning_biomass.json",
+      "parquet_url": "/mock-data/iphc_spawning_biomass.parquet",
+      "schema_url": "/mock-data/iphc_spawning_biomass.schema.json",
+      "row_count": 39,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "psc_chinook_cumulative",
+      "json_url": "/mock-data/psc_chinook_cumulative.json",
+      "parquet_url": "/mock-data/psc_chinook_cumulative.parquet",
+      "schema_url": "/mock-data/psc_chinook_cumulative.schema.json",
+      "row_count": 28,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "catch_vs_tac_current",
+      "json_url": "/mock-data/catch_vs_tac_current.json",
+      "parquet_url": "/mock-data/catch_vs_tac_current.parquet",
+      "schema_url": "/mock-data/catch_vs_tac_current.schema.json",
+      "row_count": 10,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
+    },
+    {
+      "name": "fish_counts_kenai_late_chinook",
+      "json_url": "/mock-data/fish_counts_kenai_late_chinook.json",
+      "parquet_url": "/mock-data/fish_counts_kenai_late_chinook.parquet",
+      "schema_url": "/mock-data/fish_counts_kenai_late_chinook.schema.json",
+      "row_count": 20,
+      "json_bytes": 0,
+      "parquet_bytes": 0,
+      "json_sha256": "mock",
+      "parquet_sha256": "mock"
     }
   ]
 }
