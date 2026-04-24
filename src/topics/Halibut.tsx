@@ -91,7 +91,8 @@ export default function Halibut() {
   const mortalityStack = useMemo(() => {
     if (!mortData) return { chartData: [], sourceKeys: [] };
     const sources = Object.keys(SOURCE_META);
-    const years = [...new Set(mortData.map((r) => r.year))].sort((a, b) => a - b);
+    const maxYear = Math.max(...mortData.map((r) => r.year));
+    const years = [...new Set(mortData.map((r) => r.year))].filter((y) => y >= maxYear - 19).sort((a, b) => a - b);
     const chartData = years.map((yr) => {
       const row: Record<string, number | string> = { year: yr };
       for (const src of sources) {
@@ -256,7 +257,7 @@ export default function Halibut() {
 
       {mortData && mortalityStack.chartData.length > 0 && (
         <>
-          <h2 className="h2">Mortality by source, 1888–present</h2>
+          <h2 className="h2">Mortality by source, last 20 years</h2>
           <p className="section-intro">
             How total coastwide halibut mortality has been distributed across
             sectors over the full IPHC record. Directed commercial dominates;

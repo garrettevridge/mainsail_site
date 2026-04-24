@@ -100,7 +100,6 @@ export default function Sidebar({ topics, generatedAt }: SidebarProps) {
         }}
       >
         Figures sourced from NMFS, ADF&amp;G, IPHC, NPFMC and AFSC publications.
-        Nothing on this page is an advocacy statement.
         {generatedAt && (
           <div style={{ marginTop: 10, fontSize: 11 }}>
             Data as of{" "}
