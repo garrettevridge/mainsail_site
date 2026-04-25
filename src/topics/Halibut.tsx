@@ -8,6 +8,7 @@ import type {
   IphcAreaMortalityRow,
   MonitoredCatchRow,
   DiscardMortalityRateRow,
+  SportHarvestDataRow,
 } from "../api/types";
 import {
   Card,
@@ -49,6 +50,8 @@ export default function Halibut() {
     useDataset<MonitoredCatchRow>("monitored_catch");
   const { data: dmrData } =
     useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
+  const { data: sportData } =
+    useDataset<SportHarvestDataRow>("sport_harvest");
 
   const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading || areaLoading || catchLoading;
 
@@ -231,6 +234,36 @@ export default function Halibut() {
     return { rows, year: maxYr };
   }, [catchData]);
 
+  // Sport catch-and-release mortality
+  const sportCR = useMemo(() => {
+    if (!sportData) return { rows: [], hasDmr: false };
+    const hal = sportData.filter((r) => r.species_code === "HA");
+    if (!hal.length) return { rows: [], hasDmr: false };
+
+    // Look up the Coastwide sport DMR if it exists in the database yet
+    const crDmr = dmrData?.find(
+      (d) => d.species === "Pacific halibut" && d.gear_type === "Sport (hook-and-line)"
+    )?.dmr_value ?? null;
+
+    const years = [...new Set(hal.map((r) => r.year))].sort((a, b) => b - a);
+    const rows = years.map((yr) => {
+      const catch_ = hal.filter((r) => r.year === yr && r.record_type === "catch")
+        .reduce((s, r) => s + (r.fish_count ?? 0), 0);
+      const harvest = hal.filter((r) => r.year === yr && r.record_type === "harvest")
+        .reduce((s, r) => s + (r.fish_count ?? 0), 0);
+      const released = catch_ - harvest;
+      const mortEst = crDmr != null ? Math.round(released * crDmr) : null;
+      return [
+        yr,
+        Math.round(catch_).toLocaleString(),
+        Math.round(harvest).toLocaleString(),
+        Math.round(released).toLocaleString(),
+        mortEst != null ? mortEst.toLocaleString() : "—",
+      ];
+    });
+    return { rows, hasDmr: crDmr != null };
+  }, [sportData, dmrData]);
+
   // Map monitored_catch gear names → DMR gear_type labels
   const GEAR_TO_DMR: Record<string, string> = {
     "Hook and Line":   "Longline (hook-and-line)",
@@ -314,6 +347,8 @@ export default function Halibut() {
           "iphc_tcey — adopted total constant exploitation yield by area",
           "ifq_landings — IFQ halibut landings by year and area",
           "monitored_catch — halibut bycatch (discarded) by fleet and gear",
+          "sport_harvest — ADF&G SWHS halibut catch vs. harvest (releases implied)",
+          "discard_mortality_rates — DMR by gear including IPHC sport C&R rate (16%)",
         ]}
         could={[
           "iphc_setline_survey — annual setline survey CPUE indices",
@@ -541,6 +576,33 @@ export default function Halibut() {
               ]}
               rows={discardMortality.rows}
               caption={`Source: NMFS AKRO monitored_catch × discard_mortality_rates, year ${discardMortality.year}. † = DMR entry expired; using last known rate.`}
+            />
+          </Card>
+        </>
+      )}
+
+      {sportData && sportCR.rows.length > 0 && (
+        <>
+          <h2 className="h2">Sport halibut — catch, harvest &amp; release mortality</h2>
+          {!sportCR.hasDmr && (
+            <Note>
+              <b>Sport C&amp;R DMR pending publish.</b> The{" "}
+              <code>discard_mortality_rates</code> dataset does not yet contain
+              the IPHC sport release mortality rate (16%). The mortality estimate
+              column will populate once the updated dataset is published to S3.
+            </Note>
+          )}
+          <Card>
+            <Table
+              columns={[
+                { label: "Year", yr: true },
+                { label: "Total catch", num: true },
+                { label: "Kept", num: true },
+                { label: "Released", num: true },
+                { label: "C&R mortality est.", num: true },
+              ]}
+              rows={sportCR.rows}
+              caption={`Source: ADF&G SWHS via Mainsail sport_harvest (species HA). C&R mortality = released × 16% (IPHC stock assessment methodology).`}
             />
           </Card>
         </>
