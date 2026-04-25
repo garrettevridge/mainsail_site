@@ -7,6 +7,7 @@ import type {
   IfqLandingsRow,
   IphcAreaMortalityRow,
   MonitoredCatchRow,
+  DiscardMortalityRateRow,
 } from "../api/types";
 import {
   Card,
@@ -46,6 +47,8 @@ export default function Halibut() {
     useDataset<IphcAreaMortalityRow>("iphc_mortality_by_area");
   const { data: catchData, isLoading: catchLoading } =
     useDataset<MonitoredCatchRow>("monitored_catch");
+  const { data: dmrData } =
+    useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
 
   const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading || areaLoading || catchLoading;
 
@@ -227,6 +230,76 @@ export default function Halibut() {
       .map(([gear, mt]) => [gear, `${Math.round(mt).toLocaleString()} mt`]);
     return { rows, year: maxYr };
   }, [catchData]);
+
+  // Map monitored_catch gear names → DMR gear_type labels
+  const GEAR_TO_DMR: Record<string, string> = {
+    "Hook and Line":   "Longline (hook-and-line)",
+    "Nonpelagic Trawl": "Trawl",
+    "Pelagic Trawl":   "Trawl",
+    "Pot":             "Pot",
+  };
+
+  const discardMortality = useMemo(() => {
+    if (!catchData || !dmrData) return { rows: [], year: null as number | null, bsaiTrawlGap: false };
+    const hal = catchData.filter(
+      (r) => r.species_group === "Pacific Halibut" && r.disposition === "Discarded" && r.monitored_or_total === "Total"
+    );
+    if (!hal.length) return { rows: [], year: null, bsaiTrawlGap: false };
+    const maxYr = Math.max(...hal.map((r) => r.year));
+    const halYear = hal.filter((r) => r.year === maxYr);
+
+    // Build (gear, fmp_area) → discarded mt
+    const byKey = new Map<string, number>();
+    for (const r of halYear) {
+      const key = `${r.gear}|${r.fmp_area}`;
+      byKey.set(key, (byKey.get(key) ?? 0) + (r.metric_tons ?? 0));
+    }
+
+    // Look up best DMR: match species + gear_type + fmp_area, pick highest effective_year_start
+    const lookupDmr = (gear: string, fmpArea: string): { dmr: number | null; gap: boolean } => {
+      const dmrGear = GEAR_TO_DMR[gear];
+      if (!dmrGear) return { dmr: null, gap: false };
+      const candidates = dmrData
+        .filter((d) => d.species === "Pacific halibut" && d.gear_type === dmrGear && d.fmp_area === fmpArea)
+        .sort((a, b) => b.effective_year_start - a.effective_year_start);
+      if (!candidates.length) return { dmr: null, gap: false };
+      const best = candidates[0];
+      // Flag if the most recent entry has expired (effective_year_end < current year)
+      const gap = best.effective_year_end != null && best.effective_year_end < maxYr;
+      return { dmr: best.dmr_value, gap };
+    };
+
+    let bsaiTrawlGap = false;
+    const rows: (string | number)[][] = [];
+    let totalDiscard = 0, totalMort = 0;
+
+    for (const [key, mt] of [...byKey.entries()].sort(([, a], [, b]) => b - a)) {
+      const [gear, area] = key.split("|");
+      const { dmr, gap } = lookupDmr(gear, area);
+      if (gap && (gear === "Nonpelagic Trawl" || gear === "Pelagic Trawl") && area === "BSAI") {
+        bsaiTrawlGap = true;
+      }
+      const mortEst = dmr != null ? mt * dmr : null;
+      totalDiscard += mt;
+      if (mortEst != null) totalMort += mortEst;
+      rows.push([
+        gear,
+        area,
+        `${Math.round(mt).toLocaleString()} mt`,
+        dmr != null ? `${(dmr * 100).toFixed(0)}%${gap ? " †" : ""}` : "—",
+        mortEst != null ? `${Math.round(mortEst).toLocaleString()} mt` : "—",
+      ]);
+    }
+
+    rows.push([
+      "Total", "",
+      `${Math.round(totalDiscard).toLocaleString()} mt`,
+      "",
+      `${Math.round(totalMort).toLocaleString()} mt`,
+    ]);
+
+    return { rows, year: maxYr, bsaiTrawlGap };
+  }, [catchData, dmrData]);
 
   return (
     <>
@@ -440,6 +513,34 @@ export default function Halibut() {
               ]}
               rows={halinBycatchLatest.rows}
               caption={`Source: NMFS AKRO monitored catch via Mainsail monitored_catch, year ${halinBycatchLatest.year}`}
+            />
+          </Card>
+        </>
+      )}
+
+      {catchData && dmrData && discardMortality.rows.length > 0 && (
+        <>
+          <h2 className="h2">{discardMortality.year} halibut bycatch — DMR-weighted mortality estimate</h2>
+          {discardMortality.bsaiTrawlGap && (
+            <Note>
+              <b>Data gap flagged — BSAI trawl DMR.</b> The{" "}
+              <code>discard_mortality_rates</code> dataset has no entry for BSAI
+              trawl effective 2023 or later. The value shown (86%) is the last
+              published rate (2020–2022 harvest specifications). The actual
+              current rate from the 2025–2026 BSAI specs should be ingested.
+            </Note>
+          )}
+          <Card>
+            <Table
+              columns={[
+                { label: "Gear" },
+                { label: "FMP area" },
+                { label: "Discarded", num: true },
+                { label: "DMR", num: true },
+                { label: "Mortality est.", num: true },
+              ]}
+              rows={discardMortality.rows}
+              caption={`Source: NMFS AKRO monitored_catch × discard_mortality_rates, year ${discardMortality.year}. † = DMR entry expired; using last known rate.`}
             />
           </Card>
         </>
