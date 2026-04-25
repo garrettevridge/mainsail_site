@@ -6,6 +6,7 @@ import type {
   IphcTceyDataRow,
   IfqLandingsRow,
   IphcAreaMortalityRow,
+  MonitoredCatchRow,
 } from "../api/types";
 import {
   Card,
@@ -43,8 +44,10 @@ export default function Halibut() {
     useDataset<IfqLandingsRow>("ifq_landings");
   const { data: areaData, isLoading: areaLoading } =
     useDataset<IphcAreaMortalityRow>("iphc_mortality_by_area");
+  const { data: catchData, isLoading: catchLoading } =
+    useDataset<MonitoredCatchRow>("monitored_catch");
 
-  const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading || areaLoading;
+  const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading || areaLoading || catchLoading;
 
   const latestFinalYear = useMemo(() => {
     if (!mortData) return null;
@@ -82,7 +85,7 @@ export default function Halibut() {
     if (!mortData) return { chartData: [], sourceKeys: [] };
     const sources = Object.keys(SOURCE_META);
     const maxYear = Math.max(...mortData.map((r) => r.year));
-    const years = [...new Set(mortData.map((r) => r.year))].filter((y) => y >= maxYear - 19).sort((a, b) => a - b);
+    const years = [...new Set(mortData.map((r) => r.year))].filter((y) => y >= maxYear - 9).sort((a, b) => a - b);
     const chartData = years.map((yr) => {
       const row: Record<string, number | string> = { year: yr };
       for (const src of sources) {
@@ -177,6 +180,54 @@ export default function Halibut() {
 
   const totalTcey = tcey2026.find((r) => r.area === "Total");
 
+  const SECTOR_SHORT: Record<string, string> = {
+    "Catcher/Processor":                "C/P",
+    "Catcher Vessel":                   "CV",
+    "Catcher Vessel: AFA":              "CV (AFA)",
+    "Catcher Vessel: PCTC":             "CV (PCTC)",
+    "Catcher Vessel: Rockfish Program": "CV (Rockfish)",
+    "Mothership":                       "Mothership",
+  };
+
+  const SECTOR_COLORS = ["#1a2332","#2f5d8a","#6b8fad","#b45309","#7b6a4f","#a8a29e"];
+
+  const halinBycatchTrend = useMemo(() => {
+    if (!catchData) return { chartData: [], sectors: [] };
+    const hal = catchData.filter(
+      (r) => r.species_group === "Pacific Halibut" && r.disposition === "Discarded" && r.monitored_or_total === "Total"
+    );
+    const sectors = [...new Set(hal.map((r) => r.sector))].sort();
+    const years = [...new Set(hal.map((r) => r.year))].sort((a, b) => a - b);
+    const chartData = years.map((yr) => {
+      const point: Record<string, number | string> = { year: yr };
+      for (const s of sectors) {
+        const label = SECTOR_SHORT[s] ?? s;
+        point[label] = hal
+          .filter((r) => r.year === yr && r.sector === s)
+          .reduce((sum, r) => sum + (r.metric_tons ?? 0), 0);
+      }
+      return point;
+    });
+    return { chartData, sectors: sectors.map((s) => SECTOR_SHORT[s] ?? s) };
+  }, [catchData]);
+
+  const halinBycatchLatest = useMemo(() => {
+    if (!catchData) return { rows: [], year: null as number | null };
+    const hal = catchData.filter(
+      (r) => r.species_group === "Pacific Halibut" && r.disposition === "Discarded" && r.monitored_or_total === "Total"
+    );
+    if (!hal.length) return { rows: [], year: null };
+    const maxYr = Math.max(...hal.map((r) => r.year));
+    const byGear = new Map<string, number>();
+    for (const r of hal.filter((r) => r.year === maxYr)) {
+      byGear.set(r.gear, (byGear.get(r.gear) ?? 0) + (r.metric_tons ?? 0));
+    }
+    const rows = [...byGear.entries()]
+      .sort(([, a], [, b]) => b - a)
+      .map(([gear, mt]) => [gear, `${Math.round(mt).toLocaleString()} mt`]);
+    return { rows, year: maxYr };
+  }, [catchData]);
+
   return (
     <>
       <Crumb topic="Halibut Mortality by Source" />
@@ -189,6 +240,7 @@ export default function Halibut() {
           "iphc_spawning_biomass — female spawning biomass 1888–present",
           "iphc_tcey — adopted total constant exploitation yield by area",
           "ifq_landings — IFQ halibut landings by year and area",
+          "monitored_catch — halibut bycatch (discarded) by fleet and gear",
         ]}
         could={[
           "iphc_setline_survey — annual setline survey CPUE indices",
@@ -265,7 +317,7 @@ export default function Halibut() {
 
       {mortData && mortalityStack.chartData.length > 0 && (
         <>
-          <h2 className="h2">Mortality by source, last 20 years</h2>
+          <h2 className="h2">Mortality by source, last 10 years</h2>
           <Card>
             <StackedTrend
               data={mortalityStack.chartData}
@@ -352,6 +404,42 @@ export default function Halibut() {
                 fmt(r.tcey_tonnes, 0),
               ])}
               caption="Source: IPHC annual meeting materials, via Mainsail iphc_tcey"
+            />
+          </Card>
+        </>
+      )}
+
+      {catchData && halinBycatchTrend.chartData.length > 0 && (
+        <>
+          <h2 className="h2">Halibut bycatch (discarded) by fleet, 2013–present</h2>
+          <Card>
+            <StackedTrend
+              data={halinBycatchTrend.chartData}
+              xKey="year"
+              stackKeys={halinBycatchTrend.sectors}
+              colors={SECTOR_COLORS}
+              title="Pacific Halibut discards by fleet — federal groundfish fisheries"
+              yLabel="metric tons"
+              yFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(Math.round(v))}
+            />
+            <div className="data-caption">
+              Source: NMFS AKRO monitored catch via Mainsail monitored_catch (disposition = Discarded, Total rows)
+            </div>
+          </Card>
+        </>
+      )}
+
+      {catchData && halinBycatchLatest.rows.length > 0 && (
+        <>
+          <h2 className="h2">{halinBycatchLatest.year} halibut bycatch by gear type</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Gear" },
+                { label: "Discarded (mt)", num: true },
+              ]}
+              rows={halinBycatchLatest.rows}
+              caption={`Source: NMFS AKRO monitored catch via Mainsail monitored_catch, year ${halinBycatchLatest.year}`}
             />
           </Card>
         </>
