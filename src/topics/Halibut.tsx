@@ -5,10 +5,12 @@ import type {
   IphcSpawningBiomassRow,
   IphcTceyDataRow,
   IfqLandingsRow,
+  IphcAreaMortalityRow,
 } from "../api/types";
 import {
   Card,
   Crumb,
+  DataContext,
   Legend,
   Note,
   ProportionBar,
@@ -19,10 +21,7 @@ import type { ProportionPart } from "../components/primitives";
 import TimeSeriesLine from "../components/charts/TimeSeriesLine";
 import StackedTrend from "../components/charts/StackedTrend";
 
-const SOURCE_META: Record<
-  string,
-  { label: string; color: string }
-> = {
+const SOURCE_META: Record<string, { label: string; color: string }> = {
   commercial_landings: { label: "Directed commercial", color: "#1a2332" },
   directed_discard:    { label: "Directed discard",    color: "#2f5d8a" },
   nondirected_discard: { label: "Bycatch (non-directed)", color: "#b45309" },
@@ -42,23 +41,21 @@ export default function Halibut() {
     useDataset<IphcTceyDataRow>("iphc_tcey");
   const { data: ifqData, isLoading: ifqLoading } =
     useDataset<IfqLandingsRow>("ifq_landings");
+  const { data: areaData, isLoading: areaLoading } =
+    useDataset<IphcAreaMortalityRow>("iphc_mortality_by_area");
 
-  const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading;
+  const isLoading = mortLoading || biLoading || tceyLoading || ifqLoading || areaLoading;
 
-  // Most recent non-preliminary year for source breakdown
   const latestFinalYear = useMemo(() => {
     if (!mortData) return null;
     const finals = mortData.filter((r) => r.is_preliminary === 0);
     return finals.length ? Math.max(...finals.map((r) => r.year)) : null;
   }, [mortData]);
 
-  // Proportion bar parts for latest final year
   const proportionParts = useMemo<ProportionPart[]>(() => {
     if (!mortData || latestFinalYear == null) return [];
     return mortData
-      .filter(
-        (r) => r.year === latestFinalYear && r.source !== "total" && (r.mortality_mlb ?? 0) > 0
-      )
+      .filter((r) => r.year === latestFinalYear && r.source !== "total" && (r.mortality_mlb ?? 0) > 0)
       .map((r) => ({
         label: SOURCE_META[r.source]?.label ?? r.source,
         value: r.mortality_mlb ?? 0,
@@ -67,18 +64,12 @@ export default function Halibut() {
       .sort((a, b) => b.value - a.value);
   }, [mortData, latestFinalYear]);
 
-  // Source table (last 5 years)
   const sourceTableRows = useMemo(() => {
     if (!mortData || latestFinalYear == null) return [];
     const sources = Object.keys(SOURCE_META);
-    const years = Array.from(
-      { length: 5 },
-      (_, i) => latestFinalYear - 4 + i
-    );
+    const years = Array.from({ length: 5 }, (_, i) => latestFinalYear - 4 + i);
     return sources.map((src) => {
-      const cells: (string | number)[] = [
-        SOURCE_META[src]?.label ?? src,
-      ];
+      const cells: (string | number)[] = [SOURCE_META[src]?.label ?? src];
       for (const yr of years) {
         const row = mortData.find((r) => r.year === yr && r.source === src);
         cells.push(row?.mortality_mlb != null ? fmt(row.mortality_mlb) : "—");
@@ -87,7 +78,6 @@ export default function Halibut() {
     });
   }, [mortData, latestFinalYear]);
 
-  // Stacked mortality by source over time — pivot (year, source) → wide row
   const mortalityStack = useMemo(() => {
     if (!mortData) return { chartData: [], sourceKeys: [] };
     const sources = Object.keys(SOURCE_META);
@@ -105,21 +95,14 @@ export default function Halibut() {
     return { chartData, sourceKeys: sources.map((s) => SOURCE_META[s].label) };
   }, [mortData]);
 
-  // Coastwide spawning biomass (coastwide_long model, with CI band)
   const biomassTrend = useMemo(() => {
     if (!biomassData) return [];
     return biomassData
       .filter((r) => r.model === "coastwide_long")
       .sort((a, b) => a.year - b.year)
-      .map((r) => ({
-        year: r.year,
-        value: r.sb_mlb,
-        goalLower: r.sb_low_ci_mlb,
-        goalUpper: r.sb_high_ci_mlb,
-      }));
+      .map((r) => ({ year: r.year, value: r.sb_mlb, goalLower: r.sb_low_ci_mlb, goalUpper: r.sb_high_ci_mlb }));
   }, [biomassData]);
 
-  // 2026 adopted TCEY by area
   const tcey2026 = useMemo(() => {
     if (!tceyData) return [];
     const maxYear = Math.max(...tceyData.map((r) => r.year));
@@ -134,7 +117,6 @@ export default function Halibut() {
 
   const tceyMaxYear = tcey2026[0]?.year ?? null;
 
-  // IFQ landings by year and area (halibut only)
   const ifqHalibut = useMemo(() => {
     if (!ifqData) return [];
     return ifqData
@@ -142,11 +124,54 @@ export default function Halibut() {
       .sort((a, b) => a.year - b.year || a.area.localeCompare(b.area));
   }, [ifqData]);
 
+  // Area mortality — most recent 5 years, pivot year as columns
+  const areaMortTable = useMemo(() => {
+    if (!areaData) return { rows: [], years: [] };
+    const maxYear = Math.max(...areaData.map((r) => r.year));
+    const years = Array.from({ length: 5 }, (_, i) => maxYear - 4 + i);
+    const areas = [...new Set(areaData.map((r) => r.area))]
+      .filter((a) => a !== "Total")
+      .sort((a, b) => a.localeCompare(b));
+    const rows = areas.map((area) => {
+      const cells: (string | number)[] = [`Area ${area}`];
+      for (const yr of years) {
+        const row = areaData.find((r) => r.year === yr && r.area === area);
+        cells.push(row?.mortality_mlb != null ? fmt(row.mortality_mlb) + (row.is_preliminary === 1 ? " †" : "") : "—");
+      }
+      return cells;
+    });
+    const totalRows = years.map((yr) => {
+      const row = areaData.find((r) => r.year === yr && r.area === "Total");
+      return row?.mortality_mlb != null ? fmt(row.mortality_mlb) + (row.is_preliminary === 1 ? " †" : "") : "—";
+    });
+    rows.push(["Total coastwide", ...totalRows]);
+    return { rows, years };
+  }, [areaData]);
+
+  // Area mortality trend (last 20 years, non-Total areas)
+  const areaMortTrend = useMemo(() => {
+    if (!areaData) return { chartData: [], areas: [] };
+    const maxYear = Math.max(...areaData.map((r) => r.year));
+    const areas = [...new Set(areaData.map((r) => r.area))]
+      .filter((a) => a !== "Total")
+      .sort((a, b) => a.localeCompare(b));
+    const years = [...new Set(areaData.map((r) => r.year))].filter((y) => y >= maxYear - 19).sort((a, b) => a - b);
+    const chartData = years.map((yr) => {
+      const point: Record<string, number | string> = { year: yr };
+      for (const area of areas) {
+        const row = areaData.find((r) => r.year === yr && r.area === area);
+        point[`Area ${area}`] = row?.mortality_mlb ?? 0;
+      }
+      return point;
+    });
+    return { chartData, areas: areas.map((a) => `Area ${a}`) };
+  }, [areaData]);
+
+  const AREA_COLORS = ["#1a2332","#2f5d8a","#6b8fad","#b45309","#7b6a4f","#a8a29e","#d4c5b0","#4a7c6f"];
+
   const totalMort2024 = useMemo(() => {
     if (!mortData) return null;
-    const row = mortData.find(
-      (r) => r.year === (latestFinalYear ?? 0) && r.source === "total"
-    );
+    const row = mortData.find((r) => r.year === (latestFinalYear ?? 0) && r.source === "total");
     return row?.mortality_mlb ?? null;
   }, [mortData, latestFinalYear]);
 
@@ -156,30 +181,28 @@ export default function Halibut() {
     <>
       <Crumb topic="Halibut Mortality by Source" />
       <h1 className="page-title">Halibut Mortality by Source</h1>
-      <p className="page-lede first-sentence">
-        Pacific halibut is the only Alaska fishery with a single, coastwide
-        ledger that reconciles every pound of mortality — directed commercial,
-        bycatch, recreational, subsistence, research, wastage — into one annual
-        total. That reconciliation is done by the International Pacific Halibut
-        Commission, established by a 1923 U.S.–Canada treaty that predates
-        every other agency involved.
-      </p>
-      <p className="page-lede">
-        The logic runs from a coastwide biological estimate down to the share
-        available to the directed commercial fleet. IPHC sets the{" "}
-        <b>Total Constant Exploitation Yield (TCEY)</b> — the all-source
-        mortality limit — each January. From TCEY it deducts the projected
-        mortality from bycatch in groundfish fisheries, recreational harvest,
-        subsistence, and wastage. What remains is the{" "}
-        <b>Fishery Constant Exploitation Yield (FCEY)</b>, the
-        directed-commercial allocation divided among eight regulatory areas
-        from the Oregon coast to the Aleutians.
-      </p>
-      <p className="page-lede">
-        All figures on this page are in <b>net pounds (million lbs)</b> — head-off,
-        gutted — the IPHC reporting unit. Values from NMFS or ADF&amp;G in round
-        pounds are converted before IPHC consolidates them.
-      </p>
+
+      <DataContext
+        use={[
+          "iphc_mortality_by_source — coastwide mortality by source (commercial, bycatch, recreational, subsistence)",
+          "iphc_mortality_by_area — mortality by regulatory area (2A–4D)",
+          "iphc_spawning_biomass — female spawning biomass 1888–present",
+          "iphc_tcey — adopted total constant exploitation yield by area",
+          "ifq_landings — IFQ halibut landings by year and area",
+        ]}
+        could={[
+          "iphc_setline_survey — annual setline survey CPUE indices",
+          "iphc_age_composition — age/sex sampling from commercial landings",
+          "cdq_halibut_allocations — CDQ group halibut allocations",
+          "sport_halibut_creel — ADF&G creel survey charter catch estimates",
+        ]}
+        ideas={[
+          "Bycatch share of total mortality trend (% non-directed)",
+          "TCEY vs. actual mortality by area over time",
+          "Biomass vs. mortality ratio (exploitation rate)",
+          "IFQ utilization rate by area (% allocation landed)",
+        ]}
+      />
 
       {isLoading && <p className="section-intro">Loading IPHC data…</p>}
 
@@ -193,39 +216,25 @@ export default function Halibut() {
                 sub: "Net lbs, coastwide",
               },
               {
-                val: totalTcey?.tcey_mlb != null
-                  ? `${fmt(totalTcey.tcey_mlb)} Mlb`
-                  : "—",
+                val: totalTcey?.tcey_mlb != null ? `${fmt(totalTcey.tcey_mlb)} Mlb` : "—",
                 label: `${tceyMaxYear ?? "—"} adopted TCEY (coastwide)`,
                 sub: "All-source mortality cap",
               },
               {
-                val: proportionParts[0]?.value != null
-                  ? `${fmt(proportionParts[0].value)} Mlb`
-                  : "—",
+                val: proportionParts[0]?.value != null ? `${fmt(proportionParts[0].value)} Mlb` : "—",
                 label: `Directed commercial ${latestFinalYear}`,
                 sub: proportionParts[0]?.label,
                 accent: "accent",
               },
               {
-                val: proportionParts
-                  .filter((_, i) => i > 0)
-                  .reduce((s, p) => s + p.value, 0)
-                  .toLocaleString("en-US", { maximumFractionDigits: 2 }) + " Mlb",
+                val: proportionParts.filter((_, i) => i > 0).reduce((s, p) => s + p.value, 0).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " Mlb",
                 label: `All other mortality sources ${latestFinalYear}`,
                 sub: "Bycatch, recreational, subsistence",
               },
             ]}
           />
 
-          <h2 className="h2">
-            {latestFinalYear} Mortality by source
-          </h2>
-          <p className="section-intro">
-            Proportion of coastwide halibut mortality by reporting sector.
-            "Directed commercial" is the IFQ fleet; "bycatch (non-directed)"
-            is halibut caught incidentally in federal groundfish fisheries.
-          </p>
+          <h2 className="h2">{latestFinalYear} mortality by source</h2>
           <Card>
             <ProportionBar parts={proportionParts} />
             <Legend
@@ -238,7 +247,6 @@ export default function Halibut() {
           </Card>
 
           <h2 className="h2">Mortality by source, last 5 years</h2>
-          <p className="section-intro">Net pounds (million lbs), coastwide.</p>
           <Card>
             <Table
               columns={[
@@ -249,7 +257,7 @@ export default function Halibut() {
                 })),
               ]}
               rows={sourceTableRows}
-              caption="Source: IPHC annual stock assessment, via Mainsail iphc_mortality_by_source"
+              caption="Source: IPHC annual stock assessment, via Mainsail iphc_mortality_by_source. Net lbs (million lbs)."
             />
           </Card>
         </>
@@ -258,12 +266,6 @@ export default function Halibut() {
       {mortData && mortalityStack.chartData.length > 0 && (
         <>
           <h2 className="h2">Mortality by source, last 20 years</h2>
-          <p className="section-intro">
-            How total coastwide halibut mortality has been distributed across
-            sectors over the full IPHC record. Directed commercial dominates;
-            bycatch and recreational shares have grown since the 1980s.
-            Net pounds (million lbs).
-          </p>
           <Card>
             <StackedTrend
               data={mortalityStack.chartData}
@@ -281,14 +283,45 @@ export default function Halibut() {
         </>
       )}
 
+      {areaData && areaMortTable.rows.length > 0 && (
+        <>
+          <h2 className="h2">Mortality by regulatory area, last 5 years</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Area" },
+                ...areaMortTable.years.map((yr) => ({ label: String(yr), num: true })),
+              ]}
+              rows={areaMortTable.rows}
+              caption="Source: IPHC stock assessment via Mainsail iphc_mortality_by_area. Net lbs (million lbs). † = preliminary."
+            />
+          </Card>
+        </>
+      )}
+
+      {areaData && areaMortTrend.chartData.length > 0 && (
+        <>
+          <h2 className="h2">Mortality by regulatory area, last 20 years</h2>
+          <Card>
+            <StackedTrend
+              data={areaMortTrend.chartData}
+              xKey="year"
+              stackKeys={areaMortTrend.areas}
+              colors={AREA_COLORS}
+              title="Pacific Halibut — mortality by regulatory area"
+              yLabel="million lbs"
+              yFormatter={(v) => `${v.toFixed(1)}`}
+            />
+            <div className="data-caption">
+              Source: IPHC stock assessment via Mainsail iphc_mortality_by_area
+            </div>
+          </Card>
+        </>
+      )}
+
       {biomassData && biomassTrend.length > 0 && (
         <>
           <h2 className="h2">Coastwide spawning biomass, 1888–present</h2>
-          <p className="section-intro">
-            Estimated female spawning biomass (coastwide model). Shaded band
-            is the 95% confidence interval from the IPHC stock assessment.
-            Biomass is in million lbs (net pounds).
-          </p>
           <Card>
             <TimeSeriesLine
               data={biomassTrend}
@@ -305,15 +338,7 @@ export default function Halibut() {
 
       {tceyData && tcey2026.length > 0 && (
         <>
-          <h2 className="h2">
-            {tceyMaxYear} TCEY by regulatory area (adopted)
-          </h2>
-          <p className="section-intro">
-            The adopted TCEY is the all-source mortality ceiling for each
-            regulatory area. Areas 2A–2C cover the U.S. West Coast and
-            Southeast Alaska. Areas 3A–3B are the Central and Western Gulf.
-            Areas 4A–4CDE cover the Bering Sea and Aleutians.
-          </p>
+          <h2 className="h2">{tceyMaxYear} TCEY by regulatory area (adopted)</h2>
           <Card>
             <Table
               columns={[
@@ -322,7 +347,7 @@ export default function Halibut() {
                 { label: "TCEY (metric tons)", num: true },
               ]}
               rows={tcey2026.map((r) => [
-                r.area === "Total" ? `Total coastwide` : `Area ${r.area}`,
+                r.area === "Total" ? "Total coastwide" : `Area ${r.area}`,
                 fmt(r.tcey_mlb),
                 fmt(r.tcey_tonnes, 0),
               ])}
@@ -335,12 +360,6 @@ export default function Halibut() {
       {ifqData && ifqHalibut.length > 0 && (
         <>
           <h2 className="h2">IFQ halibut landings, 2022–present</h2>
-          <p className="section-intro">
-            Directed commercial halibut through the Individual Fishing Quota
-            (IFQ) program. Catch and allocation in metric tons (net head-off,
-            gutted). IFQ program began 1995; pre-2022 NMFS URLs currently
-            return 404 — additional years pending.
-          </p>
           <Note>
             <b>Units differ from IPHC figures above.</b> IPHC mortality
             figures are in net pounds; these IFQ figures are in metric tons.

@@ -15,4 +15,5 @@ export type { LegendItem } from "./Legend";
 export { default as ProportionBar } from "./ProportionBar";
 export type { ProportionPart } from "./ProportionBar";
 export { default as Sidebar } from "./Sidebar";
+export { default as DataContext } from "./DataContext";
 export type { TopicEntry } from "./Sidebar";

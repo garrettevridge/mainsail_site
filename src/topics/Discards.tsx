@@ -4,6 +4,7 @@ import type { MonitoredCatchRow, DiscardMortalityRateRow } from "../api/types";
 import {
   Card,
   Crumb,
+  DataContext,
   Legend,
   Note,
   ProportionBar,
@@ -27,16 +28,14 @@ export default function Discards() {
   const isLoading = catchLoading || dmrLoading;
 
   const maxYear = useMemo(
-    () =>
-      catchData?.length ? Math.max(...catchData.map((r) => r.year)) : null,
+    () => (catchData?.length ? Math.max(...catchData.map((r) => r.year)) : null),
     [catchData]
   );
 
-  // Most recent year: total retained vs discarded (BSAI + GOA, all sectors, "Total" rows)
+  // Overall retained vs discarded
   const dispositionTotals = useMemo(() => {
     if (!catchData || maxYear == null) return { retained: 0, discarded: 0 };
-    let retained = 0;
-    let discarded = 0;
+    let retained = 0, discarded = 0;
     for (const r of catchData) {
       if (r.year === maxYear && r.monitored_or_total === "Total") {
         if (r.disposition === "Retained") retained += r.metric_tons ?? 0;
@@ -54,40 +53,108 @@ export default function Discards() {
     ];
   }, [dispositionTotals]);
 
-  // Top species groups discarded by year (BSAI + GOA, Total rows)
+  // Top species groups discarded by year
   const discardBySpeciesTrend = useMemo(() => {
     if (!catchData) return { chartData: [], keys: [] };
-
-    // Find top 6 discarded species groups by total volume across all years
     const totals = new Map<string, number>();
     for (const r of catchData) {
       if (r.disposition === "Discarded" && r.monitored_or_total === "Total") {
         totals.set(r.species_group, (totals.get(r.species_group) ?? 0) + (r.metric_tons ?? 0));
       }
     }
-    const topGroups = [...totals.entries()]
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 6)
-      .map(([g]) => g);
-
+    const topGroups = [...totals.entries()].sort(([, a], [, b]) => b - a).slice(0, 6).map(([g]) => g);
     const years = [...new Set(catchData.map((r) => r.year))].sort((a, b) => a - b);
     const chartData = years.map((yr) => {
       const point: Record<string, number | string> = { year: yr };
       for (const g of topGroups) {
         point[g] = catchData
-          .filter(
-            (r) =>
-              r.year === yr &&
-              r.species_group === g &&
-              r.disposition === "Discarded" &&
-              r.monitored_or_total === "Total"
-          )
+          .filter((r) => r.year === yr && r.species_group === g && r.disposition === "Discarded" && r.monitored_or_total === "Total")
           .reduce((s, r) => s + (r.metric_tons ?? 0), 0);
       }
       return point;
     });
-
     return { chartData, keys: topGroups };
+  }, [catchData]);
+
+  // Retained vs discarded by FMP area (latest year)
+  const byFmpArea = useMemo(() => {
+    if (!catchData || maxYear == null) return [];
+    const areas = [...new Set(catchData.map((r) => r.fmp_area))].sort();
+    return areas.map((area) => {
+      const rows = catchData.filter((r) => r.year === maxYear && r.fmp_area === area && r.monitored_or_total === "Total");
+      const retained = rows.filter((r) => r.disposition === "Retained").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const discarded = rows.filter((r) => r.disposition === "Discarded").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const total = retained + discarded;
+      return [
+        area,
+        `${fmt(Math.round(retained / 1000))} kt`,
+        `${fmt(Math.round(discarded / 1000))} kt`,
+        total > 0 ? fmtPct(discarded / total) : "—",
+      ];
+    });
+  }, [catchData, maxYear]);
+
+  // Retained vs discarded by gear (latest year)
+  const byGear = useMemo(() => {
+    if (!catchData || maxYear == null) return [];
+    const gears = [...new Set(catchData.filter((r) => r.year === maxYear).map((r) => r.gear))].sort();
+    return gears
+      .map((gear) => {
+        const rows = catchData.filter((r) => r.year === maxYear && r.gear === gear && r.monitored_or_total === "Total");
+        const retained = rows.filter((r) => r.disposition === "Retained").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const discarded = rows.filter((r) => r.disposition === "Discarded").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const total = retained + discarded;
+        return { gear, retained, discarded, total, rate: total > 0 ? discarded / total : 0 };
+      })
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((r) => [
+        r.gear,
+        `${fmt(Math.round(r.retained / 1000))} kt`,
+        `${fmt(Math.round(r.discarded / 1000))} kt`,
+        fmtPct(r.rate),
+      ]);
+  }, [catchData, maxYear]);
+
+  // Retained vs discarded by sector (latest year)
+  const bySector = useMemo(() => {
+    if (!catchData || maxYear == null) return [];
+    const sectors = [...new Set(catchData.filter((r) => r.year === maxYear).map((r) => r.sector))].sort();
+    return sectors
+      .map((sector) => {
+        const rows = catchData.filter((r) => r.year === maxYear && r.sector === sector && r.monitored_or_total === "Total");
+        const retained = rows.filter((r) => r.disposition === "Retained").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const discarded = rows.filter((r) => r.disposition === "Discarded").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const total = retained + discarded;
+        return { sector, retained, discarded, total, rate: total > 0 ? discarded / total : 0 };
+      })
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((r) => [
+        r.sector,
+        `${fmt(Math.round(r.retained / 1000))} kt`,
+        `${fmt(Math.round(r.discarded / 1000))} kt`,
+        fmtPct(r.rate),
+      ]);
+  }, [catchData, maxYear]);
+
+  // Discard rate trend by year (BSAI + GOA, all)
+  const discardTrend = useMemo(() => {
+    if (!catchData) return [];
+    const years = [...new Set(catchData.map((r) => r.year))].sort((a, b) => a - b);
+    return years.map((yr) => {
+      const rows = catchData.filter((r) => r.year === yr && r.monitored_or_total === "Total");
+      const retained = rows.filter((r) => r.disposition === "Retained").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const discarded = rows.filter((r) => r.disposition === "Discarded").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const total = retained + discarded;
+      return [
+        String(yr),
+        `${fmt(Math.round(retained / 1000))} kt`,
+        `${fmt(Math.round(discarded / 1000))} kt`,
+        `${fmt(Math.round(total / 1000))} kt`,
+        total > 0 ? fmtPct(discarded / total) : "—",
+      ];
+    });
   }, [catchData]);
 
   const { retained, discarded } = dispositionTotals;
@@ -98,27 +165,25 @@ export default function Discards() {
     <>
       <Crumb topic="Discards & Utilization" />
       <h1 className="page-title">Discards &amp; Utilization</h1>
-      <p className="page-lede first-sentence">
-        "Discards" in Alaska's federal groundfish fisheries is a term with two
-        distinct meanings — regulatory and economic — and both matter for
-        understanding how much of the catch is actually used. The regulatory
-        definition counts any fish returned to the sea, dead or alive, as a
-        discard; the economic definition tracks only fish that had a plausible
-        commercial path and were returned for market reasons.
-      </p>
-      <p className="page-lede">
-        Across the federal groundfish fleet, the retained-to-landed ratio sits
-        near <b>97%</b>. Discards concentrate in a handful of specific
-        situations: undersized or non-target species caught incidentally, fish
-        that fall outside a year's quota after a sector closes, and
-        regulatory-mandated returns (prohibited species, non-retention species,
-        legal-minimum shortfalls).
-      </p>
-      <p className="page-lede">
-        The sections below decompose that headline into retained vs. discarded
-        volumes, composition of the discarded fraction, and the discard
-        mortality rates applied by gear type.
-      </p>
+
+      <DataContext
+        use={[
+          "monitored_catch — NMFS AKRO retained vs. discarded by species, gear, sector, FMP area",
+          "discard_mortality_rates — BSAI/GOA discard mortality rates by gear and species",
+        ]}
+        could={[
+          "psc_weekly — halibut & salmon PSC counts by target fishery",
+          "wastage_reports — processor at-sea waste/trim data",
+          "prohibited_species_catch — PSC limit utilization by fishery",
+          "at_sea_production — product recovery rates by vessel class",
+        ]}
+        ideas={[
+          "Discard rate by species complex trend (is it improving?)",
+          "Retained vs. discarded by vessel size class",
+          "DMR-weighted mortality: convert discards to mortality equivalents",
+          "Compare discard rates: BSAI trawl vs. GOA trawl vs. longline",
+        ]}
+      />
 
       {isLoading && <p className="section-intro">Loading discard data…</p>}
 
@@ -152,22 +217,12 @@ export default function Discards() {
           />
 
           <h2 className="h2">{maxYear} retained vs. discarded</h2>
-          <p className="section-intro">
-            Share of federal groundfish catch retained vs. returned to sea
-            (BSAI + GOA combined, all sectors, all species groups).
-          </p>
           <Card>
             <ProportionBar parts={proportionParts} />
             <Legend
               items={[
-                {
-                  label: `Retained — ${fmt(Math.round(retained / 1000))} kt (${fmtPct(retained / total)})`,
-                  color: "#1a2332",
-                },
-                {
-                  label: `Discarded — ${fmt(Math.round(discarded / 1000))} kt (${fmtPct(discardRate)})`,
-                  color: "#b45309",
-                },
+                { label: `Retained — ${fmt(Math.round(retained / 1000))} kt (${fmtPct(retained / total)})`, color: "#1a2332" },
+                { label: `Discarded — ${fmt(Math.round(discarded / 1000))} kt (${fmtPct(discardRate)})`, color: "#b45309" },
               ]}
             />
             <div className="data-caption">Source: NMFS Monitored Catch tables</div>
@@ -175,14 +230,7 @@ export default function Discards() {
 
           {discardBySpeciesTrend.keys.length > 0 && (
             <>
-              <h2 className="h2">
-                Top discarded species groups by year, 2013–{maxYear}
-              </h2>
-              <p className="section-intro">
-                Metric tons discarded (Total rows, BSAI + GOA combined). The
-                six largest species groups by cumulative discard volume across
-                all years shown.
-              </p>
+              <h2 className="h2">Top discarded species groups by year, 2013–{maxYear}</h2>
               <Card>
                 <StackedTrend
                   data={discardBySpeciesTrend.chartData}
@@ -190,9 +238,80 @@ export default function Discards() {
                   stackKeys={discardBySpeciesTrend.keys}
                   title="Federal groundfish discards by species group"
                   yLabel="metric tons"
-                  yFormatter={(v) =>
-                    v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
-                  }
+                  yFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                />
+              </Card>
+            </>
+          )}
+
+          {byFmpArea.length > 0 && (
+            <>
+              <h2 className="h2">{maxYear} retained vs. discarded by FMP area</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "FMP area" },
+                    { label: "Retained", num: true },
+                    { label: "Discarded", num: true },
+                    { label: "Discard rate", num: true },
+                  ]}
+                  rows={byFmpArea}
+                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                />
+              </Card>
+            </>
+          )}
+
+          {byGear.length > 0 && (
+            <>
+              <h2 className="h2">{maxYear} retained vs. discarded by gear type</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Gear" },
+                    { label: "Retained", num: true },
+                    { label: "Discarded", num: true },
+                    { label: "Discard rate", num: true },
+                  ]}
+                  rows={byGear}
+                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                />
+              </Card>
+            </>
+          )}
+
+          {bySector.length > 0 && (
+            <>
+              <h2 className="h2">{maxYear} retained vs. discarded by sector</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Sector" },
+                    { label: "Retained", num: true },
+                    { label: "Discarded", num: true },
+                    { label: "Discard rate", num: true },
+                  ]}
+                  rows={bySector}
+                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                />
+              </Card>
+            </>
+          )}
+
+          {discardTrend.length > 0 && (
+            <>
+              <h2 className="h2">Annual discard totals, 2013–{maxYear}</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Year", yr: true },
+                    { label: "Retained", num: true },
+                    { label: "Discarded", num: true },
+                    { label: "Total catch", num: true },
+                    { label: "Discard rate", num: true },
+                  ]}
+                  rows={discardTrend}
+                  caption="Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch"
                 />
               </Card>
             </>
@@ -203,13 +322,6 @@ export default function Discards() {
       {dmrData && (
         <>
           <h2 className="h2">Discard mortality rates by gear</h2>
-          <p className="section-intro">
-            Regulatory discard mortality rates (DMRs) specify what fraction of
-            discarded fish are counted as mortality. A trawl-discarded halibut
-            counts more heavily than a hook-and-line discarded halibut because
-            survival rates differ by gear type. These rates are established by
-            the Council and published in the harvest specifications.
-          </p>
           <Card>
             <Table
               columns={[
@@ -236,9 +348,7 @@ export default function Discards() {
           <Note>
             <b>Trawl vs. longline mortality.</b> Trawl gear carries the
             highest discard mortality rates (up to 80% for Pacific halibut);
-            longline hook-and-line is 11% for the same species. This
-            difference explains why the Council imposes stricter PSC caps on
-            trawl sectors even at the same bycatch count.
+            longline hook-and-line is 11% for the same species.
           </Note>
         </>
       )}

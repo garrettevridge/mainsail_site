@@ -1,41 +1,111 @@
+import { useMemo } from "react";
+import { useDataset } from "../api/manifest";
+import type {
+  SalmonCommercialHarvestDataRow,
+  SalmonEscapementRow,
+  EscapementGoalsHistoryRow,
+} from "../api/types";
 import {
   Card,
   Crumb,
+  DataContext,
   KV,
-  Note,
   Pill,
   Table,
 } from "../components/primitives";
 
+const fmt = (n: number | null | undefined) =>
+  n == null ? "—" : n.toLocaleString("en-US");
+
 export default function FisheriesManagement() {
+  const { data: commercialData } =
+    useDataset<SalmonCommercialHarvestDataRow>("salmon_commercial_harvest");
+  const { data: escapementData } =
+    useDataset<SalmonEscapementRow>("salmon_escapement");
+  const { data: goalsData } =
+    useDataset<EscapementGoalsHistoryRow>("escapement_goals_history");
+
+  const harvestYears = useMemo(() => {
+    if (!commercialData) return [];
+    const statewide = commercialData.filter((r) => r.region === "statewide");
+    return [...new Set(statewide.map((r) => r.year))].sort((a, b) => a - b).slice(-5);
+  }, [commercialData]);
+
+  const harvestBySpecies = useMemo(() => {
+    if (!commercialData || !harvestYears.length) return [];
+    const statewide = commercialData.filter((r) => r.region === "statewide");
+    const SPECIES_ORDER = ["chinook", "sockeye", "coho", "pink", "chum"];
+    return SPECIES_ORDER.map((sp) =>
+      [sp as string | number, ...harvestYears.map((yr) => {
+        const row = statewide.find((r) => r.species === sp && r.year === yr);
+        if (row?.harvest_fish == null) return "—" as string | number;
+        return fmt(row.harvest_fish) + (row.is_preliminary === 1 ? " †" : "");
+      })]
+    );
+  }, [commercialData, harvestYears]);
+
+  const recentEscapement = useMemo(() => {
+    if (!escapementData) return { rows: [] as (string | number)[][], year: null as number | null };
+    const maxYear = Math.max(...escapementData.map((r) => r.year));
+    const rows = escapementData
+      .filter((r) => r.year === maxYear && r.actual_count != null)
+      .sort((a, b) => (b.actual_count ?? 0) - (a.actual_count ?? 0))
+      .slice(0, 25)
+      .map((r) => [
+        r.system_name,
+        r.species,
+        r.region ?? "—",
+        r.count_method ?? "—",
+        fmt(r.actual_count),
+        r.goal_lower != null && r.goal_upper != null
+          ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}`
+          : "—",
+        r.goal_met === 1 ? "Yes" : r.goal_met === 0 ? "No" : "—",
+      ]);
+    return { rows, year: maxYear };
+  }, [escapementData]);
+
+  const goalsRows = useMemo(() => {
+    if (!goalsData) return [];
+    return [...goalsData]
+      .sort((a, b) => a.system_name.localeCompare(b.system_name))
+      .map((r) => [
+        r.system_name,
+        r.species,
+        r.goal_type,
+        r.goal_lower != null && r.goal_upper != null
+          ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}`
+          : "—",
+        String(r.effective_year_start),
+        r.effective_year_end != null ? String(r.effective_year_end) : "present",
+        r.source_document ?? "—",
+      ]);
+  }, [goalsData]);
+
   return (
     <>
       <Crumb topic="Fisheries Management" />
       <h1 className="page-title">Fisheries Management</h1>
-      <p className="page-lede first-sentence">
-        Alaska supplies more than half of all U.S. seafood by weight, drawn from
-        some of the most productive marine ecosystems in the world — and it does
-        so under a fisheries management system that is unusual for its
-        scientific basis, its layered jurisdiction, and its record of avoiding
-        stock collapse since statehood in 1959.
-      </p>
-      <p className="page-lede">
-        Three bodies share authority. The <b>State of Alaska</b> manages all
-        salmon, herring, shellfish, and nearshore groundfish inside three
-        nautical miles from shore. The <b>federal government</b>, through NMFS
-        and the North Pacific Fishery Management Council, manages groundfish
-        and crab between 3 and 200 miles. <b>Pacific halibut</b> is managed
-        coastwide by the International Pacific Halibut Commission under a 1923
-        U.S.–Canada treaty — the oldest active fisheries treaty in North
-        America.
-      </p>
-      <p className="page-lede">
-        Each body sets catch limits through a public, peer-reviewed process:
-        biologists estimate what the stock can support, the limit is reduced
-        for uncertainty and policy considerations, and the final number is
-        published before the season opens. The rest of this page describes
-        that system as it stands today.
-      </p>
+
+      <DataContext
+        use={[
+          "salmon_commercial_harvest — ADF&G statewide harvest by species",
+          "salmon_escapement — ADF&G escapement counts by system",
+          "escapement_goals_history — ADF&G escapement goal history",
+        ]}
+        could={[
+          "subsistence_harvest — federal/state subsistence take",
+          "personal_use_harvest — dipnet and personal-use data",
+          "salmon_age_sex_size — biological sampling data",
+          "ADF&G tender tickets by port/processor",
+        ]}
+        ideas={[
+          "Map view of escapement by drainage",
+          "Goal attainment rate trend (% years goal met)",
+          "Harvest vs. escapement ratio by system over time",
+          "Jurisdiction overlay: state vs. federal waters by species",
+        ]}
+      />
 
       <h2 className="h2">Jurisdiction at a glance</h2>
       <Card>
@@ -107,12 +177,65 @@ export default function FisheriesManagement() {
         />
       </Card>
 
-      <Note>
-        <b>IPHC.</b> The International Pacific Halibut Commission was
-        established in 1923 by treaty between the U.S. and Canada. Its annual
-        stock assessment consolidates halibut mortality reported by U.S. and
-        Canadian agencies into a single coastwide ledger.
-      </Note>
+      {commercialData && harvestBySpecies.length > 0 && (
+        <>
+          <h2 className="h2">Commercial salmon harvest — statewide by species (fish)</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Species" },
+                ...harvestYears.map((yr) => ({ label: String(yr), num: true })),
+              ]}
+              rows={harvestBySpecies}
+              caption="Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary."
+            />
+          </Card>
+        </>
+      )}
+
+      {escapementData && recentEscapement.rows.length > 0 && (
+        <>
+          <h2 className="h2">
+            Salmon escapement — top systems by count, {recentEscapement.year}
+          </h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "System" },
+                { label: "Species" },
+                { label: "Region" },
+                { label: "Method" },
+                { label: "Count", num: true },
+                { label: "Goal range" },
+                { label: "Goal met" },
+              ]}
+              rows={recentEscapement.rows}
+              caption={`Source: ADF&G escapement database via Mainsail salmon_escapement, year ${recentEscapement.year}`}
+            />
+          </Card>
+        </>
+      )}
+
+      {goalsData && goalsRows.length > 0 && (
+        <>
+          <h2 className="h2">Escapement goals history</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "System" },
+                { label: "Species" },
+                { label: "Goal type" },
+                { label: "Goal range" },
+                { label: "From" },
+                { label: "To" },
+                { label: "Source document" },
+              ]}
+              rows={goalsRows}
+              caption="Source: ADF&G Board of Fisheries escapement goal history, via Mainsail escapement_goals_history"
+            />
+          </Card>
+        </>
+      )}
     </>
   );
 }

@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
-import type { SalmonCommercialHarvestDataRow, HatcheryReleasesRow, SportHarvestDataRow } from "../api/types";
-import { Card, Crumb, Note, StatGrid, Table } from "../components/primitives";
+import type {
+  SalmonCommercialHarvestDataRow,
+  HatcheryReleasesRow,
+  SportHarvestDataRow,
+  SalmonEscapementRow,
+  PscWeeklyDataRow,
+} from "../api/types";
+import { Card, Crumb, DataContext, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
 
 const fmt = (n: number | null | undefined) =>
@@ -22,31 +28,38 @@ export default function Chum() {
     useDataset<HatcheryReleasesRow>("hatchery_releases");
   const { data: sportData, isLoading: sportLoading } =
     useDataset<SportHarvestDataRow>("sport_harvest");
+  const { data: escapementData } =
+    useDataset<SalmonEscapementRow>("salmon_escapement");
+  const { data: pscData, isLoading: pscLoading } =
+    useDataset<PscWeeklyDataRow>("psc_weekly");
 
-  // Statewide commercial chum harvest
   const commercialChum = useMemo(() => {
     if (!commercialData) return [];
-    return commercialData
-      .filter((r) => r.species === "chum" && r.region === "statewide")
-      .sort((a, b) => b.year - a.year);
+    return commercialData.filter((r) => r.species === "chum" && r.region === "statewide").sort((a, b) => b.year - a.year);
   }, [commercialData]);
 
-  // Hatchery releases of chum by country/year (country-level rows only)
+  // Commercial by region (latest year)
+  const commercialByRegion = useMemo(() => {
+    if (!commercialData) return { rows: [], year: null as number | null };
+    const chum = commercialData.filter((r) => r.species === "chum");
+    if (!chum.length) return { rows: [], year: null };
+    const maxYear = Math.max(...chum.map((r) => r.year));
+    const rows = chum
+      .filter((r) => r.year === maxYear && r.region !== "statewide")
+      .sort((a, b) => (b.harvest_fish ?? 0) - (a.harvest_fish ?? 0))
+      .map((r) => [
+        r.region,
+        fmt(r.harvest_fish) + (r.is_preliminary === 1 ? " †" : ""),
+      ]);
+    return { rows, year: maxYear };
+  }, [commercialData]);
+
   const hatcheryTrend = useMemo(() => {
     if (!hatcheryData) return { chartData: [], countries: [] };
-
-    const countries = [
-      ...new Set(
-        hatcheryData
-          .filter((r) => r.species === "Chum" && r.data_level === "country")
-          .map((r) => r.country)
-      ),
-    ].sort();
-
-    const yearMap = new Map<
-      number,
-      Record<string, number>
-    >();
+    const countries = [...new Set(
+      hatcheryData.filter((r) => r.species === "Chum" && r.data_level === "country").map((r) => r.country)
+    )].sort();
+    const yearMap = new Map<number, Record<string, number>>();
     for (const r of hatcheryData) {
       if (r.species !== "Chum" || r.data_level !== "country") continue;
       if (!yearMap.has(r.release_year)) {
@@ -57,12 +70,30 @@ export default function Chum() {
       const entry = yearMap.get(r.release_year)!;
       entry[r.country] = (entry[r.country] ?? 0) + (r.number_released ?? 0);
     }
-
     const chartData = [...yearMap.values()].sort((a, b) => a.year - b.year);
     return { chartData, countries };
   }, [hatcheryData]);
 
-  // Sport harvest chum (CS = Chum Salmon in ADF&G SWHS)
+  // Hatchery releases detail table by country and year
+  const hatcheryTable = useMemo(() => {
+    if (!hatcheryData) return { rows: [], years: [] };
+    const chumCountry = hatcheryData.filter((r) => r.species === "Chum" && r.data_level === "country");
+    const countries = [...new Set(chumCountry.map((r) => r.country))].sort();
+    const years = [...new Set(chumCountry.map((r) => r.release_year))].sort((a, b) => b - a).slice(0, 6).reverse();
+    const rows = countries.map((country) =>
+      [country, ...years.map((yr) => {
+        const row = chumCountry.find((r) => r.country === country && r.release_year === yr);
+        if (!row?.number_released) return "—";
+        return row.number_released >= 1e9
+          ? `${(row.number_released / 1e9).toFixed(2)}B`
+          : row.number_released >= 1e6
+          ? `${(row.number_released / 1e6).toFixed(0)}M`
+          : fmt(row.number_released);
+      })]
+    );
+    return { rows, years };
+  }, [hatcheryData]);
+
   const sportChum = useMemo(() => {
     if (!sportData) return [];
     const map = new Map<number, number>();
@@ -71,23 +102,84 @@ export default function Chum() {
         map.set(r.year, (map.get(r.year) ?? 0) + (r.fish_count ?? 0));
       }
     }
-    return [...map.entries()]
-      .sort(([a], [b]) => b - a)
-      .map(([year, fish]) => ({ year, fish }));
+    return [...map.entries()].sort(([a], [b]) => b - a).map(([year, fish]) => ({ year, fish }));
   }, [sportData]);
 
-  // Latest year commercial harvest for stat
-  const latestCommercial = commercialChum[0];
+  // PSC chum bycatch by target fishery
+  const pscChumTrend = useMemo(() => {
+    if (!pscData) return [];
+    const FISHERIES = ["Pollock (midwater)", "Pollock (bottom)", "Pacific Cod", "Other groundfish"];
+    const map = new Map<number, Record<string, number>>();
+    for (const r of pscData) {
+      if (r.species_code !== "CHUM" || r.is_confidential === 1) continue;
+      const yr = r.year;
+      if (!map.has(yr)) {
+        const entry: Record<string, number> = { year: yr };
+        for (const f of FISHERIES) entry[f] = 0;
+        map.set(yr, entry);
+      }
+      const entry = map.get(yr)!;
+      const tf = r.target_fishery;
+      let bucket = "Other groundfish";
+      if (tf === "Midwater Pollock") bucket = "Pollock (midwater)";
+      else if (tf === "Bottom Pollock") bucket = "Pollock (bottom)";
+      else if (tf === "Pacific Cod") bucket = "Pacific Cod";
+      entry[bucket] = (entry[bucket] ?? 0) + (r.psc_count ?? 0);
+    }
+    return [...map.values()].sort((a, b) => a.year - b.year);
+  }, [pscData]);
 
-  // Total North Pacific chum releases (most recent year available)
+  const pscChumLatestYear = useMemo(() => {
+    if (!pscData) return null;
+    const chum = pscData.filter((r) => r.species_code === "CHUM");
+    return chum.length ? Math.max(...chum.map((r) => r.year)) : null;
+  }, [pscData]);
+
+  const pscChumByFishery = useMemo(() => {
+    if (!pscData || pscChumLatestYear == null) return [];
+    const map = new Map<string, number>();
+    for (const r of pscData) {
+      if (r.species_code === "CHUM" && r.year === pscChumLatestYear && r.is_confidential === 0) {
+        map.set(r.target_fishery, (map.get(r.target_fishery) ?? 0) + (r.psc_count ?? 0));
+      }
+    }
+    return [...map.entries()].filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a).map(([fishery, count]) => [fishery, fmt(count)]);
+  }, [pscData, pscChumLatestYear]);
+
+  const pscChumAnnualTotal = useMemo(() => {
+    if (!pscChumTrend.length) return null;
+    const last = pscChumTrend[pscChumTrend.length - 1];
+    return Object.entries(last).filter(([k]) => k !== "year").reduce((s, [, v]) => s + (v as number), 0);
+  }, [pscChumTrend]);
+
+  // Chum escapement
+  const chumEscapement = useMemo(() => {
+    if (!escapementData) return { rows: [], year: null as number | null };
+    const chum = escapementData.filter((r) => r.species.toLowerCase().includes("chum"));
+    if (!chum.length) return { rows: [], year: null };
+    const maxYear = Math.max(...chum.map((r) => r.year));
+    const rows = chum
+      .filter((r) => r.year === maxYear && r.actual_count != null)
+      .sort((a, b) => (b.actual_count ?? 0) - (a.actual_count ?? 0))
+      .slice(0, 20)
+      .map((r) => [
+        r.system_name,
+        r.region ?? "—",
+        r.count_method ?? "—",
+        fmt(r.actual_count),
+        r.goal_lower != null && r.goal_upper != null ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}` : "—",
+        r.goal_met === 1 ? "Yes" : r.goal_met === 0 ? "No" : "—",
+      ]);
+    return { rows, year: maxYear };
+  }, [escapementData]);
+
+  const latestCommercial = commercialChum[0];
   const hatcheryLatestYear = useMemo(() => {
     if (!hatcheryTrend.chartData.length) return null;
     const last = hatcheryTrend.chartData[hatcheryTrend.chartData.length - 1];
     return {
       year: last.year as number,
-      total: Object.entries(last)
-        .filter(([k]) => k !== "year")
-        .reduce((s, [, v]) => s + (v as number), 0),
+      total: Object.entries(last).filter(([k]) => k !== "year").reduce((s, [, v]) => s + (v as number), 0),
     };
   }, [hatcheryTrend]);
 
@@ -95,48 +187,40 @@ export default function Chum() {
     <>
       <Crumb topic="Chum Salmon Mortality & Genetics" />
       <h1 className="page-title">Chum Salmon Mortality &amp; Genetics</h1>
-      <p className="page-lede first-sentence">
-        Chum salmon are Alaska's second-highest-volume salmon species by
-        number and the subject of a multi-decade hatchery program that now
-        accounts for the majority of commercially-harvested chum statewide.
-        Like Chinook, chum mortality is counted through four distinct reporting
-        streams and, in parallel, genotyped against a coastwide baseline to
-        attribute bycatch back to its river of origin.
-      </p>
-      <p className="page-lede">
-        The four counting streams — commercial, subsistence, sport, and BSAI
-        pollock bycatch — are the same structure as Chinook, but the magnitudes
-        and the hatchery composition make chum a distinct story. The Prince
-        William Sound and Southeast Alaska hatchery programs release over a
-        billion chum fry annually; returning adults dominate several commercial
-        districts.
-      </p>
-      <p className="page-lede">
-        The GSI baseline resolves chum to seven reporting groups, including
-        Coastal Western Alaska, Upper/Middle Yukon, and East Asian and Russian
-        stocks. The proportion of each in BSAI bycatch shifts year-to-year and
-        is the subject of active Council deliberation.
-      </p>
 
-      {(commLoading || hatcheryLoading || sportLoading) && (
-        <p className="section-intro">Loading chum data…</p>
-      )}
+      <DataContext
+        use={[
+          "salmon_commercial_harvest — ADF&G statewide + regional commercial harvest",
+          "hatchery_releases — NPAFC hatchery releases by country (chum)",
+          "sport_harvest — ADF&G SWHS statewide sport harvest (chum)",
+          "psc_weekly — NMFS weekly PSC reports (BSAI chum bycatch)",
+          "salmon_escapement — ADF&G escapement counts (chum systems)",
+        ]}
+        could={[
+          "chum_gsi — GSI stock composition of chum PSC bycatch",
+          "hatchery_returns — NPAFC hatchery return/survival rates",
+          "chum_coded_wire_tag — CWT recoveries by hatchery of origin",
+          "ocean_harvest — high-seas chum harvest data (Japan, Russia)",
+        ]}
+        ideas={[
+          "Hatchery release vs. wild escapement ratio by region",
+          "Chum PSC as % of escapement goal by drainage",
+          "N. Pacific hatchery production share vs. wild runs",
+          "Commercial harvest trend by gear type (drift vs. set net)",
+        ]}
+      />
 
       {(latestCommercial || hatcheryLatestYear) && (
         <StatGrid
           stats={[
             {
-              val: latestCommercial?.harvest_fish != null
-                ? fmt(latestCommercial.harvest_fish)
-                : "—",
+              val: latestCommercial?.harvest_fish != null ? fmt(latestCommercial.harvest_fish) : "—",
               label: `Commercial harvest ${latestCommercial?.year ?? ""}`,
               sub: "Statewide, all gear",
-              accent: latestCommercial?.is_preliminary === 1 ? undefined : "accent",
+              accent: latestCommercial?.is_preliminary !== 1 ? "accent" : undefined,
             },
             {
-              val: hatcheryLatestYear
-                ? `${(hatcheryLatestYear.total / 1e9).toFixed(2)}B`
-                : "—",
+              val: hatcheryLatestYear ? `${(hatcheryLatestYear.total / 1e9).toFixed(2)}B` : "—",
               label: `N. Pacific hatchery releases ${hatcheryLatestYear?.year ?? ""}`,
               sub: "Chum salmon, all countries",
             },
@@ -145,47 +229,52 @@ export default function Chum() {
               label: `Sport harvest ${sportChum[0]?.year ?? ""}`,
               sub: "Statewide (ADF&G SWHS)",
             },
+            {
+              val: pscChumAnnualTotal != null ? fmt(Math.round(pscChumAnnualTotal)) : "—",
+              label: `BSAI chum PSC ${pscChumLatestYear ?? ""}`,
+              sub: "Fish count, non-confidential rows",
+            },
           ]}
         />
       )}
 
-      {/* ── Commercial Harvest ── */}
       <h2 className="h2">Commercial harvest — statewide chum</h2>
-      <p className="section-intro">
-        Statewide Alaska commercial chum salmon harvest from ADF&amp;G annual
-        press releases. Figures are all-gear, all-region totals.
-      </p>
-
+      {commLoading && <p className="section-intro">Loading commercial harvest data…</p>}
       {commercialData && (
         <Card>
           <Table
             columns={[
               { label: "Year", yr: true },
               { label: "Harvest (fish)", num: true },
-              { label: "Preliminary" },
             ]}
             rows={commercialChum.map((r) => [
               r.year,
-              fmt(r.harvest_fish),
-              r.is_preliminary === 1 ? (
-                <span className="preliminary-flag">Prelim</span>
-              ) : (
-                ""
-              ),
+              fmt(r.harvest_fish) + (r.is_preliminary === 1 ? " †" : ""),
             ])}
-            caption="Source: ADF&G annual Salmon Harvest Summary press releases, via Mainsail salmon_commercial_harvest"
+            caption="Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary."
           />
         </Card>
       )}
 
-      {/* ── Sport Harvest ── */}
+      {commercialByRegion.rows.length > 0 && (
+        <>
+          <h2 className="h2">{commercialByRegion.year} commercial harvest by region</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Region" },
+                { label: "Harvest (fish)", num: true },
+              ]}
+              rows={commercialByRegion.rows}
+              caption={`Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary.`}
+            />
+          </Card>
+        </>
+      )}
+
       {sportData && sportChum.length > 0 && (
         <>
           <h2 className="h2">Sport harvest — chum salmon (statewide)</h2>
-          <p className="section-intro">
-            Statewide chum salmon harvest from ADF&amp;G SWHS (species code CS
-            = Chum Salmon). Approximately 18-month publication lag.
-          </p>
           <Card>
             <Table
               columns={[
@@ -199,44 +288,93 @@ export default function Chum() {
         </>
       )}
 
-      {/* ── Hatchery Releases ── */}
-      <h2 className="h2">North Pacific hatchery releases — chum salmon</h2>
-      <p className="section-intro">
-        Annual chum salmon hatchery releases by country, from the North
-        Pacific Anadromous Fish Commission (NPAFC) database. The U.S. (Alaska)
-        and Japan are the largest release programs; Russian and Korean programs
-        have grown substantially since 2000.
-      </p>
+      <h2 className="h2">BSAI chum bycatch (PSC) by target fishery</h2>
+      {pscLoading && <p className="section-intro">Loading PSC data (~48 MB)…</p>}
+      {pscChumTrend.length > 0 && (
+        <Card>
+          <StackedTrend
+            data={pscChumTrend}
+            xKey="year"
+            stackKeys={["Pollock (midwater)", "Pollock (bottom)", "Pacific Cod", "Other groundfish"]}
+            colors={["#1a2332", "#2f5d8a", "#b45309", "#d4c5b0"]}
+            title="BSAI chum PSC by target fishery"
+            yLabel="fish"
+            yFormatter={(v) => v.toLocaleString()}
+          />
+        </Card>
+      )}
 
+      {pscChumByFishery.length > 0 && (
+        <>
+          <h2 className="h2">{pscChumLatestYear} chum PSC by target fishery</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Target fishery" },
+                { label: "Chum PSC (fish)", num: true },
+              ]}
+              rows={pscChumByFishery}
+              caption={`Source: NMFS weekly PSC reports via Mainsail psc_weekly, year ${pscChumLatestYear}`}
+            />
+          </Card>
+        </>
+      )}
+
+      <h2 className="h2">North Pacific hatchery releases — chum salmon</h2>
+      {hatcheryLoading && <p className="section-intro">Loading hatchery data…</p>}
       {hatcheryData && hatcheryTrend.countries.length > 0 && (
         <Card>
           <StackedTrend
             data={hatcheryTrend.chartData}
             xKey="year"
             stackKeys={hatcheryTrend.countries}
-            colors={hatcheryTrend.countries.map(
-              (c) => COUNTRY_COLORS[c] ?? "#6b7280"
-            )}
+            colors={hatcheryTrend.countries.map((c) => COUNTRY_COLORS[c] ?? "#6b7280")}
             title="Chum salmon hatchery releases by country (NPAFC)"
             yLabel="fish released"
             yFormatter={(v) =>
-              v >= 1e9
-                ? `${(v / 1e9).toFixed(1)}B`
-                : v >= 1e6
-                ? `${(v / 1e6).toFixed(0)}M`
-                : v.toLocaleString()
+              v >= 1e9 ? `${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : v.toLocaleString()
             }
           />
         </Card>
       )}
 
-      <Note>
-        <b>BSAI chum PSC.</b> The <code>psc_weekly</code> dataset currently
-        covers Chinook (CHNK) bycatch only. Chum bycatch from the BSAI pollock
-        fishery is recorded but not yet included in this version of the
-        dataset. Chum GSI attribution is also a Phase 2 item in the Mainsail
-        data inventory.
-      </Note>
+      {hatcheryTable.rows.length > 0 && (
+        <>
+          <h2 className="h2">Hatchery releases by country, recent years</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Country" },
+                ...hatcheryTable.years.map((yr) => ({ label: String(yr), num: true })),
+              ]}
+              rows={hatcheryTable.rows}
+              caption="Source: NPAFC statistics via Mainsail hatchery_releases (country-level aggregates)"
+            />
+          </Card>
+        </>
+      )}
+
+      {chumEscapement.rows.length > 0 && (
+        <>
+          <h2 className="h2">Chum escapement — key systems, {chumEscapement.year}</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "System" },
+                { label: "Region" },
+                { label: "Method" },
+                { label: "Count", num: true },
+                { label: "Goal range" },
+                { label: "Goal met" },
+              ]}
+              rows={chumEscapement.rows}
+              caption={`Source: ADF&G escapement database via Mainsail salmon_escapement, year ${chumEscapement.year}`}
+            />
+          </Card>
+        </>
+      )}
+
+      {sportLoading && <p className="section-intro">Loading sport harvest data…</p>}
     </>
   );
 }

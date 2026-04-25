@@ -1,17 +1,16 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
 import type { MonitoredCatchRow } from "../api/types";
-import { Card, Crumb, Note, Table } from "../components/primitives";
+import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
 import MultiLineTrend from "../components/charts/MultiLineTrend";
 
-// Compact sector labels for legend readability
 const SECTOR_LABELS: Record<string, string> = {
-  "Catcher/Processor":             "Catcher/Processor",
-  "Catcher Vessel":                "Catcher Vessel",
-  "Catcher Vessel: AFA":           "CV (AFA pollock)",
-  "Catcher Vessel: PCTC":          "CV (PCTC cod)",
-  "Catcher Vessel: Rockfish Program": "CV (Rockfish Program)",
-  "Mothership":                    "Mothership",
+  "Catcher/Processor":               "Catcher/Processor",
+  "Catcher Vessel":                  "Catcher Vessel",
+  "Catcher Vessel: AFA":             "CV (AFA pollock)",
+  "Catcher Vessel: PCTC":            "CV (PCTC cod)",
+  "Catcher Vessel: Rockfish Program":"CV (Rockfish Program)",
+  "Mothership":                      "Mothership",
 };
 
 const SECTOR_COLORS = [
@@ -22,17 +21,18 @@ const fmt = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
 export default function Observer() {
-  const { data, isLoading, error } = useDataset<MonitoredCatchRow>(
-    "monitored_catch"
+  const { data, isLoading, error } = useDataset<MonitoredCatchRow>("monitored_catch");
+
+  const maxYear = useMemo(
+    () => (data?.length ? Math.max(...data.map((r) => r.year)) : null),
+    [data]
   );
 
-  // Coverage rate by sector/year: sum(Monitored or Observed) / sum(Total)
+  // Coverage rate by sector/year
   const coverageTrend = useMemo(() => {
     if (!data) return { chartData: [], sectors: [] };
-
     const monitored = new Map<string, number>();
     const total = new Map<string, number>();
-
     for (const r of data) {
       const key = `${r.year}|${r.sector}`;
       const mt = r.metric_tons ?? 0;
@@ -42,10 +42,8 @@ export default function Observer() {
         total.set(key, (total.get(key) ?? 0) + mt);
       }
     }
-
     const sectors = [...new Set(data.map((r) => r.sector))].sort();
     const years = [...new Set(data.map((r) => r.year))].sort((a, b) => a - b);
-
     const chartData = years.map((yr) => {
       const point: Record<string, number | string> = { year: yr };
       for (const sec of sectors) {
@@ -57,88 +55,157 @@ export default function Observer() {
       }
       return point;
     });
-
-    return {
-      chartData,
-      sectors: sectors.map((s) => SECTOR_LABELS[s] ?? s),
-    };
+    return { chartData, sectors: sectors.map((s) => SECTOR_LABELS[s] ?? s) };
   }, [data]);
 
-  // 2024 coverage summary table
+  // Latest year coverage by sector
   const summaryTable = useMemo(() => {
-    if (!data) return [];
-    const maxYear = Math.max(...data.map((r) => r.year));
+    if (!data || maxYear == null) return [];
     const sectors = [...new Set(data.filter((r) => r.year === maxYear).map((r) => r.sector))].sort();
-
     return sectors.map((sec) => {
       const rows = data.filter((r) => r.year === maxYear && r.sector === sec);
-      const mon = rows
-        .filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed")
-        .reduce((s, r) => s + (r.metric_tons ?? 0), 0);
-      const tot = rows
-        .filter((r) => r.monitored_or_total === "Total")
-        .reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const mon = rows.filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const tot = rows.filter((r) => r.monitored_or_total === "Total").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
       const rate = tot > 0 ? Math.min(100, (mon / tot) * 100) : 0;
-      return [
-        SECTOR_LABELS[sec] ?? sec,
-        `${fmt(mon)} mt`,
-        `${fmt(tot)} mt`,
-        `${rate.toFixed(1)}%`,
-        String(maxYear),
-      ];
+      return [SECTOR_LABELS[sec] ?? sec, `${fmt(mon)} mt`, `${fmt(tot)} mt`, `${rate.toFixed(1)}%`];
     });
+  }, [data, maxYear]);
+
+  // Coverage by FMP area (BSAI vs GOA)
+  const fmpCoverageTrend = useMemo(() => {
+    if (!data) return { chartData: [], areas: [] };
+    const monitored = new Map<string, number>();
+    const total = new Map<string, number>();
+    for (const r of data) {
+      const key = `${r.year}|${r.fmp_area}`;
+      const mt = r.metric_tons ?? 0;
+      if (r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed") {
+        monitored.set(key, (monitored.get(key) ?? 0) + mt);
+      } else if (r.monitored_or_total === "Total") {
+        total.set(key, (total.get(key) ?? 0) + mt);
+      }
+    }
+    const areas = [...new Set(data.map((r) => r.fmp_area))].sort();
+    const years = [...new Set(data.map((r) => r.year))].sort((a, b) => a - b);
+    const chartData = years.map((yr) => {
+      const point: Record<string, number | string> = { year: yr };
+      for (const area of areas) {
+        const key = `${yr}|${area}`;
+        const mon = monitored.get(key) ?? 0;
+        const tot = total.get(key) ?? 0;
+        point[area] = tot > 0 ? Math.min(100, Math.round((mon / tot) * 100)) : 0;
+      }
+      return point;
+    });
+    return { chartData, areas };
   }, [data]);
 
-  const maxYear = data?.length ? Math.max(...data.map((r) => r.year)) : null;
+  // Coverage by gear type (latest year)
+  const gearTable = useMemo(() => {
+    if (!data || maxYear == null) return [];
+    const gears = [...new Set(data.filter((r) => r.year === maxYear).map((r) => r.gear))].sort();
+    return gears
+      .map((gear) => {
+        const rows = data.filter((r) => r.year === maxYear && r.gear === gear);
+        const mon = rows.filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const tot = rows.filter((r) => r.monitored_or_total === "Total").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+        const rate = tot > 0 ? Math.min(100, (mon / tot) * 100) : 0;
+        return { gear, mon, tot, rate };
+      })
+      .filter((r) => r.tot > 0)
+      .sort((a, b) => b.tot - a.tot)
+      .map((r) => [r.gear, `${fmt(r.mon)} mt`, `${fmt(r.tot)} mt`, `${r.rate.toFixed(1)}%`]);
+  }, [data, maxYear]);
+
+  // Catch by species group (latest year, Total rows, retained + discarded combined)
+  const speciesGroupTable = useMemo(() => {
+    if (!data || maxYear == null) return [];
+    const totals = new Map<string, { retained: number; discarded: number }>();
+    for (const r of data) {
+      if (r.year === maxYear && r.monitored_or_total === "Total") {
+        const prev = totals.get(r.species_group) ?? { retained: 0, discarded: 0 };
+        if (r.disposition === "Retained") prev.retained += r.metric_tons ?? 0;
+        else if (r.disposition === "Discarded") prev.discarded += r.metric_tons ?? 0;
+        totals.set(r.species_group, prev);
+      }
+    }
+    return [...totals.entries()]
+      .map(([grp, v]) => ({ grp, total: v.retained + v.discarded, ...v }))
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((r) => [
+        r.grp,
+        `${fmt(r.retained)} mt`,
+        `${fmt(r.discarded)} mt`,
+        `${fmt(r.total)} mt`,
+        r.total > 0 ? `${((r.discarded / r.total) * 100).toFixed(1)}%` : "—",
+      ]);
+  }, [data, maxYear]);
+
+  // Overall coverage stats
+  const overallStats = useMemo(() => {
+    if (!data || maxYear == null) return null;
+    const rows = data.filter((r) => r.year === maxYear);
+    const mon = rows.filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+    const tot = rows.filter((r) => r.monitored_or_total === "Total").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+    return { mon, tot, rate: tot > 0 ? (mon / tot) * 100 : 0 };
+  }, [data, maxYear]);
 
   return (
     <>
       <Crumb topic="Observer Coverage" />
       <h1 className="page-title">Observer Coverage</h1>
-      <p className="page-lede first-sentence">
-        The catch limits set each year are only as credible as the data that
-        feeds them — and in Alaska, that data comes from human observers and
-        electronic monitoring devices placed directly on fishing vessels.
-        Observers sample what was caught, what was kept, and what was
-        discarded; their numbers are extrapolated to the parts of the fleet
-        not monitored in real time.
-      </p>
-      <p className="page-lede">
-        The North Pacific Observer Program operates on two tiers.{" "}
-        <b>Full coverage</b> sectors — BSAI pollock catcher-processors,
-        motherships, Amendment 80 bottom trawl — carry observers on every
-        trip, sometimes two per vessel, producing coverage rates at or near
-        100%. <b>Partial coverage</b> sectors — halibut and sablefish IFQ
-        longline, smaller trawl catcher-vessels — are sampled through
-        stratified random selection, with rates set each year in a public
-        Annual Deployment Plan.
-      </p>
-      <p className="page-lede">
-        The system as it exists today dates to a <b>2013 restructure</b> that
-        ended length-based, pay-as-you-go deployment. Partial-coverage vessels
-        now pay into a pooled observer funding system; deployment is
-        randomized. Since then, electronic monitoring has been introduced as
-        an alternative in several fixed-gear partial-coverage categories.
-      </p>
+
+      <DataContext
+        use={[
+          "monitored_catch — NMFS AKRO monitored catch by sector, gear, FMP area",
+        ]}
+        could={[
+          "observer_deployments — individual deployment records (vessel, dates, area)",
+          "em_review_rates — electronic monitoring review rates by vessel class",
+          "observer_costs — at-sea observer cost reimbursement data",
+          "bycatch_rates — PSC rate per unit of target catch by gear/area",
+        ]}
+        ideas={[
+          "Coverage rate trend by gear type (trawl vs. longline vs. pot)",
+          "EM vs. at-sea observer comparison since 2020 rollout",
+          "Coverage gap map: vessels under threshold by port",
+          "Discard rate vs. coverage rate correlation",
+        ]}
+      />
 
       {isLoading && <p className="section-intro">Loading observer coverage data…</p>}
       {error && <Note>Could not load monitored catch data from S3.</Note>}
 
-      {data && (
+      {data && overallStats && (
         <>
-          <Note>
-            <b>Coverage calculation.</b> Shown rates are metric tons monitored
-            ÷ total metric tons, by sector. Full-coverage sectors approach
-            100%; partial-coverage sectors reflect the deployment plan rate.
-            The 2013 restructure is the first year in this dataset.
-          </Note>
+          <StatGrid
+            stats={[
+              {
+                val: `${fmt(overallStats.mon)} mt`,
+                label: `Monitored catch, ${maxYear}`,
+                sub: "BSAI + GOA, all sectors",
+                accent: "accent",
+              },
+              {
+                val: `${fmt(overallStats.tot)} mt`,
+                label: `Total catch, ${maxYear}`,
+                sub: "BSAI + GOA, all sectors",
+              },
+              {
+                val: `${overallStats.rate.toFixed(1)}%`,
+                label: `Overall coverage rate, ${maxYear}`,
+                sub: "Monitored ÷ total metric tons",
+              },
+              {
+                val: String(maxYear),
+                label: "Most recent year in dataset",
+                sub: "2013 restructure is first year",
+              },
+            ]}
+          />
 
           <h2 className="h2">Monitoring coverage by sector, 2013–{maxYear}</h2>
-          <p className="section-intro">
-            Coverage rate (monitored metric tons ÷ total metric tons) by
-            fleet sector. AFA pollock catcher-vessels and
-            Catcher/Processors operate under full-coverage requirements.
-          </p>
           <Card>
             <MultiLineTrend
               data={coverageTrend.chartData}
@@ -151,23 +218,60 @@ export default function Observer() {
             />
           </Card>
 
+          <h2 className="h2">Coverage by FMP area, 2013–{maxYear}</h2>
+          <Card>
+            <MultiLineTrend
+              data={fmpCoverageTrend.chartData}
+              xKey="year"
+              seriesKeys={fmpCoverageTrend.areas}
+              colors={["#2f5d8a", "#b45309"]}
+              title="Observer/EM coverage rate — BSAI vs. GOA"
+              yLabel="coverage %"
+              unitSuffix="%"
+            />
+          </Card>
+
           {maxYear != null && (
             <>
               <h2 className="h2">{maxYear} coverage by sector</h2>
-              <p className="section-intro">
-                Monitored metric tons, total metric tons, and derived coverage
-                rate for the most recent complete year.
-              </p>
               <Card>
                 <Table
                   columns={[
                     { label: "Sector" },
-                    { label: "Monitored catch", num: true },
+                    { label: "Monitored", num: true },
                     { label: "Total catch", num: true },
                     { label: "Coverage rate", num: true },
-                    { label: "Year", yr: true },
                   ]}
                   rows={summaryTable}
+                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                />
+              </Card>
+
+              <h2 className="h2">{maxYear} coverage by gear type</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Gear" },
+                    { label: "Monitored", num: true },
+                    { label: "Total catch", num: true },
+                    { label: "Coverage rate", num: true },
+                  ]}
+                  rows={gearTable}
+                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                />
+              </Card>
+
+              <h2 className="h2">{maxYear} catch by species group</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Species group" },
+                    { label: "Retained", num: true },
+                    { label: "Discarded", num: true },
+                    { label: "Total", num: true },
+                    { label: "Discard rate", num: true },
+                  ]}
+                  rows={speciesGroupTable}
                   caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
                 />
               </Card>
