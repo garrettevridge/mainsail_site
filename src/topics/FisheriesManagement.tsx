@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
+import { filterCountableEscapement } from "../api/datasetHelpers";
 import type {
   SalmonCommercialHarvestDataRow,
   SalmonEscapementRow,
@@ -45,9 +46,10 @@ export default function FisheriesManagement() {
   }, [commercialData, harvestYears]);
 
   const recentEscapement = useMemo(() => {
-    if (!escapementData) return { rows: [] as (string | number)[][], year: null as number | null };
-    const maxYear = Math.max(...escapementData.map((r) => r.year));
-    const rows = escapementData
+    const countable = filterCountableEscapement(escapementData);
+    if (!countable.length) return { rows: [] as (string | number)[][], year: null as number | null };
+    const maxYear = Math.max(...countable.map((r) => r.year));
+    const rows = countable
       .filter((r) => r.year === maxYear && r.actual_count != null)
       .sort((a, b) => (b.actual_count ?? 0) - (a.actual_count ?? 0))
       .slice(0, 25)

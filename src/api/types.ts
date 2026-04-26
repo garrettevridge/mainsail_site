@@ -22,19 +22,27 @@ export interface Manifest {
   datasets: ManifestDataset[];
 }
 
-// ── Per-dataset row shapes ───────────────────────────────────────────────
+// ── S3-native row shapes (match actual published columns) ────────────────────
+// Authoritative: these mirror the columns the mainsail_data pipeline writes
+// to s3://mainsail-public-data/v1/<dataset>.json. Confirmed against
+// backend/_publish/*.json staging artifacts on 2026-04-25.
 
-export interface SalmonCommercialHarvestRow {
-  fact_id: string;
+export interface ChinookGsiRow {
+  id: number;
   year: number;
-  species: "chinook" | "sockeye" | "coho" | "pink" | "chum";
-  region: string;
-  harvest_fish: number | null;
-  harvest_pounds: number | null;
-  exvessel_value_usd: number | null;
-  is_preliminary: 0 | 1;
-  source_document: string | null;
-  source_url: string | null;
+  region: string; // stock reporting group
+  mean_pct: number;
+  total_catch: number;
+  n_samples: number;
+}
+
+export interface FishCountsRow {
+  id: number;
+  location: string;
+  species: string;
+  count_date: string;
+  daily_count: number | null;
+  cumulative_count: number | null;
 }
 
 export interface SalmonEscapementRow {
@@ -64,40 +72,9 @@ export interface EscapementGoalsHistoryRow {
   source_document: string | null;
 }
 
-export interface PscWeeklyRow {
-  id: number;
-  year: number;
-  stat_week: number;
-  species: string; // CHNK, CHUM, HLBT, etc.
-  fmp_area: string; // BSAI, GOA
-  target_fishery: string; // Pollock, etc.
-  psc_count: number;
-  report_through: string | null;
-}
-
-export interface ChinookGsiRow {
-  id: number;
-  year: number;
-  region: string; // stock reporting group
-  mean_pct: number;
-  total_catch: number;
-  n_samples: number;
-}
-
-export interface IphcMortalityBySourceRow {
-  id: number;
-  year: number;
-  source: string;
-  mortality_net_pounds: number | null;
-}
-
-export interface IphcTceyRow {
-  id: number;
-  year: number;
-  area: string;
-  tcey_net_pounds: number | null;
-}
-
+// monitored_catch publishes Capitalized enum values ("Retained"/"Discarded",
+// "Monitored"/"Observed"/"Total"); the YAML docs in mainsail_data say
+// lowercase, but the published JSON is the source of truth.
 export interface MonitoredCatchRow {
   id: number;
   year: number;
@@ -110,35 +87,7 @@ export interface MonitoredCatchRow {
   metric_tons: number;
 }
 
-export interface SubsistenceHarvestRow {
-  id: number;
-  year: number;
-  region: string;
-  species: string;
-  harvest_fish: number | null;
-}
-
-export interface SportHarvestRow {
-  id: number;
-  year: number;
-  area: string;
-  species: string;
-  harvest: number | null;
-  catch: number | null;
-}
-
-export interface FishCountsRow {
-  id: number;
-  location: string;
-  species: string;
-  count_date: string;
-  daily_count: number | null;
-  cumulative_count: number | null;
-}
-
-// ── S3-native row shapes (match actual published columns) ────────────────────
-// The earlier interfaces above were designed for pre-shaped mock datasets.
-// These interfaces match the real column names published by the pipeline.
+// ── Authoritative *DataRow shapes (production publish-confirmed) ─────────────
 
 export interface TacSpecsRow {
   spec_id: string;
@@ -155,12 +104,17 @@ export interface TacSpecsRow {
   status: string;
 }
 
+// psc_weekly is a unioned table: salmon, halibut, and crab PSC streams in
+// one table, distinguished by psc_type. Halibut rows have species_code=null
+// and use psc_weight_kg/psc_mortality_mt; salmon/crab use psc_count.
+// Filter by psc_type before any aggregation across PSC types.
 export interface PscWeeklyDataRow {
   fact_id: string;
+  psc_type: "salmon" | "halibut" | "crab";
   year: number;
   stat_week: number;
   week_end_date: string | null;
-  species_code: string;
+  species_code: string | null;
   species_name: string;
   gear: string;
   reporting_area: string;

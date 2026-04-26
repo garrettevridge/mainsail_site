@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
+import { filterCountableEscapement } from "../api/datasetHelpers";
 import type {
   SalmonCommercialHarvestDataRow,
   HatcheryReleasesRow,
@@ -154,8 +155,9 @@ export default function Chum() {
 
   // Chum escapement
   const chumEscapement = useMemo(() => {
-    if (!escapementData) return { rows: [], year: null as number | null };
-    const chum = escapementData.filter((r) => r.species.toLowerCase().includes("chum"));
+    const countable = filterCountableEscapement(escapementData);
+    if (!countable.length) return { rows: [], year: null as number | null };
+    const chum = countable.filter((r) => r.species.toLowerCase().includes("chum"));
     if (!chum.length) return { rows: [], year: null };
     const maxYear = Math.max(...chum.map((r) => r.year));
     const rows = chum

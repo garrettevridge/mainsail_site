@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
+import { filterCountableEscapement } from "../api/datasetHelpers";
 import type {
   PscWeeklyDataRow,
   ChinookGsiRow,
@@ -145,8 +146,9 @@ export default function Chinook() {
 
   // Chinook escapement — most recent year
   const chinookEscapement = useMemo(() => {
-    if (!escapementData) return { rows: [], year: null as number | null };
-    const chnk = escapementData.filter((r) => r.species.toLowerCase().includes("chinook") || r.species.toLowerCase().includes("king"));
+    const countable = filterCountableEscapement(escapementData);
+    if (!countable.length) return { rows: [], year: null as number | null };
+    const chnk = countable.filter((r) => r.species.toLowerCase().includes("chinook") || r.species.toLowerCase().includes("king"));
     if (!chnk.length) return { rows: [], year: null };
     const maxYear = Math.max(...chnk.map((r) => r.year));
     const rows = chnk

@@ -149,6 +149,46 @@ In order:
 
 ---
 
+## Update — 2026-04-25 follow-up commit
+
+After this audit was written, I verified each suspected bug against the
+actual published JSON in `mainsail_data/backend/_publish/*.json` rather
+than relying on the dataset YAMLs (which turned out to be wrong in one
+case). Outcome:
+
+- **BUG 1 (psc_type missing) — confirmed and fixed.** Added `psc_type`
+  to `PscWeeklyDataRow` and made `species_code` nullable to match the
+  published shape. Note: the canonical store currently only contains
+  `psc_type='salmon'` rows — halibut and crab streams haven't been
+  ingested yet, but the discriminator field still publishes.
+- **BUG 2 (MonitoredCatchRow case mismatch) — RETRACTED.** The actual
+  published JSON uses capitalized `"Retained"`, `"Discarded"`,
+  `"Monitored"`, `"Observed"`, `"Total"` — i.e., types.ts is correct
+  and the **mainsail_data YAML doc is wrong.** This is a backend-side
+  YAML fix, not a site-side bug. Filed as a follow-up task for
+  mainsail_data.
+- **BUG 3 (count_method filter) — confirmed and fixed.** Added
+  `filterCountableEscapement()` helper in `src/api/datasetHelpers.ts`
+  and applied it in `Chinook.tsx`, `Chum.tsx`, and
+  `FisheriesManagement.tsx`. Backend confirms 36 of 810 escapement
+  rows (~4.4%) carry `not_operated_*` or `partial_season_*` count
+  methods that should not be aggregated against goals.
+
+**Other follow-up cleanup landed in the same commit:**
+- Deleted 5 dead `Story*.tsx` pages + `Home.tsx` (all unrouted, all
+  used mock-only dataset names).
+- Pruned 8 unused pre-S3 Row interfaces from `src/api/types.ts`
+  (`SalmonCommercialHarvestRow`, `PscWeeklyRow`, `SubsistenceHarvestRow`,
+  `SportHarvestRow`, `IphcMortalityBySourceRow`, `IphcTceyRow`,
+  duplicate-shape definitions).
+- `tsc -b` clean.
+
+Cutover is now blocked only on (a) GH Secrets in `mainsail_data`
+unblocking the first S3 publish and (b) `VITE_MANIFEST_URL` being set
+in this repo's GitHub Actions Variables.
+
+---
+
 ## Field-shape spot-check findings (deep audit, 3 highest-risk datasets)
 
 Ran a column-by-column comparison between `src/api/types.ts` interfaces
