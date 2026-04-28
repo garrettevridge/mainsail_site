@@ -1,7 +1,0 @@
-[
-  {"year": 2020, "retained_mt": 1820000, "discarded_mt": 62000, "utilization_pct": 96.7},
-  {"year": 2021, "retained_mt": 1910000, "discarded_mt": 58000, "utilization_pct": 97.1},
-  {"year": 2022, "retained_mt": 1895000, "discarded_mt": 55000, "utilization_pct": 97.2},
-  {"year": 2023, "retained_mt": 1950000, "discarded_mt": 59000, "utilization_pct": 97.1},
-  {"year": 2024, "retained_mt": 1942000, "discarded_mt": 57500, "utilization_pct": 97.1}
-]

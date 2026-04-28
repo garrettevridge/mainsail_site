@@ -79,9 +79,12 @@ rule here serves that purpose.
 
 - **Build must pass on every commit.** `npm run build` is the gate.
 - **Do not commit `dist/`, `node_modules/`, or `.env`.**
-- **The site must work against the mock fixtures.** Anyone who
-  clones the repo and runs `npm run dev` sees a working site
-  without access to a real S3 bucket.
+- **The site must work against the production S3 manifest by default.**
+  Anyone who clones the repo and runs `npm run dev` sees a working
+  site against the live `mainsail-public-data` bucket. The fallback
+  URL in `src/api/manifest.ts` makes this true without any env setup.
+  No mock fixtures are committed; contributors who need staging data
+  set `VITE_MANIFEST_URL` in a local `.env`.
 
 ## When the contract evolves
 

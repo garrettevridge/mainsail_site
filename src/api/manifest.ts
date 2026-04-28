@@ -3,8 +3,11 @@
 // Mainsail's contract is: consumers read `manifest.json` first,
 // then fetch individual dataset URLs.
 //
-// In dev, MANIFEST_URL points at a local mock. In production build,
-// it points at the real S3 URL via VITE_MANIFEST_URL.
+// VITE_MANIFEST_URL is set in production via GitHub Actions Variables.
+// The fallback below points at the same production S3 URL so local
+// dev (`npm run dev`) works against real data without any env setup.
+// To develop against a different bucket / staging artifact, set
+// VITE_MANIFEST_URL in a local .env file.
 
 import { useMemo } from "react";
 import useSWR from "swr";
@@ -12,7 +15,7 @@ import type { Manifest } from "./types";
 
 const MANIFEST_URL =
   (import.meta.env.VITE_MANIFEST_URL as string | undefined) ??
-  `${import.meta.env.BASE_URL}mock-data/manifest.json`;
+  "https://mainsail-public-data.s3.us-west-2.amazonaws.com/manifest.json";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const r = await fetch(url);

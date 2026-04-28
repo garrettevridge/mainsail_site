@@ -1,8 +1,0 @@
-[
-  {"year": 2023, "region": "Coastal Western Alaska",  "mean_pct": 47.2, "total_catch": 11855, "n_samples": 1106},
-  {"year": 2023, "region": "North Alaska Peninsula",  "mean_pct": 24.0, "total_catch": 11855, "n_samples": 1106},
-  {"year": 2023, "region": "British Columbia",        "mean_pct": 21.4, "total_catch": 11855, "n_samples": 1106},
-  {"year": 2023, "region": "West Coast US",           "mean_pct": 5.5,  "total_catch": 11855, "n_samples": 1106},
-  {"year": 2023, "region": "Northwest Gulf of Alaska","mean_pct": 0.9,  "total_catch": 11855, "n_samples": 1106},
-  {"year": 2023, "region": "Coastal Southeast Alaska","mean_pct": 0.4,  "total_catch": 11855, "n_samples": 1106}
-]

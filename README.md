@@ -55,12 +55,13 @@ npm run dev
 # → http://localhost:5173
 ```
 
-During development the manifest URL points at the mock fixtures in
-`public/mock-data/`. To point at a real S3 manifest, set
-`VITE_MANIFEST_URL`:
+Local dev fetches the production S3 manifest by default
+(`https://mainsail-public-data.s3.us-west-2.amazonaws.com/manifest.json`),
+so `npm run dev` works against real data with no env setup. To point
+at a different bucket / staging artifact, set `VITE_MANIFEST_URL`:
 
 ```bash
-VITE_MANIFEST_URL=https://mainsail-public-data.s3.us-west-2.amazonaws.com/manifest.json npm run dev
+VITE_MANIFEST_URL=https://example/manifest.json npm run dev
 ```
 
 ## Build
@@ -83,9 +84,9 @@ at `.github/workflows/deploy.yml`. Configure two repo settings:
 
 - **Settings → Pages → Source**: "GitHub Actions"
 - **Settings → Secrets and variables → Actions → Variables**: add
-  `VITE_MANIFEST_URL` pointing at the live S3 manifest once the
-  data pipeline is publishing. Until then the site runs off the
-  mock fixtures shipped in `public/mock-data/`.
+  `VITE_MANIFEST_URL = https://mainsail-public-data.s3.us-west-2.amazonaws.com/manifest.json`.
+  If unset, the source default in `src/api/manifest.ts` points at the
+  same production URL, so the build still works.
 
 ## Repository layout
 
@@ -100,8 +101,7 @@ mainsail_site/
 ├── tsconfig.json
 ├── .github/workflows/
 │   └── deploy.yml         ← GitHub Pages CI
-├── public/
-│   └── mock-data/         ← local dev fixtures (manifest + sample datasets)
+├── public/                ← static assets (favicon, icons)
 └── src/
     ├── main.tsx
     ├── App.tsx            ← router
