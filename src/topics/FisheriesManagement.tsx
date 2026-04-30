@@ -171,10 +171,10 @@ export default function FisheriesManagement() {
             { label: "Est." },
           ]}
           rows={[
-            ["International Pacific Halibut Commission (IPHC)", "U.S. & Canada", "Stock assessment, catch limits (TCEY), regulation of the halibut fishery coastwide", "1923"],
-            ["Pacific Salmon Commission", "U.S. & Canada", "Transboundary salmon sharing under the Pacific Salmon Treaty (Stikine, Taku, Alsek; WCVI Chinook)", "1985"],
-            ["Yukon River Panel", "U.S. & Canada", "Yukon Chinook, chum and coho management under the Yukon River Salmon Agreement", "1995"],
-            ["North Pacific Anadromous Fish Commission (NPAFC)", "U.S., Canada, Japan, Russia, Korea", "High-seas salmon research and enforcement of no-directed-harvest rule beyond EEZs", "1993"],
+            ["International Pacific Halibut Commission (IPHC)", "United States & Canada", "Stock assessment, catch limits (TCEY), regulation of the halibut fishery coastwide", "1923"],
+            ["Pacific Salmon Commission", "United States & Canada", "Transboundary salmon sharing under the Pacific Salmon Treaty (Stikine, Taku, Alsek; WCVI Chinook)", "1985"],
+            ["Yukon River Panel", "United States & Canada", "Yukon Chinook, chum and coho management under the Yukon River Salmon Agreement", "1995"],
+            ["North Pacific Anadromous Fish Commission (NPAFC)", "Canada, Japan, Republic of Korea, Russian Federation, United States", "High-seas salmon research and enforcement of no-directed-harvest rule beyond EEZs", "1993"],
           ]}
         />
       </Card>

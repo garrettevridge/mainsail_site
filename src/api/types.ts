@@ -102,6 +102,39 @@ export interface TacSpecsRow {
   catch_mt: number | null;
   percent_tac_taken: number | null;
   status: string;
+  data_quality_flags: string | null; // JSON-encoded array; "state_ghl" marks
+                                     // rows that are state allocations and
+                                     // do NOT count against the federal OY.
+}
+
+// stock_assessment_biomass — NPFMC SAFE-derived biomass time series.
+// Phase 2 (2026-04-29): five Tier 1 stocks — BSAI EBS pollock 1964-2024,
+// GOA pollock 1977-2024, BSAI EBS Pacific cod 1978-2024, GOA Pacific cod
+// 1977-2024, Alaska sablefish 1960-2024. ~270 rows total.
+// Each SAFE assessment can revise prior-year estimates, so source_safe_year
+// pins each row to a specific assessment cycle.
+export interface StockAssessmentBiomassRow {
+  biomass_id: string;
+  stock_id: string;             // canonical stock id, e.g. "bsai_ebs_pollock"
+  fmp_area: string;             // "BSAI" | "GOA" | "alaska_wide"
+  species_complex: string;      // joins to tac_specs.species_complex
+  area_detail: string | null;
+  year: number;
+  // Headline biomass series for this stock — the column the chart plots.
+  // Each stock's assessment uses its own age cutoff; see biomass_age_cutoff.
+  total_biomass_kt: number | null;
+  biomass_age_cutoff: string | null; // "age_3+" | "age_2+" | "age_0+" | "total"
+  // Pollock-only convenience alias; mirrors total_biomass_kt for stocks
+  // where the cutoff is exactly age 3+. NULL for other stocks. Kept for
+  // backward compatibility with Phase 1 readers.
+  age_3plus_biomass_kt: number | null;
+  ssb_kt: number | null;
+  recruit_millions: number | null;
+  recruit_age: number | null;
+  total_biomass_cv: number | null;
+  source_safe_year: number;
+  source_table: string | null;
+  source_url: string | null;
 }
 
 // psc_weekly is a unioned table: salmon, halibut, and crab PSC streams in

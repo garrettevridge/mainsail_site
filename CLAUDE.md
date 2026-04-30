@@ -23,6 +23,17 @@ rule here serves that purpose.
   "efficient," "wasteful" — none of these belong in chart captions
   or prose without a comparative anchor. If the data says 97%
   utilization, say "97%" — not "high utilization."
+- **Country names use precise official designations.** Use the UN's
+  short-name designation or the agency / treaty's official wording
+  for every country reference in dataset values, page copy, table
+  cells, briefings, and CHANGELOG entries. Casual short forms
+  ("Korea", "Britain", "Holland") are editorial choices that don't
+  belong in a neutral data engine. Specifically: "Republic of Korea"
+  (not "Korea"); "Russian Federation" or "Russia" (not "USSR");
+  "United Kingdom" (not "Britain" or "England"); "United States"
+  preferred over "U.S." in dataset values, abbreviations OK in tight
+  UI labels with a key. The rule applies to presentation; it does
+  NOT apply to URL slugs, file names, or technical identifiers.
 
 ## Data integrity
 
