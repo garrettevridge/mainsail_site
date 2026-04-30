@@ -71,22 +71,34 @@ npm run build     # → dist/
 npm run preview   # serves dist/ at http://localhost:4173
 ```
 
-For GitHub Pages deploy under a repo subpath, set `VITE_BASE`:
-
-```bash
-VITE_BASE=/mainsail_site/ npm run build
-```
+The site is served at root (`/`) — no subpath base config required.
 
 ## Deploy
 
-CI deploys to GitHub Pages on every push to `main`. The workflow is
-at `.github/workflows/deploy.yml`. Configure two repo settings:
+Hosted on **AWS Amplify Hosting**. Amplify watches the `main` branch and
+runs `amplify.yml` on every push: `npm ci` → `npm run build` → publish
+`dist/`.
 
-- **Settings → Pages → Source**: "GitHub Actions"
-- **Settings → Secrets and variables → Actions → Variables**: add
-  `VITE_MANIFEST_URL = https://mainsail-public-data.s3.us-west-2.amazonaws.com/manifest.json`.
-  If unset, the source default in `src/api/manifest.ts` points at the
-  same production URL, so the build still works.
+One-time AWS Console setup (per environment):
+
+1. **Amplify Console → Create app → Host web app** → connect this GitHub
+   repo, branch `main`. Amplify auto-detects `amplify.yml`.
+2. **App settings → Rewrites and redirects** → add the SPA fallback so
+   client-side routes resolve:
+   - **Source**: `</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|webmanifest)$)([^.]+$)/>`
+   - **Target**: `/index.html`
+   - **Type**: `200 (Rewrite)`
+3. *(Optional)* **App settings → Environment variables** → set
+   `VITE_MANIFEST_URL` if pointing at a non-default bucket. Unset is
+   fine — the fallback in `src/api/manifest.ts` points at the
+   production manifest.
+4. *(Optional)* **App settings → Domain management** → attach a custom
+   domain. Amplify provisions the ACM cert.
+
+**S3 CORS**: the `mainsail-public-data` bucket must allow GETs from the
+Amplify app's origin (the `*.amplifyapp.com` URL plus any custom
+domain). Update the bucket CORS policy in the data repo / S3 console
+when the Amplify URL is live.
 
 ## Repository layout
 
@@ -99,8 +111,7 @@ mainsail_site/
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json
-├── .github/workflows/
-│   └── deploy.yml         ← GitHub Pages CI
+├── amplify.yml            ← Amplify Hosting build spec
 ├── public/                ← static assets (favicon, icons)
 └── src/
     ├── main.tsx
