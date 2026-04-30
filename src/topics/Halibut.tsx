@@ -91,7 +91,7 @@ export default function Halibut() {
     if (!mortData) return { chartData: [], sourceKeys: [] };
     const sources = Object.keys(SOURCE_META);
     const maxYear = Math.max(...mortData.map((r) => r.year));
-    const years = [...new Set(mortData.map((r) => r.year))].filter((y) => y >= maxYear - 9).sort((a, b) => a - b);
+    const years = [...new Set(mortData.map((r) => r.year))].filter((y) => y >= maxYear - 19).sort((a, b) => a - b);
     const chartData = years.map((yr) => {
       const row: Record<string, number | string> = { year: yr };
       for (const src of sources) {
@@ -425,7 +425,7 @@ export default function Halibut() {
 
       {mortData && mortalityStack.chartData.length > 0 && (
         <>
-          <h2 className="h2">Mortality by source, last 10 years</h2>
+          <h2 className="h2">Mortality by source, last 20 years</h2>
           <Card>
             <StackedTrend
               data={mortalityStack.chartData}
