@@ -14,24 +14,6 @@
       href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <!--
-      Decode the path that public/404.html parked in the query string,
-      and rewrite history before React mounts so the SPA boots into the
-      right route. Paired with public/404.html.
-      Technique: https://github.com/rafgraph/spa-github-pages
-    -->
-    <script type="text/javascript">
-      (function (l) {
-        if (l.search[1] === '/') {
-          var decoded = l.search.slice(1).split('&').map(function (s) {
-            return s.replace(/~and~/g, '&');
-          }).join('?');
-          window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-          );
-        }
-      })(window.location);
-    </script>
   </head>
   <body>
     <div id="root"></div>
