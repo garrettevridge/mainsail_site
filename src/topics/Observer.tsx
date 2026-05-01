@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
 import type { MonitoredCatchRow } from "../api/types";
 import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
-import MultiLineTrend from "../components/charts/MultiLineTrend";
 
 const SECTOR_LABELS: Record<string, string> = {
   "Catcher/Processor":               "Catcher/Processor",
@@ -12,10 +11,6 @@ const SECTOR_LABELS: Record<string, string> = {
   "Catcher Vessel: Rockfish Program":"CV (Rockfish Program)",
   "Mothership":                      "Mothership",
 };
-
-const SECTOR_COLORS = [
-  "#1a2332", "#2f5d8a", "#6b8fad", "#b45309", "#7b6a4f", "#a8a29e",
-];
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 1 });
@@ -27,36 +22,6 @@ export default function Observer() {
     () => (data?.length ? Math.max(...data.map((r) => r.year)) : null),
     [data]
   );
-
-  // Coverage rate by sector/year
-  const coverageTrend = useMemo(() => {
-    if (!data) return { chartData: [], sectors: [] };
-    const monitored = new Map<string, number>();
-    const total = new Map<string, number>();
-    for (const r of data) {
-      const key = `${r.year}|${r.sector}`;
-      const mt = r.metric_tons ?? 0;
-      if (r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed") {
-        monitored.set(key, (monitored.get(key) ?? 0) + mt);
-      } else if (r.monitored_or_total === "Total") {
-        total.set(key, (total.get(key) ?? 0) + mt);
-      }
-    }
-    const sectors = [...new Set(data.map((r) => r.sector))].sort();
-    const years = [...new Set(data.map((r) => r.year))].sort((a, b) => a - b);
-    const chartData = years.map((yr) => {
-      const point: Record<string, number | string> = { year: yr };
-      for (const sec of sectors) {
-        const key = `${yr}|${sec}`;
-        const mon = monitored.get(key) ?? 0;
-        const tot = total.get(key) ?? 0;
-        const label = SECTOR_LABELS[sec] ?? sec;
-        point[label] = tot > 0 ? Math.min(100, Math.round((mon / tot) * 100)) : 0;
-      }
-      return point;
-    });
-    return { chartData, sectors: sectors.map((s) => SECTOR_LABELS[s] ?? s) };
-  }, [data]);
 
   // Latest year coverage by sector
   const summaryTable = useMemo(() => {
@@ -70,35 +35,6 @@ export default function Observer() {
       return [SECTOR_LABELS[sec] ?? sec, `${fmt(mon)} mt`, `${fmt(tot)} mt`, `${rate.toFixed(1)}%`];
     });
   }, [data, maxYear]);
-
-  // Coverage by FMP area (BSAI vs GOA)
-  const fmpCoverageTrend = useMemo(() => {
-    if (!data) return { chartData: [], areas: [] };
-    const monitored = new Map<string, number>();
-    const total = new Map<string, number>();
-    for (const r of data) {
-      const key = `${r.year}|${r.fmp_area}`;
-      const mt = r.metric_tons ?? 0;
-      if (r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed") {
-        monitored.set(key, (monitored.get(key) ?? 0) + mt);
-      } else if (r.monitored_or_total === "Total") {
-        total.set(key, (total.get(key) ?? 0) + mt);
-      }
-    }
-    const areas = [...new Set(data.map((r) => r.fmp_area))].sort();
-    const years = [...new Set(data.map((r) => r.year))].sort((a, b) => a - b);
-    const chartData = years.map((yr) => {
-      const point: Record<string, number | string> = { year: yr };
-      for (const area of areas) {
-        const key = `${yr}|${area}`;
-        const mon = monitored.get(key) ?? 0;
-        const tot = total.get(key) ?? 0;
-        point[area] = tot > 0 ? Math.min(100, Math.round((mon / tot) * 100)) : 0;
-      }
-      return point;
-    });
-    return { chartData, areas };
-  }, [data]);
 
   // Coverage by gear type (latest year)
   const gearTable = useMemo(() => {
@@ -205,31 +141,17 @@ export default function Observer() {
             ]}
           />
 
-          <h2 className="h2">Monitoring coverage by sector, 2013–{maxYear}</h2>
-          <Card>
-            <MultiLineTrend
-              data={coverageTrend.chartData}
-              xKey="year"
-              seriesKeys={coverageTrend.sectors}
-              colors={SECTOR_COLORS}
-              title="Observer/EM coverage rate by sector — BSAI + GOA combined"
-              yLabel="coverage %"
-              unitSuffix="%"
-            />
-          </Card>
-
-          <h2 className="h2">Coverage by FMP area, 2013–{maxYear}</h2>
-          <Card>
-            <MultiLineTrend
-              data={fmpCoverageTrend.chartData}
-              xKey="year"
-              seriesKeys={fmpCoverageTrend.areas}
-              colors={["#2f5d8a", "#b45309"]}
-              title="Observer/EM coverage rate — BSAI vs. GOA"
-              yLabel="coverage %"
-              unitSuffix="%"
-            />
-          </Card>
+          <Note>
+            <b>How to read these tables.</b> "Monitored" is metric tons of catch
+            attributed to vessels under at-sea observer or electronic monitoring
+            coverage; "Total" is the fleetwide catch estimate. Coverage rate is
+            Monitored ÷ Total. NMFS publishes these as separate row classes
+            (<code>monitored_or_total</code>) in the Catch Accounting System, so
+            the rate is a direct ratio of two reported quantities — not an
+            extrapolation. Rates can exceed 100% in small sectors when reported
+            monitored tons round above the corresponding total estimate; values
+            shown are clamped at 100%.
+          </Note>
 
           {maxYear != null && (
             <>
