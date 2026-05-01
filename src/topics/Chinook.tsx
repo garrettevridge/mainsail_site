@@ -8,6 +8,7 @@ import type {
   SportHarvestDataRow,
   SalmonEscapementRow,
   FishCountsRow,
+  SubsistenceHarvestDataRow,
 } from "../api/types";
 import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
@@ -15,8 +16,11 @@ import StackedTrend from "../components/charts/StackedTrend";
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("en-US");
 
-const fmtPct = (n: number | null | undefined) =>
-  n == null ? "—" : `${(n * 100).toFixed(1)}%`;
+// chinook_gsi.mean_pct is published as a percentage value already
+// (e.g. 47.2 = 47.2%), so we format the value directly. The earlier
+// implementation re-multiplied by 100, producing values like 4720%.
+const fmtPctValue = (n: number | null | undefined) =>
+  n == null ? "—" : `${n.toFixed(1)}%`;
 
 function normalizeFishery(tf: string): string {
   if (tf === "Midwater Pollock") return "Pollock (midwater)";
@@ -38,8 +42,128 @@ export default function Chinook() {
     useDataset<SalmonEscapementRow>("salmon_escapement");
   const { data: fishCountsData } =
     useDataset<FishCountsRow>("fish_counts");
+  const { data: subsistenceData } =
+    useDataset<SubsistenceHarvestDataRow>("subsistence_harvest");
 
   const FISHERIES = ["Pollock (midwater)", "Pollock (bottom)", "Pacific Cod", "Other groundfish"];
+
+  // ── Mortality-by-source stack (last 20 years) ─────────────────────────────
+  // Four buckets, all in fish counts (no unit conversion needed):
+  //   • Commercial (directed) — ADF&G salmon_commercial_harvest, statewide chinook
+  //   • Bycatch (PSC)         — psc_weekly CHNK, summed across non-confidential rows
+  //   • Subsistence           — subsistence_harvest chinook_harvest_fish summed across communities
+  //   • Sport (kept)          — sport_harvest species_code=KS, record_type=harvest
+  //
+  // PSC fish are treated as 100% mortality (standard practice — non-directed
+  // catch arrives dead in the codend and is discarded). Sport "harvest" is
+  // kept fish only; release mortality is NOT included here. ADF&G has
+  // site-specific hooking-mortality studies (e.g. Kenai River, Bendock &
+  // Alexandersdottir, FDS 91-39) but does not publish a single fleetwide
+  // sport release-mortality rate the way IPHC does for halibut, so we omit
+  // it rather than impose one. Subsistence reporting ends in 2022; later
+  // years render as a gap rather than a zero.
+  const MORTALITY_BUCKETS = [
+    "Commercial (directed)",
+    "Bycatch (PSC)",
+    "Subsistence",
+    "Sport (kept)",
+  ];
+
+  const chinookMortalityStack = useMemo(() => {
+    if (!commercialData && !pscData && !subsistenceData && !sportData) return [];
+    const byYear = new Map<number, Record<string, number | null>>();
+    const ensure = (yr: number) => {
+      if (!byYear.has(yr)) byYear.set(yr, { year: yr });
+      return byYear.get(yr)!;
+    };
+
+    if (commercialData) {
+      for (const r of commercialData) {
+        if (r.species !== "chinook" || r.region !== "statewide") continue;
+        if (r.harvest_fish == null) continue;
+        const e = ensure(r.year);
+        e["Commercial (directed)"] = (e["Commercial (directed)"] as number ?? 0) + r.harvest_fish;
+      }
+    }
+    if (pscData) {
+      for (const r of pscData) {
+        if (r.species_code !== "CHNK" || r.is_confidential === 1) continue;
+        if (r.psc_count == null) continue;
+        const e = ensure(r.year);
+        e["Bycatch (PSC)"] = (e["Bycatch (PSC)"] as number ?? 0) + r.psc_count;
+      }
+    }
+    if (subsistenceData) {
+      for (const r of subsistenceData) {
+        if (r.chinook_harvest_fish == null) continue;
+        const e = ensure(r.year);
+        e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.chinook_harvest_fish;
+      }
+    }
+    if (sportData) {
+      for (const r of sportData) {
+        if (r.species_code !== "KS" || r.record_type !== "harvest") continue;
+        if (r.fish_count == null) continue;
+        const e = ensure(r.year);
+        e["Sport (kept)"] = (e["Sport (kept)"] as number ?? 0) + r.fish_count;
+      }
+    }
+
+    if (!byYear.size) return [];
+    const maxYr = Math.max(...byYear.keys());
+    const minYr = maxYr - 19;
+    return [...byYear.values()]
+      .filter((r) => (r.year as number) >= minYr && (r.year as number) <= maxYr)
+      .map((r): Record<string, string | number> => ({
+        year: r.year as number,
+        // Render each bucket as a number (0 when missing) so Recharts stacks
+        // rather than dropping the segment.
+        "Commercial (directed)": (r["Commercial (directed)"] as number) ?? 0,
+        "Bycatch (PSC)":         (r["Bycatch (PSC)"]         as number) ?? 0,
+        "Subsistence":           (r["Subsistence"]           as number) ?? 0,
+        "Sport (kept)":          (r["Sport (kept)"]          as number) ?? 0,
+      }))
+      .sort((a, b) => (a.year as number) - (b.year as number));
+  }, [commercialData, pscData, subsistenceData, sportData]);
+
+  // ── Annual totals table — mortality buckets + escapement column ──────────
+  // Adds a sum-of-counted-escapement column for context. Escapement here is
+  // a partial total (only river systems present in the salmon_escapement
+  // dataset for that year) and should not be read as a complete return count.
+  const chinookEscapementByYear = useMemo(() => {
+    const map = new Map<number, number>();
+    const countable = filterCountableEscapement(escapementData);
+    for (const r of countable) {
+      const sp = r.species.toLowerCase();
+      if (!sp.includes("chinook") && !sp.includes("king")) continue;
+      if (r.actual_count == null) continue;
+      map.set(r.year, (map.get(r.year) ?? 0) + r.actual_count);
+    }
+    return map;
+  }, [escapementData]);
+
+  const chinookMortalityTable = useMemo(() => {
+    return [...chinookMortalityStack]
+      .sort((a, b) => (b.year as number) - (a.year as number))
+      .map((r) => {
+        const yr = r.year as number;
+        const com = r["Commercial (directed)"] as number;
+        const byc = r["Bycatch (PSC)"] as number;
+        const sub = r["Subsistence"] as number;
+        const spo = r["Sport (kept)"] as number;
+        const esc = chinookEscapementByYear.get(yr);
+        const total = com + byc + sub + spo;
+        return [
+          yr,
+          com > 0 ? fmt(com) : "—",
+          byc > 0 ? fmt(byc) : "—",
+          sub > 0 ? fmt(sub) : "—",
+          spo > 0 ? fmt(spo) : "—",
+          fmt(total),
+          esc != null ? fmt(esc) + " ‡" : "—",
+        ];
+      });
+  }, [chinookMortalityStack, chinookEscapementByYear]);
 
   const pscTrend = useMemo(() => {
     if (!pscData) return [];
@@ -201,14 +325,15 @@ export default function Chinook() {
           "chinook_gsi — GSI stock composition of Chinook bycatch",
           "salmon_commercial_harvest — ADF&G commercial harvest by region",
           "sport_harvest — ADF&G SWHS sport harvest (Chinook)",
+          "subsistence_harvest — ADF&G Division of Subsistence community surveys (Chinook)",
           "salmon_escapement — ADF&G escapement counts (Chinook systems)",
           "fish_counts — weir/sonar daily and cumulative fish passage",
         ]}
         could={[
           "chinook_age_sex_size — biological sampling at weirs",
           "chinook_coded_wire_tag — CWT recovery data by brood year",
+          "sport_release_mortality — fleetwide hooking-mortality rate (none currently published by ADF&G)",
           "ADF&G in-season management actions by drainage",
-          "Yukon/Kuskokwim subsistence harvest by community",
         ]}
         ideas={[
           "GSI stock composition trend over time (which rivers' fish?)",
@@ -234,6 +359,57 @@ export default function Chinook() {
             },
           ]}
         />
+      )}
+
+      {chinookMortalityStack.length > 0 && (
+        <>
+          <h2 className="h2">Chinook mortality by source, last 20 years</h2>
+          <Card>
+            <StackedTrend
+              data={chinookMortalityStack}
+              xKey="year"
+              stackKeys={MORTALITY_BUCKETS}
+              colors={["#1a2332", "#b45309", "#7b6a4f", "#2f5d8a"]}
+              title="Alaska Chinook — annual mortality by source (fish count)"
+              yLabel="fish"
+              yFormatter={(v) =>
+                v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v.toLocaleString()
+              }
+            />
+            <div className="data-caption">
+              Sources: ADF&amp;G salmon_commercial_harvest (statewide chinook),
+              NMFS psc_weekly (CHNK, non-confidential), ADF&amp;G
+              subsistence_harvest (chinook_harvest_fish summed across reporting
+              communities), ADF&amp;G SWHS sport_harvest (KS, harvested fish).
+              All buckets in fish counts. PSC and commercial figures are
+              treated as 100% mortality. Sport reflects kept fish only —
+              release mortality is not included; ADF&amp;G has site-specific
+              hooking-mortality studies (e.g. Kenai River, Bendock &amp;
+              Alexandersdottir, FDS 91-39) but does not publish a fleetwide
+              rate. Subsistence reporting ends in 2022; later years render as
+              a gap, not a zero.
+            </div>
+          </Card>
+
+          <h2 className="h2">Annual mortality by source — with counted escapement</h2>
+          <Card>
+            <Table
+              columns={[
+                { label: "Year", yr: true },
+                { label: "Commercial", num: true },
+                { label: "Bycatch (PSC)", num: true },
+                { label: "Subsistence", num: true },
+                { label: "Sport (kept)", num: true },
+                { label: "Total mortality", num: true },
+                { label: "Counted escapement", num: true },
+              ]}
+              rows={chinookMortalityTable}
+              caption={
+                "Counted escapement is the sum of actual_count across river systems present in the salmon_escapement dataset for that year. ‡ = partial coverage — only systems with reported counts are included; this is NOT a complete return total. Use as context for the mortality columns, not as a denominator."
+              }
+            />
+          </Card>
+        </>
       )}
 
       <h2 className="h2">BSAI pollock Chinook bycatch (PSC) by target fishery</h2>
@@ -365,7 +541,7 @@ export default function Chinook() {
               { label: "Total catch", num: true },
               { label: "Samples", num: true },
             ]}
-            rows={gsiData.map((r) => [r.year, r.region, fmtPct(r.mean_pct), fmt(r.total_catch), fmt(r.n_samples)])}
+            rows={gsiData.map((r) => [r.year, r.region, fmtPctValue(r.mean_pct), fmt(r.total_catch), fmt(r.n_samples)])}
             caption="Source: AFSC Auke Bay Laboratories GSI report, via Mainsail chinook_gsi (partial — 2023 only)"
           />
         </Card>
