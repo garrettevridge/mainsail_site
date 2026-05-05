@@ -277,53 +277,64 @@ export default function Chinook() {
 
   // Chinook escapement — most recent year
   const chinookEscapement = useMemo(() => {
+    const empty = {
+      rows: [] as Array<Array<string | number | null>>,
+      year: null as number | null,
+      systemCount: 0,
+      regionCounts: [] as Array<[string, number]>,
+      systemsByRegion: [] as Array<[string, Array<{ name: string; lastYear: number }>]>,
+      methods: [] as string[],
+    };
     const countable = filterCountableEscapement(escapementData);
-    if (!countable.length) {
-      return {
-        rows: [],
-        year: null as number | null,
-        systemCount: 0,
-        regionCounts: [] as Array<[string, number]>,
-        systemsByRegion: [] as Array<[string, string[]]>,
-        methods: [] as string[],
-      };
-    }
+    if (!countable.length) return empty;
     const chnk = countable.filter(
       (r) =>
         r.species.toLowerCase().includes("chinook") ||
         r.species.toLowerCase().includes("king")
     );
-    if (!chnk.length) {
-      return {
-        rows: [],
-        year: null,
-        systemCount: 0,
-        regionCounts: [] as Array<[string, number]>,
-        systemsByRegion: [] as Array<[string, string[]]>,
-        methods: [] as string[],
-      };
-    }
+    if (!chnk.length) return empty;
     const maxYear = Math.max(...chnk.map((r) => r.year));
     const yearRows = chnk.filter((r) => r.year === maxYear && r.actual_count != null);
 
-    // Distinct systems in the most recent reporting year
-    const systems = new Set(yearRows.map((r) => r.system_name));
-    const systemCount = systems.size;
+    // Build the union of every system that has reported a chinook
+    // actual_count anywhere in the dataset, alongside the last year it
+    // reported. This is broader than the latest-year intersection used by
+    // the table above: a system that ran through 2022 but hasn't yet
+    // posted a 2023+ count still appears here, so the "river systems
+    // represented" panel reflects the full ADF&G monitoring footprint
+    // present in salmon_escapement, not just the most recent year.
+    const lastYearBySystem = new Map<string, number>();
+    const regionBySystem = new Map<string, string>();
+    for (const r of chnk) {
+      if (r.actual_count == null) continue;
+      const prev = lastYearBySystem.get(r.system_name) ?? -Infinity;
+      if (r.year > prev) {
+        lastYearBySystem.set(r.system_name, r.year);
+        regionBySystem.set(r.system_name, r.region ?? "Unspecified");
+      } else if (!regionBySystem.has(r.system_name)) {
+        regionBySystem.set(r.system_name, r.region ?? "Unspecified");
+      }
+    }
+    const systemCount = lastYearBySystem.size;
 
-    // System count per region (use unique system_name per region)
-    const regionMap = new Map<string, Set<string>>();
-    for (const r of yearRows) {
-      const reg = r.region ?? "Unspecified";
-      if (!regionMap.has(reg)) regionMap.set(reg, new Set());
-      regionMap.get(reg)!.add(r.system_name);
+    // Group systems by region with their last-reported year.
+    const regionMap = new Map<string, Array<{ name: string; lastYear: number }>>();
+    for (const [name, lastYear] of lastYearBySystem) {
+      const reg = regionBySystem.get(name) ?? "Unspecified";
+      if (!regionMap.has(reg)) regionMap.set(reg, []);
+      regionMap.get(reg)!.push({ name, lastYear });
     }
     const regionCounts: Array<[string, number]> = [...regionMap.entries()]
-      .map(([reg, set]): [string, number] => [reg, set.size])
+      .map(([reg, arr]): [string, number] => [reg, arr.length])
       .sort((a, b) => b[1] - a[1]);
 
-    // Distinct system names per region (alphabetised within region)
-    const systemsByRegion: Array<[string, string[]]> = [...regionMap.entries()]
-      .map(([reg, set]): [string, string[]] => [reg, [...set].sort()])
+    const systemsByRegion: Array<[string, Array<{ name: string; lastYear: number }>]> = [
+      ...regionMap.entries(),
+    ]
+      .map(([reg, arr]): [string, Array<{ name: string; lastYear: number }>] => [
+        reg,
+        [...arr].sort((a, b) => a.name.localeCompare(b.name)),
+      ])
       .sort((a, b) => b[1].length - a[1].length);
 
     // Distinct count_method values present in the chinook subset (all years)
@@ -678,24 +689,68 @@ export default function Chinook() {
           </Note>
           <Card>
             <div className="data-caption" style={{ marginBottom: "0.5em" }}>
-              <b>River systems represented in {chinookEscapement.year} reporting</b>
+              <b>River systems represented in salmon_escapement (chinook)</b>
               {" — "}
-              <span>n = {chinookEscapement.systemCount} systems (Alaska statewide).</span>
+              <span>
+                n = {chinookEscapement.systemCount} distinct systems with at
+                least one reported chinook escapement count anywhere in the
+                dataset (window: 1976–{chinookEscapement.year}). Systems that
+                have not yet reported in the most recent year remain in the
+                list with their last-reported year shown.
+              </span>
             </div>
             <Table
               columns={[
                 { label: "Region" },
                 { label: "Systems (n)", num: true },
-                { label: "River systems" },
+                { label: "River systems (last reported year)" },
               ]}
-              rows={chinookEscapement.systemsByRegion.map(([reg, names]) => [
+              rows={chinookEscapement.systemsByRegion.map(([reg, items]) => [
                 reg,
-                names.length,
-                names.join(", "),
+                items.length,
+                items.map((s) => `${s.name} (${s.lastYear})`).join("; "),
               ])}
-              caption={`Source: Seamark Analytics, derived from ADF&G escapement database (via Mainsail salmon_escapement), year ${chinookEscapement.year}. Distinct system_name values where actual_count is reported.`}
+              caption={`Source: Seamark Analytics, derived from ADF&G escapement database (via Mainsail salmon_escapement). Each system_name appears once with its most recent reporting year.`}
             />
           </Card>
+
+          <Note>
+            <b>Known coverage gaps in the chinook escapement dataset.</b>{" "}
+            The dataset currently captures {chinookEscapement.systemCount}{" "}
+            chinook systems, weighted toward AYK (Yukon, Kuskokwim,
+            Norton Sound) and Interior Alaska reconstructions. Several
+            major chinook-producing systems are <i>not</i> currently
+            ingested by Mainsail's publish pipeline and therefore do not
+            appear above:
+            <ul style={{ margin: "0.5em 0 0.5em 1.25em" }}>
+              <li>
+                <b>Cook Inlet:</b> Kenai River (early and late runs),
+                Susitna (Deshka, Yentna mainstem and tributaries), Kasilof.
+              </li>
+              <li>
+                <b>Copper River and Prince William Sound:</b> Copper River
+                mainstem and tributaries.
+              </li>
+              <li>
+                <b>Southeast Alaska / transboundary:</b> Taku, Stikine,
+                Unuk, Chilkat, Situk-Ahrnklin, Chickamin.
+              </li>
+              <li>
+                <b>Kodiak:</b> Karluk, Ayakulik.
+              </li>
+              <li>
+                <b>Kuskokwim and AYK tributaries:</b> Goodnews, Aniak,
+                Kogrukluk weir, individual Kuskokwim tributaries beyond
+                the drainagewide reconstruction.
+              </li>
+            </ul>
+            ADF&amp;G publishes counts or run-reconstruction estimates for
+            most of these systems through Division of Sport Fish, Division
+            of Commercial Fisheries, and the joint U.S.–Canada panels
+            (Yukon River Panel, Pacific Salmon Commission Transboundary
+            Panel). Adding them to the public manifest is a Mainsail
+            backend ingest task; this list is the working punch list.
+          </Note>
           <Card>
             <Table
               columns={[
