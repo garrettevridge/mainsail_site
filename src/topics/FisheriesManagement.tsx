@@ -198,7 +198,7 @@ export default function FisheriesManagement() {
       {escapementData && recentEscapement.rows.length > 0 && (
         <>
           <h2 className="h2">
-            Salmon escapement — top systems by count, {recentEscapement.year}
+            Salmon escapement — top systems by count, {recentEscapement.year} (Alaska statewide)
           </h2>
           <Card>
             <Table
@@ -220,7 +220,7 @@ export default function FisheriesManagement() {
 
       {goalsData && goalsRows.length > 0 && (
         <>
-          <h2 className="h2">Escapement goals history</h2>
+          <h2 className="h2">Escapement goals history — Alaska statewide</h2>
           <Card>
             <Table
               columns={[

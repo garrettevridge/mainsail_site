@@ -142,6 +142,11 @@ export default function Chinook() {
     return map;
   }, [escapementData]);
 
+  // Each component has its own publication window. Summing across all four
+  // is only defensible when all four are reported for that year — otherwise
+  // the "Total" understates true mortality. We mark partial-coverage rows
+  // with ◊ on the reported total so readers can see at a glance which years
+  // have a defensible all-source figure (2019–2022 in the current snapshot).
   const chinookMortalityTable = useMemo(() => {
     return [...chinookMortalityStack]
       .sort((a, b) => (b.year as number) - (a.year as number))
@@ -152,14 +157,16 @@ export default function Chinook() {
         const sub = r["Subsistence"] as number;
         const spo = r["Sport (kept)"] as number;
         const esc = chinookEscapementByYear.get(yr);
-        const total = com + byc + sub + spo;
+        const presentCount = [com, byc, sub, spo].filter((v) => v > 0).length;
+        const partial = presentCount < 4;
+        const reported = com + byc + sub + spo;
         return [
           yr,
           com > 0 ? fmt(com) : "—",
           byc > 0 ? fmt(byc) : "—",
           sub > 0 ? fmt(sub) : "—",
           spo > 0 ? fmt(spo) : "—",
-          fmt(total),
+          partial ? `${fmt(reported)} ◊` : fmt(reported),
           esc != null ? fmt(esc) + " ‡" : "—",
         ];
       });
@@ -392,6 +399,51 @@ export default function Chinook() {
           </Card>
 
           <h2 className="h2">Annual mortality by source — with counted escapement</h2>
+          <Note>
+            <b>Methodology &amp; coverage.</b> Each column is taken directly
+            from a published source dataset; no values are imputed, smoothed,
+            or backfilled. Counts are fish, not pounds.
+            <ul style={{ margin: "0.5em 0 0.5em 1.25em" }}>
+              <li>
+                <b>Commercial (directed):</b> ADF&amp;G annual Salmon Harvest
+                Summary, statewide chinook (<code>salmon_commercial_harvest</code>,
+                <code> region = "statewide"</code>). Currently published 2019–2025;
+                pre-2019 statewide rollups are not yet in the manifest.
+                Counted as 100% mortality (landed fish).
+              </li>
+              <li>
+                <b>Bycatch (PSC):</b> NMFS weekly PSC reports, BSAI groundfish,
+                CHNK rows, non-confidential (<code>psc_weekly</code>). Coverage
+                begins 2013 — pre-2013 NMFS Catch Accounting System estimates
+                are not yet in the manifest. Counted as 100% mortality
+                (standard NPFMC practice — non-directed catch arrives dead in
+                the codend and is discarded).
+              </li>
+              <li>
+                <b>Subsistence:</b> ADF&amp;G Division of Subsistence community
+                household surveys (<code>subsistence_harvest</code>,
+                summed across <code>chinook_harvest_fish</code>). Coverage
+                ends 2022; later years are gaps in the source publication
+                schedule, not zeros. Counted as 100% mortality (kept fish).
+              </li>
+              <li>
+                <b>Sport (kept):</b> ADF&amp;G Statewide Harvest Survey
+                (<code>sport_harvest</code>, species <code>KS</code>,
+                <code>record_type = "harvest"</code>). Reflects kept fish only.
+                Catch-and-release mortality is <i>not</i> included — ADF&amp;G
+                publishes site-specific hooking-mortality studies (e.g. Kenai
+                River) but no fleetwide rate, so we do not impose one. SWHS
+                runs ~1 year behind, so the latest year may be missing.
+              </li>
+            </ul>
+            <b>Reading the row totals.</b> The "Reported total" column sums
+            only the components that exist for that year; rows where any
+            component is missing are flagged with ◊. <b>True total mortality
+            is higher than the ◊ figure</b> by whatever the missing component
+            would have contributed. Years 2019–2022 are the only ones where
+            all four components are currently reported, and are the
+            defensible all-source snapshot.
+          </Note>
           <Card>
             <Table
               columns={[
@@ -400,12 +452,12 @@ export default function Chinook() {
                 { label: "Bycatch (PSC)", num: true },
                 { label: "Subsistence", num: true },
                 { label: "Sport (kept)", num: true },
-                { label: "Total mortality", num: true },
+                { label: "Reported total", num: true },
                 { label: "Counted escapement", num: true },
               ]}
               rows={chinookMortalityTable}
               caption={
-                "Counted escapement is the sum of actual_count across river systems present in the salmon_escapement dataset for that year. ‡ = partial coverage — only systems with reported counts are included; this is NOT a complete return total. Use as context for the mortality columns, not as a denominator."
+                "◊ = partial coverage; the row total sums only the columns reported for that year and understates true mortality. ‡ = counted escapement is the sum of actual_count across river systems present in the salmon_escapement dataset for that year — partial coverage; not a complete return total."
               }
             />
           </Card>
@@ -432,7 +484,7 @@ export default function Chinook() {
 
       {pscData && pscByFishery.length > 0 && (
         <>
-          <h2 className="h2">{pscLatestYear} PSC by target fishery</h2>
+          <h2 className="h2">{pscLatestYear} PSC by target fishery — BSAI groundfish</h2>
           <Card>
             <Table
               columns={[
@@ -448,7 +500,7 @@ export default function Chinook() {
 
       {pscData && pscByArea.length > 0 && (
         <>
-          <h2 className="h2">{pscLatestYear} PSC by reporting area</h2>
+          <h2 className="h2">{pscLatestYear} PSC by reporting area — BSAI groundfish</h2>
           <Card>
             <Table
               columns={[
@@ -482,7 +534,7 @@ export default function Chinook() {
 
       {commercialByRegion.rows.length > 0 && (
         <>
-          <h2 className="h2">{commercialByRegion.year} commercial harvest by region</h2>
+          <h2 className="h2">{commercialByRegion.year} commercial harvest by region — Alaska statewide</h2>
           <Card>
             <Table
               columns={[
@@ -514,7 +566,7 @@ export default function Chinook() {
 
       {sportByRegion.rows.length > 0 && (
         <>
-          <h2 className="h2">{sportByRegion.year} sport harvest by area</h2>
+          <h2 className="h2">{sportByRegion.year} sport harvest by area — Alaska statewide</h2>
           <Card>
             <Table
               columns={[
@@ -529,7 +581,7 @@ export default function Chinook() {
         </>
       )}
 
-      <h2 className="h2">Genetic stock identification (GSI) — bycatch attribution</h2>
+      <h2 className="h2">Genetic stock identification (GSI) — BSAI pollock bycatch attribution</h2>
       {gsiLoading && <p className="section-intro">Loading GSI data…</p>}
       {gsiData && gsiData.length > 0 && (
         <Card>
@@ -549,7 +601,7 @@ export default function Chinook() {
 
       {chinookEscapement.rows.length > 0 && (
         <>
-          <h2 className="h2">Chinook escapement — key systems, {chinookEscapement.year}</h2>
+          <h2 className="h2">Chinook escapement — key systems, {chinookEscapement.year} (Alaska statewide)</h2>
           <Card>
             <Table
               columns={[
@@ -569,7 +621,7 @@ export default function Chinook() {
 
       {chinookCounts.rows.length > 0 && (
         <>
-          <h2 className="h2">Chinook weir & sonar counts, {chinookCounts.year}</h2>
+          <h2 className="h2">Chinook weir & sonar counts, {chinookCounts.year} (Alaska statewide)</h2>
           <Card>
             <Table
               columns={[

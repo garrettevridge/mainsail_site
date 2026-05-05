@@ -394,7 +394,7 @@ export default function Halibut() {
             ]}
           />
 
-          <h2 className="h2">{latestFinalYear} mortality by source</h2>
+          <h2 className="h2">{latestFinalYear} mortality by source — IPHC coastwide</h2>
           <Card>
             <ProportionBar parts={proportionParts} />
             <Legend
@@ -406,7 +406,7 @@ export default function Halibut() {
             <div className="data-caption">Source: IPHC stock assessment</div>
           </Card>
 
-          <h2 className="h2">Mortality by source, last 5 years</h2>
+          <h2 className="h2">Mortality by source, last 5 years — IPHC coastwide</h2>
           <Card>
             <Table
               columns={[
@@ -425,7 +425,7 @@ export default function Halibut() {
 
       {mortData && mortalityStack.chartData.length > 0 && (
         <>
-          <h2 className="h2">Mortality by source, last 20 years</h2>
+          <h2 className="h2">Mortality by source, last 20 years — IPHC coastwide</h2>
           <Card>
             <StackedTrend
               data={mortalityStack.chartData}
@@ -445,7 +445,7 @@ export default function Halibut() {
 
       {areaData && areaMortTable.rows.length > 0 && (
         <>
-          <h2 className="h2">Mortality by regulatory area, last 5 years</h2>
+          <h2 className="h2">Mortality by regulatory area, last 5 years — IPHC areas 2A–4D</h2>
           <Card>
             <Table
               columns={[
@@ -461,7 +461,7 @@ export default function Halibut() {
 
       {areaData && areaMortTrend.chartData.length > 0 && (
         <>
-          <h2 className="h2">Mortality by regulatory area, last 20 years</h2>
+          <h2 className="h2">Mortality by regulatory area, last 20 years — IPHC areas 2A–4D</h2>
           <Card>
             <StackedTrend
               data={areaMortTrend.chartData}
@@ -498,7 +498,7 @@ export default function Halibut() {
 
       {tceyData && tcey2026.length > 0 && (
         <>
-          <h2 className="h2">{tceyMaxYear} TCEY by regulatory area (adopted)</h2>
+          <h2 className="h2">{tceyMaxYear} TCEY by regulatory area (adopted) — IPHC areas 2A–4D</h2>
           <Card>
             <Table
               columns={[
@@ -519,7 +519,7 @@ export default function Halibut() {
 
       {catchData && halinBycatchTrend.chartData.length > 0 && (
         <>
-          <h2 className="h2">Halibut bycatch (discarded) by fleet, 2013–present</h2>
+          <h2 className="h2">Halibut bycatch (discarded) by fleet, 2013–present — BSAI + GOA federal groundfish</h2>
           <Card>
             <StackedTrend
               data={halinBycatchTrend.chartData}
@@ -539,7 +539,7 @@ export default function Halibut() {
 
       {catchData && halinBycatchLatest.rows.length > 0 && (
         <>
-          <h2 className="h2">{halinBycatchLatest.year} halibut bycatch by gear type</h2>
+          <h2 className="h2">{halinBycatchLatest.year} halibut bycatch by gear type — BSAI + GOA federal groundfish</h2>
           <Card>
             <Table
               columns={[
@@ -583,7 +583,7 @@ export default function Halibut() {
 
       {sportData && sportCR.rows.length > 0 && (
         <>
-          <h2 className="h2">Sport halibut — catch, harvest &amp; release mortality</h2>
+          <h2 className="h2">Sport halibut — catch, harvest &amp; release mortality (Alaska SWHS, statewide)</h2>
           {!sportCR.hasDmr && (
             <Note>
               <b>Sport C&amp;R DMR pending publish.</b> The{" "}
@@ -610,7 +610,7 @@ export default function Halibut() {
 
       {ifqData && ifqHalibut.length > 0 && (
         <>
-          <h2 className="h2">IFQ halibut landings, 2022–present</h2>
+          <h2 className="h2">IFQ halibut landings, 2022–present — IPHC areas 2C/3A/3B/4A–4D (Alaska)</h2>
           <Note>
             <b>Units differ from IPHC figures above.</b> IPHC mortality
             figures are in net pounds; these IFQ figures are in metric tons.
