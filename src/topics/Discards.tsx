@@ -264,7 +264,7 @@ export default function Discards() {
 
           {byGear.length > 0 && (
             <>
-              <h2 className="h2">{maxYear} retained vs. discarded by gear type</h2>
+              <h2 className="h2">{maxYear} retained vs. discarded by gear type — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
@@ -282,7 +282,7 @@ export default function Discards() {
 
           {bySector.length > 0 && (
             <>
-              <h2 className="h2">{maxYear} retained vs. discarded by sector</h2>
+              <h2 className="h2">{maxYear} retained vs. discarded by sector — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
@@ -300,7 +300,7 @@ export default function Discards() {
 
           {discardTrend.length > 0 && (
             <>
-              <h2 className="h2">Annual discard totals, 2013–{maxYear}</h2>
+              <h2 className="h2">Annual discard totals, 2013–{maxYear} — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[

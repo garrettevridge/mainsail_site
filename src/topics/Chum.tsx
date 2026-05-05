@@ -361,7 +361,7 @@ export default function Chum() {
 
       {commercialByRegion.rows.length > 0 && (
         <>
-          <h2 className="h2">{commercialByRegion.year} commercial harvest by region</h2>
+          <h2 className="h2">{commercialByRegion.year} commercial harvest by region — Alaska statewide</h2>
           <Card>
             <Table
               columns={[
@@ -409,7 +409,7 @@ export default function Chum() {
 
       {pscChumByFishery.length > 0 && (
         <>
-          <h2 className="h2">{pscChumLatestYear} chum PSC by target fishery</h2>
+          <h2 className="h2">{pscChumLatestYear} chum PSC by target fishery — BSAI groundfish</h2>
           <Card>
             <Table
               columns={[
@@ -443,7 +443,7 @@ export default function Chum() {
 
       {hatcheryTable.rows.length > 0 && (
         <>
-          <h2 className="h2">Hatchery releases by country, recent years</h2>
+          <h2 className="h2">Hatchery releases by country, recent years — North Pacific (NPAFC members)</h2>
           <Card>
             <Table
               columns={[
@@ -459,7 +459,7 @@ export default function Chum() {
 
       {chumEscapement.rows.length > 0 && (
         <>
-          <h2 className="h2">Chum escapement — key systems, {chumEscapement.year}</h2>
+          <h2 className="h2">Chum escapement — key systems, {chumEscapement.year} (Alaska statewide)</h2>
           <Card>
             <Table
               columns={[

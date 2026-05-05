@@ -155,7 +155,7 @@ export default function Observer() {
 
           {maxYear != null && (
             <>
-              <h2 className="h2">{maxYear} coverage by sector</h2>
+              <h2 className="h2">{maxYear} coverage by sector — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
@@ -169,7 +169,7 @@ export default function Observer() {
                 />
               </Card>
 
-              <h2 className="h2">{maxYear} coverage by gear type</h2>
+              <h2 className="h2">{maxYear} coverage by gear type — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
@@ -183,7 +183,7 @@ export default function Observer() {
                 />
               </Card>
 
-              <h2 className="h2">{maxYear} catch by species group</h2>
+              <h2 className="h2">{maxYear} catch by species group — BSAI + GOA federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
