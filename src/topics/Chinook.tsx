@@ -79,6 +79,12 @@ export default function Chinook() {
     "Sport (kept)",
   ];
 
+  // Editorial window: trim pre-2004 from the mortality-by-source presentation.
+  // Pre-2004 rows are dropped at the source memo so the chart and table stay
+  // consistent. The four underlying datasets still publish further back —
+  // this is a presentation choice, not a data-quality claim.
+  const MORTALITY_START_YEAR = 2004;
+
   const chinookMortalityStack = useMemo(() => {
     if (!commercialData && !pscHistorical && !subsistenceStatewide && !sportData) return [];
     const byYear = new Map<number, Record<string, number | null>>();
@@ -91,6 +97,7 @@ export default function Chinook() {
       for (const r of commercialData) {
         if (r.species !== "chinook" || r.region !== "statewide") continue;
         if (r.harvest_fish == null) continue;
+        if (r.year < MORTALITY_START_YEAR) continue;
         const e = ensure(r.year);
         e["Commercial (directed)"] = (e["Commercial (directed)"] as number ?? 0) + r.harvest_fish;
       }
@@ -98,6 +105,7 @@ export default function Chinook() {
     if (pscHistorical) {
       for (const r of pscHistorical) {
         if (r.species !== "chinook" || r.mortality_count == null) continue;
+        if (r.year < MORTALITY_START_YEAR) continue;
         const e = ensure(r.year);
         e["Bycatch (PSC)"] = (e["Bycatch (PSC)"] as number ?? 0) + r.mortality_count;
       }
@@ -105,6 +113,7 @@ export default function Chinook() {
     if (subsistenceStatewide) {
       for (const r of subsistenceStatewide) {
         if (r.species !== "chinook" || r.harvest_count == null) continue;
+        if (r.year < MORTALITY_START_YEAR) continue;
         const e = ensure(r.year);
         e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.harvest_count;
       }
@@ -113,6 +122,7 @@ export default function Chinook() {
       for (const r of sportData) {
         if (r.species_code !== "KS" || r.record_type !== "harvest") continue;
         if (r.fish_count == null) continue;
+        if (r.year < MORTALITY_START_YEAR) continue;
         const e = ensure(r.year);
         e["Sport (kept)"] = (e["Sport (kept)"] as number ?? 0) + r.fish_count;
       }
@@ -274,6 +284,7 @@ export default function Chinook() {
         year: null as number | null,
         systemCount: 0,
         regionCounts: [] as Array<[string, number]>,
+        systemsByRegion: [] as Array<[string, string[]]>,
         methods: [] as string[],
       };
     }
@@ -288,6 +299,7 @@ export default function Chinook() {
         year: null,
         systemCount: 0,
         regionCounts: [] as Array<[string, number]>,
+        systemsByRegion: [] as Array<[string, string[]]>,
         methods: [] as string[],
       };
     }
@@ -309,6 +321,11 @@ export default function Chinook() {
       .map(([reg, set]): [string, number] => [reg, set.size])
       .sort((a, b) => b[1] - a[1]);
 
+    // Distinct system names per region (alphabetised within region)
+    const systemsByRegion: Array<[string, string[]]> = [...regionMap.entries()]
+      .map(([reg, set]): [string, string[]] => [reg, [...set].sort()])
+      .sort((a, b) => b[1].length - a[1].length);
+
     // Distinct count_method values present in the chinook subset (all years)
     const methods = [...new Set(chnk.map((r) => r.count_method).filter((m): m is string => m != null))].sort();
 
@@ -323,7 +340,7 @@ export default function Chinook() {
         r.goal_lower != null && r.goal_upper != null ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}` : "—",
         r.goal_met === 1 ? "Yes" : r.goal_met === 0 ? "No" : "—",
       ]);
-    return { rows, year: maxYear, systemCount, regionCounts, methods };
+    return { rows, year: maxYear, systemCount, regionCounts, systemsByRegion, methods };
   }, [escapementData]);
 
   // Fish counts — chinook at weirs/sonar (most recent year)
@@ -400,14 +417,14 @@ export default function Chinook() {
 
       {chinookMortalityStack.length > 0 && (
         <>
-          <h2 className="h2">Chinook mortality by source — full available time series</h2>
+          <h2 className="h2">Chinook mortality by source — 2004–present</h2>
           <Card>
             <StackedTrend
               data={chinookMortalityStack}
               xKey="year"
               stackKeys={MORTALITY_BUCKETS}
               colors={["#1a2332", "#b45309", "#7b6a4f", "#2f5d8a"]}
-              title="Alaska Chinook — annual mortality by source (fish count)"
+              title="Alaska Chinook — annual mortality by source, 2004–present (fish count)"
               yLabel="fish"
               yFormatter={(v) =>
                 v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v.toLocaleString()
@@ -659,6 +676,26 @@ export default function Chinook() {
               </li>
             </ul>
           </Note>
+          <Card>
+            <div className="data-caption" style={{ marginBottom: "0.5em" }}>
+              <b>River systems represented in {chinookEscapement.year} reporting</b>
+              {" — "}
+              <span>n = {chinookEscapement.systemCount} systems (Alaska statewide).</span>
+            </div>
+            <Table
+              columns={[
+                { label: "Region" },
+                { label: "Systems (n)", num: true },
+                { label: "River systems" },
+              ]}
+              rows={chinookEscapement.systemsByRegion.map(([reg, names]) => [
+                reg,
+                names.length,
+                names.join(", "),
+              ])}
+              caption={`Source: Seamark Analytics, derived from ADF&G escapement database (via Mainsail salmon_escapement), year ${chinookEscapement.year}. Distinct system_name values where actual_count is reported.`}
+            />
+          </Card>
           <Card>
             <Table
               columns={[
