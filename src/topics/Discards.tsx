@@ -32,6 +32,14 @@ export default function Discards() {
     [catchData]
   );
 
+  // Prefer 2025 if the dataset has any 2025 rows; otherwise fall back to maxYear.
+  // This advances the species-group table without fabricating data.
+  const speciesGroupYear = useMemo(() => {
+    if (!catchData || maxYear == null) return null;
+    const has2025 = catchData.some((r) => r.year === 2025);
+    return has2025 ? 2025 : maxYear;
+  }, [catchData, maxYear]);
+
   // Overall retained vs discarded
   const dispositionTotals = useMemo(() => {
     if (!catchData || maxYear == null) return { retained: 0, discarded: 0 };
@@ -76,6 +84,33 @@ export default function Discards() {
     return { chartData, keys: topGroups };
   }, [catchData]);
 
+  // Catch by species group (BSAI + GOA combined, Total rows, retained + discarded).
+  // Lifted from the former Observer page; uses speciesGroupYear (2025 if present).
+  const speciesGroupTable = useMemo(() => {
+    if (!catchData || speciesGroupYear == null) return [];
+    const totals = new Map<string, { retained: number; discarded: number }>();
+    for (const r of catchData) {
+      if (r.year === speciesGroupYear && r.monitored_or_total === "Total") {
+        const prev = totals.get(r.species_group) ?? { retained: 0, discarded: 0 };
+        if (r.disposition === "Retained") prev.retained += r.metric_tons ?? 0;
+        else if (r.disposition === "Discarded") prev.discarded += r.metric_tons ?? 0;
+        totals.set(r.species_group, prev);
+      }
+    }
+    return [...totals.entries()]
+      .map(([grp, v]) => ({ grp, total: v.retained + v.discarded, ...v }))
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((r) => [
+        "BSAI + GOA",
+        r.grp,
+        `${fmt(r.retained, 1)} mt`,
+        `${fmt(r.discarded, 1)} mt`,
+        `${fmt(r.total, 1)} mt`,
+        r.total > 0 ? `${((r.discarded / r.total) * 100).toFixed(1)}%` : "—",
+      ]);
+  }, [catchData, speciesGroupYear]);
+
   // Retained vs discarded by FMP area (latest year)
   const byFmpArea = useMemo(() => {
     if (!catchData || maxYear == null) return [];
@@ -109,6 +144,7 @@ export default function Discards() {
       .filter((r) => r.total > 0)
       .sort((a, b) => b.total - a.total)
       .map((r) => [
+        "BSAI + GOA",
         r.gear,
         `${fmt(Math.round(r.retained / 1000))} kt`,
         `${fmt(Math.round(r.discarded / 1000))} kt`,
@@ -131,6 +167,7 @@ export default function Discards() {
       .filter((r) => r.total > 0)
       .sort((a, b) => b.total - a.total)
       .map((r) => [
+        "BSAI + GOA",
         r.sector,
         `${fmt(Math.round(r.retained / 1000))} kt`,
         `${fmt(Math.round(r.discarded / 1000))} kt`,
@@ -216,7 +253,7 @@ export default function Discards() {
             ]}
           />
 
-          <h2 className="h2">{maxYear} retained vs. discarded</h2>
+          <h2 className="h2">{maxYear} retained vs. discarded — BSAI + GOA federal groundfish</h2>
           <Card>
             <ProportionBar parts={proportionParts} />
             <Legend
@@ -225,18 +262,18 @@ export default function Discards() {
                 { label: `Discarded — ${fmt(Math.round(discarded / 1000))} kt (${fmtPct(discardRate)})`, color: "#b45309" },
               ]}
             />
-            <div className="data-caption">Source: NMFS Monitored Catch tables</div>
+            <div className="data-caption">Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables.</div>
           </Card>
 
           {discardBySpeciesTrend.keys.length > 0 && (
             <>
-              <h2 className="h2">Top discarded species groups by year, 2013–{maxYear}</h2>
+              <h2 className="h2">Top discarded species groups by year, 2013–{maxYear} — BSAI + GOA federal groundfish</h2>
               <Card>
                 <StackedTrend
                   data={discardBySpeciesTrend.chartData}
                   xKey="year"
                   stackKeys={discardBySpeciesTrend.keys}
-                  title="Federal groundfish discards by species group"
+                  title="Federal groundfish discards by species group (BSAI + GOA combined)"
                   yLabel="metric tons"
                   yFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
                 />
@@ -244,19 +281,39 @@ export default function Discards() {
             </>
           )}
 
+          {speciesGroupTable.length > 0 && speciesGroupYear != null && (
+            <>
+              <h2 className="h2">{speciesGroupYear} catch by species group — BSAI + GOA federal groundfish (combined)</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Region" },
+                    { label: "Species group" },
+                    { label: "Retained (mt)", num: true },
+                    { label: "Discarded (mt)", num: true },
+                    { label: "Total (mt)", num: true },
+                    { label: "Discard rate (%)", num: true },
+                  ]}
+                  rows={speciesGroupTable}
+                  caption={`Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${speciesGroupYear}.`}
+                />
+              </Card>
+            </>
+          )}
+
           {byFmpArea.length > 0 && (
             <>
-              <h2 className="h2">{maxYear} retained vs. discarded by FMP area</h2>
+              <h2 className="h2">{maxYear} retained vs. discarded by FMP area — Federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
                     { label: "FMP area" },
-                    { label: "Retained", num: true },
-                    { label: "Discarded", num: true },
-                    { label: "Discard rate", num: true },
+                    { label: "Retained (kt)", num: true },
+                    { label: "Discarded (kt)", num: true },
+                    { label: "Discard rate (%)", num: true },
                   ]}
                   rows={byFmpArea}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                  caption={`Region: BSAI and GOA, disaggregated. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
                 />
               </Card>
             </>
@@ -264,17 +321,18 @@ export default function Discards() {
 
           {byGear.length > 0 && (
             <>
-              <h2 className="h2">{maxYear} retained vs. discarded by gear type — BSAI + GOA federal groundfish</h2>
+              <h2 className="h2">{maxYear} retained vs. discarded by gear type — BSAI + GOA federal groundfish (combined)</h2>
               <Card>
                 <Table
                   columns={[
+                    { label: "Region" },
                     { label: "Gear" },
-                    { label: "Retained", num: true },
-                    { label: "Discarded", num: true },
-                    { label: "Discard rate", num: true },
+                    { label: "Retained (kt)", num: true },
+                    { label: "Discarded (kt)", num: true },
+                    { label: "Discard rate (%)", num: true },
                   ]}
                   rows={byGear}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                  caption={`Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
                 />
               </Card>
             </>
@@ -282,17 +340,18 @@ export default function Discards() {
 
           {bySector.length > 0 && (
             <>
-              <h2 className="h2">{maxYear} retained vs. discarded by sector — BSAI + GOA federal groundfish</h2>
+              <h2 className="h2">{maxYear} retained vs. discarded by sector — BSAI + GOA federal groundfish (combined)</h2>
               <Card>
                 <Table
                   columns={[
+                    { label: "Region" },
                     { label: "Sector" },
-                    { label: "Retained", num: true },
-                    { label: "Discarded", num: true },
-                    { label: "Discard rate", num: true },
+                    { label: "Retained (kt)", num: true },
+                    { label: "Discarded (kt)", num: true },
+                    { label: "Discard rate (%)", num: true },
                   ]}
                   rows={bySector}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                  caption={`Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
                 />
               </Card>
             </>
@@ -300,18 +359,18 @@ export default function Discards() {
 
           {discardTrend.length > 0 && (
             <>
-              <h2 className="h2">Annual discard totals, 2013–{maxYear} — BSAI + GOA federal groundfish</h2>
+              <h2 className="h2">Annual discard totals, 2013–{maxYear} — BSAI + GOA federal groundfish (combined)</h2>
               <Card>
                 <Table
                   columns={[
                     { label: "Year", yr: true },
-                    { label: "Retained", num: true },
-                    { label: "Discarded", num: true },
-                    { label: "Total catch", num: true },
-                    { label: "Discard rate", num: true },
+                    { label: "Retained (kt)", num: true },
+                    { label: "Discarded (kt)", num: true },
+                    { label: "Total catch (kt)", num: true },
+                    { label: "Discard rate (%)", num: true },
                   ]}
                   rows={discardTrend}
-                  caption="Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch"
+                  caption="Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables."
                 />
               </Card>
             </>
@@ -321,14 +380,14 @@ export default function Discards() {
 
       {dmrData && (
         <>
-          <h2 className="h2">Discard mortality rates by gear</h2>
+          <h2 className="h2">Discard mortality rates by gear — BSAI and GOA</h2>
           <Card>
             <Table
               columns={[
                 { label: "FMP area" },
                 { label: "Gear type" },
                 { label: "Species" },
-                { label: "DMR", num: true },
+                { label: "DMR (%)", num: true },
                 { label: "Effective years" },
                 { label: "Source" },
               ]}
@@ -342,7 +401,7 @@ export default function Discards() {
                   : `${r.effective_year_start}–`,
                 r.source,
               ])}
-              caption="Source: BSAI/GOA groundfish harvest specifications, via Mainsail discard_mortality_rates"
+              caption="Region: BSAI and GOA, per-row. Source: Seamark Analytics, derived from BSAI/GOA groundfish harvest specifications (NPFMC)."
             />
           </Card>
           <Note>

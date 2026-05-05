@@ -7,10 +7,10 @@ import type {
   SportHarvestDataRow,
   SalmonEscapementRow,
   PscWeeklyDataRow,
-  SubsistenceHarvestDataRow,
+  SubsistenceHarvestStatewideRow,
   ChumGsiRow,
 } from "../api/types";
-import { Card, Crumb, DataContext, StatGrid, Table } from "../components/primitives";
+import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
 
 const fmt = (n: number | null | undefined) =>
@@ -40,16 +40,26 @@ export default function Chum() {
     useDataset<SalmonEscapementRow>("salmon_escapement");
   const { data: pscData, isLoading: pscLoading } =
     useDataset<PscWeeklyDataRow>("psc_weekly");
-  const { data: subsistenceData } =
-    useDataset<SubsistenceHarvestDataRow>("subsistence_harvest");
+  const { data: subsistenceStatewide } =
+    useDataset<SubsistenceHarvestStatewideRow>("subsistence_harvest_statewide");
   const { data: gsiData, isLoading: gsiLoading } =
     useDataset<ChumGsiRow>("chum_gsi");
 
-  // ── Mortality-by-source stack (last 20 years) ─────────────────────────────
-  // Same four-bucket structure as the Chinook page. All in fish counts;
-  // PSC and commercial counted as 100% mortality. Sport is kept fish only;
-  // chum sport release mortality is not estimated (no published fleetwide rate).
-  // Subsistence reporting ends in 2022; later years render as a gap.
+  // ── Mortality-by-source stack — full available time series ──────────────
+  // Four buckets, all fish counts. Each bucket is sourced from the
+  // longest-window dataset published for that component:
+  //   • Commercial (directed) — salmon_commercial_harvest, statewide chum
+  //     (ADF&G/NPAFC, 1985+). 100% mortality.
+  //   • Bycatch (PSC)         — psc_weekly, salmon-type non-Chinook
+  //     (BSAI groundfish, 2013+). The longer-window
+  //     psc_annual_historical table currently carries chinook only, so
+  //     chum PSC starts in the psc_weekly window — pre-2013 years render
+  //     as zero for that bucket. 100% mortality (standard NPFMC practice).
+  //   • Subsistence           — subsistence_harvest_statewide (NPAFC),
+  //     chum 1985-2023. 100% mortality (kept fish).
+  //   • Sport (kept)          — sport_harvest species_code=CS,
+  //     record_type=harvest. Kept fish only; release mortality NOT
+  //     included (no published fleetwide rate for chum).
   const MORTALITY_BUCKETS = [
     "Commercial (directed)",
     "Bycatch (PSC)",
@@ -58,7 +68,7 @@ export default function Chum() {
   ];
 
   const chumMortalityStack = useMemo(() => {
-    if (!commercialData && !pscData && !subsistenceData && !sportData) return [];
+    if (!commercialData && !pscData && !subsistenceStatewide && !sportData) return [];
     const byYear = new Map<number, Record<string, number | null>>();
     const ensure = (yr: number) => {
       if (!byYear.has(yr)) byYear.set(yr, { year: yr });
@@ -74,18 +84,23 @@ export default function Chum() {
       }
     }
     if (pscData) {
+      // Salmon PSC has two species_codes: CHNK (Chinook) and NCHNK / NCHN
+      // (non-Chinook = chum). Filter by psc_type=salmon and exclude CHNK
+      // rather than guess the exact non-Chinook code spelling.
       for (const r of pscData) {
-        if (r.species_code !== "CHUM" || r.is_confidential === 1) continue;
+        if (r.psc_type !== "salmon") continue;
+        if (r.species_code === "CHNK") continue;
+        if (r.is_confidential === 1) continue;
         if (r.psc_count == null) continue;
         const e = ensure(r.year);
         e["Bycatch (PSC)"] = (e["Bycatch (PSC)"] as number ?? 0) + r.psc_count;
       }
     }
-    if (subsistenceData) {
-      for (const r of subsistenceData) {
-        if (r.chum_harvest_fish == null) continue;
+    if (subsistenceStatewide) {
+      for (const r of subsistenceStatewide) {
+        if (r.species !== "chum" || r.harvest_count == null) continue;
         const e = ensure(r.year);
-        e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.chum_harvest_fish;
+        e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.harvest_count;
       }
     }
     if (sportData) {
@@ -98,10 +113,7 @@ export default function Chum() {
     }
 
     if (!byYear.size) return [];
-    const maxYr = Math.max(...byYear.keys());
-    const minYr = maxYr - 19;
     return [...byYear.values()]
-      .filter((r) => (r.year as number) >= minYr && (r.year as number) <= maxYr)
       .map((r): Record<string, string | number> => ({
         year: r.year as number,
         "Commercial (directed)": (r["Commercial (directed)"] as number) ?? 0,
@@ -110,7 +122,46 @@ export default function Chum() {
         "Sport (kept)":          (r["Sport (kept)"]          as number) ?? 0,
       }))
       .sort((a, b) => (a.year as number) - (b.year as number));
-  }, [commercialData, pscData, subsistenceData, sportData]);
+  }, [commercialData, pscData, subsistenceStatewide, sportData]);
+
+  // ── Annual totals table — mortality buckets + escapement column ──────────
+  const chumEscapementByYear = useMemo(() => {
+    const map = new Map<number, number>();
+    const countable = filterCountableEscapement(escapementData);
+    for (const r of countable) {
+      if (!r.species.toLowerCase().includes("chum")) continue;
+      if (r.actual_count == null) continue;
+      map.set(r.year, (map.get(r.year) ?? 0) + r.actual_count);
+    }
+    return map;
+  }, [escapementData]);
+
+  // Mark partial-coverage rows with ◊. Chum PSC starts 2013, subsistence
+  // ends 2023, so the all-source defensible window is 2013–2023.
+  const chumMortalityTable = useMemo(() => {
+    return [...chumMortalityStack]
+      .sort((a, b) => (b.year as number) - (a.year as number))
+      .map((r) => {
+        const yr = r.year as number;
+        const com = r["Commercial (directed)"] as number;
+        const byc = r["Bycatch (PSC)"] as number;
+        const sub = r["Subsistence"] as number;
+        const spo = r["Sport (kept)"] as number;
+        const esc = chumEscapementByYear.get(yr);
+        const presentCount = [com, byc, sub, spo].filter((v) => v > 0).length;
+        const partial = presentCount < 4;
+        const reported = com + byc + sub + spo;
+        return [
+          yr,
+          com > 0 ? fmt(com) : "—",
+          byc > 0 ? fmt(byc) : "—",
+          sub > 0 ? fmt(sub) : "—",
+          spo > 0 ? fmt(spo) : "—",
+          partial ? `${fmt(reported)} ◊` : fmt(reported),
+          esc != null ? fmt(esc) + " ‡" : "—",
+        ];
+      });
+  }, [chumMortalityStack, chumEscapementByYear]);
 
   const commercialChum = useMemo(() => {
     if (!commercialData) return [];
@@ -190,7 +241,7 @@ export default function Chum() {
     const FISHERIES = ["Pollock (midwater)", "Pollock (bottom)", "Pacific Cod", "Other groundfish"];
     const map = new Map<number, Record<string, number>>();
     for (const r of pscData) {
-      if (r.species_code !== "CHUM" || r.is_confidential === 1) continue;
+      if (r.psc_type !== "salmon" || r.species_code === "CHNK" || r.is_confidential === 1) continue;
       const yr = r.year;
       if (!map.has(yr)) {
         const entry: Record<string, number> = { year: yr };
@@ -210,7 +261,7 @@ export default function Chum() {
 
   const pscChumLatestYear = useMemo(() => {
     if (!pscData) return null;
-    const chum = pscData.filter((r) => r.species_code === "CHUM");
+    const chum = pscData.filter((r) => r.psc_type === "salmon" && r.species_code !== "CHNK");
     return chum.length ? Math.max(...chum.map((r) => r.year)) : null;
   }, [pscData]);
 
@@ -218,7 +269,12 @@ export default function Chum() {
     if (!pscData || pscChumLatestYear == null) return [];
     const map = new Map<string, number>();
     for (const r of pscData) {
-      if (r.species_code === "CHUM" && r.year === pscChumLatestYear && r.is_confidential === 0) {
+      if (
+        r.psc_type === "salmon" &&
+        r.species_code !== "CHNK" &&
+        r.year === pscChumLatestYear &&
+        r.is_confidential === 0
+      ) {
         map.set(r.target_fishery, (map.get(r.target_fishery) ?? 0) + (r.psc_count ?? 0));
       }
     }
@@ -273,7 +329,7 @@ export default function Chum() {
           "salmon_commercial_harvest — ADF&G statewide + regional commercial harvest",
           "hatchery_releases — NPAFC hatchery releases by country (chum)",
           "sport_harvest — ADF&G SWHS statewide sport harvest (chum)",
-          "subsistence_harvest — ADF&G Division of Subsistence community surveys (chum)",
+          "subsistence_harvest_statewide — NPAFC-sourced statewide subsistence harvest, chum 1985-2023",
           "psc_weekly — NMFS weekly PSC reports (BSAI chum bycatch)",
           "chum_gsi — AFSC genetic stock identification of BSAI pollock chum bycatch",
           "salmon_escapement — ADF&G escapement counts (chum systems)",
@@ -321,7 +377,7 @@ export default function Chum() {
 
       {chumMortalityStack.length > 0 && (
         <>
-          <h2 className="h2">Chum mortality by source, last 20 years</h2>
+          <h2 className="h2">Chum mortality by source — full available time series (Alaska statewide)</h2>
           <Card>
             <StackedTrend
               data={chumMortalityStack}
@@ -335,16 +391,75 @@ export default function Chum() {
               }
             />
             <div className="data-caption">
-              Sources: ADF&amp;G salmon_commercial_harvest (statewide chum),
-              NMFS psc_weekly (CHUM, non-confidential), ADF&amp;G
-              subsistence_harvest (chum_harvest_fish summed across reporting
-              communities), ADF&amp;G SWHS sport_harvest (CS, harvested fish).
-              All buckets in fish counts. PSC and commercial figures are
-              treated as 100% mortality. Sport reflects kept fish only —
-              chum sport release mortality is not included (no fleetwide rate
-              is published). Subsistence reporting ends in 2022; later years
-              render as a gap, not a zero.
+              Source: Seamark Analytics, derived from ADF&amp;G annual Salmon
+              Harvest Summary (commercial), NMFS weekly PSC reports (BSAI
+              non-Chinook salmon bycatch), NPAFC Pacific Salmonid Catch
+              Statistics (subsistence), and ADF&amp;G SWHS (sport).
             </div>
+          </Card>
+
+          <h2 className="h2">Annual mortality by source — with counted escapement (Alaska statewide)</h2>
+          <Note>
+            <b>Methodology &amp; coverage.</b> Each column is taken directly
+            from a published source dataset; no values are imputed, smoothed,
+            or backfilled. Counts are fish, not pounds.
+            <ul className="ml-5 my-2 list-disc">
+              <li>
+                <b>Commercial (directed):</b> statewide chum
+                (<code>salmon_commercial_harvest</code>,
+                <code> region = "statewide"</code>), 1985-present. Counted as
+                100% mortality (landed fish).
+              </li>
+              <li>
+                <b>Bycatch (PSC):</b> NMFS weekly PSC reports
+                (<code>psc_weekly</code>, <code>psc_type = "salmon"</code>,
+                non-Chinook = chum), <b>2013-present only</b>. The
+                long-window <code>psc_annual_historical</code> table
+                currently carries chinook only, so chum PSC pre-2013 is
+                <i> not</i> in the Mainsail snapshot — those years render as
+                zero for this bucket and the row is flagged ◊. Counted as
+                100% mortality (standard NPFMC practice — non-directed catch
+                arrives dead in the codend and is discarded).
+              </li>
+              <li>
+                <b>Subsistence:</b> NPAFC statewide subsistence harvest
+                (<code>subsistence_harvest_statewide</code>,
+                <code> species = "chum"</code>), 1985-2023. Counted as 100%
+                mortality (kept fish). Years past 2023 not yet published.
+              </li>
+              <li>
+                <b>Sport (kept):</b> ADF&amp;G Statewide Harvest Survey
+                (<code>sport_harvest</code>, species_code <code>CS</code>,
+                <code> record_type = "harvest"</code>). Reflects kept fish
+                only — catch-and-release mortality is <i>not</i> included.
+                ADF&amp;G does not publish a fleetwide chum sport
+                release-mortality rate, so we do not impose one.
+              </li>
+            </ul>
+            <b>Reading the row totals.</b> The "Reported total" column sums
+            only the components that exist for that year; rows where any
+            component is missing (most commonly pre-2013 PSC) are flagged
+            with ◊. <b>True total mortality is higher than the ◊ figure</b> by
+            whatever the missing component would have contributed. The
+            all-source defensible window is the intersection of the four
+            publication windows — 2013–2023 in the current snapshot.
+          </Note>
+          <Card>
+            <Table
+              columns={[
+                { label: "Year", yr: true },
+                { label: "Commercial (fish)", num: true },
+                { label: "Bycatch (PSC) (fish)", num: true },
+                { label: "Subsistence (fish)", num: true },
+                { label: "Sport (kept) (fish)", num: true },
+                { label: "Reported total (fish)", num: true },
+                { label: "Counted escapement (fish)", num: true },
+              ]}
+              rows={chumMortalityTable}
+              caption={
+                "Source: Seamark Analytics, derived from ADF&G annual Salmon Harvest Summary, NMFS weekly PSC reports, NPAFC Pacific Salmonid Catch Statistics, and ADF&G SWHS. Region: Alaska statewide. ◊ = partial coverage; the row total sums only the columns reported for that year and understates true mortality. ‡ = counted escapement is the sum of actual_count across chum river systems present in the salmon_escapement dataset for that year — partial coverage; not a complete return total."
+              }
+            />
           </Card>
         </>
       )}
@@ -362,7 +477,7 @@ export default function Chum() {
               r.year,
               fmt(r.harvest_fish) + (r.is_preliminary === 1 ? " †" : ""),
             ])}
-            caption="Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary."
+            caption="Source: Seamark Analytics, derived from ADF&G annual Salmon Harvest Summary via Mainsail salmon_commercial_harvest. Region: Alaska statewide. † = preliminary."
           />
         </Card>
       )}
@@ -377,7 +492,7 @@ export default function Chum() {
                 { label: "Harvest (fish)", num: true },
               ]}
               rows={commercialByRegion.rows}
-              caption={`Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary.`}
+              caption={`Source: Seamark Analytics, derived from ADF&G annual Salmon Harvest Summary via Mainsail salmon_commercial_harvest. † = preliminary.`}
             />
           </Card>
         </>
@@ -393,7 +508,7 @@ export default function Chum() {
                 { label: "Harvest (fish)", num: true },
               ]}
               rows={sportChum.slice(0, 10).map((r) => [r.year, fmt(r.fish)])}
-              caption="Source: ADF&G SWHS via Mainsail sport_harvest (species_code CS)"
+              caption="Source: Seamark Analytics, derived from ADF&G SWHS via Mainsail sport_harvest (species_code CS = chum salmon). Region: Alaska statewide."
             />
           </Card>
         </>
@@ -425,7 +540,7 @@ export default function Chum() {
                 { label: "Chum PSC (fish)", num: true },
               ]}
               rows={pscChumByFishery}
-              caption={`Source: NMFS weekly PSC reports via Mainsail psc_weekly, year ${pscChumLatestYear}`}
+              caption={`Source: Seamark Analytics, derived from NMFS weekly PSC reports via Mainsail psc_weekly. Region: BSAI groundfish, year ${pscChumLatestYear}.`}
             />
           </Card>
         </>
@@ -440,11 +555,11 @@ export default function Chum() {
               { label: "Year", yr: true },
               { label: "FMP area" },
               { label: "Stock reporting group" },
-              { label: "Mean attribution", num: true },
-              { label: "95% CI (fish)", num: true },
-              { label: "Point estimate (fish)", num: true },
-              { label: "Total catch", num: true },
-              { label: "Samples", num: true },
+              { label: "Mean attribution (%)", num: true },
+              { label: "Point count (fish)", num: true },
+              { label: "95% CI low–high (fish)", num: true },
+              { label: "Total catch (fish)", num: true },
+              { label: "Samples (fish)", num: true },
             ]}
             rows={[...gsiData]
               .sort((a, b) => b.year - a.year || b.mean_pct - a.mean_pct)
@@ -453,12 +568,12 @@ export default function Chum() {
                 r.fmp_area,
                 r.region,
                 fmtPctValue(r.mean_pct),
-                `${fmt(r.lower_95_ci)}–${fmt(r.upper_95_ci)}`,
                 fmt(r.point_count),
+                `${fmt(r.lower_95_ci)}–${fmt(r.upper_95_ci)}`,
                 fmt(r.total_catch),
                 fmt(r.n_samples),
               ])}
-            caption="Source: NPFMC C2 Chum Salmon Genetics Report (Barry et al., AFSC Auke Bay Laboratories), via Mainsail chum_gsi. v1 covers BSAI 2023 B-season aggregate only; richer stratifications (sector / time-period / longitude / spatial cluster) and 2011-2022 backfill are tracked separately."
+            caption="Source: Seamark Analytics, derived from NPFMC C2 Chum Salmon Genetics Report (Barry et al., April 2024) via Mainsail chum_gsi (partial — 2023 BSAI B-season only)."
           />
         </Card>
       )}

@@ -23,7 +23,7 @@ export default function Observer() {
     [data]
   );
 
-  // Latest year coverage by sector
+  // Latest year coverage by sector — combined across both FMP areas
   const summaryTable = useMemo(() => {
     if (!data || maxYear == null) return [];
     const sectors = [...new Set(data.filter((r) => r.year === maxYear).map((r) => r.sector))].sort();
@@ -32,11 +32,11 @@ export default function Observer() {
       const mon = rows.filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
       const tot = rows.filter((r) => r.monitored_or_total === "Total").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
       const rate = tot > 0 ? Math.min(100, (mon / tot) * 100) : 0;
-      return [SECTOR_LABELS[sec] ?? sec, `${fmt(mon)} mt`, `${fmt(tot)} mt`, `${rate.toFixed(1)}%`];
+      return ["BSAI + GOA", SECTOR_LABELS[sec] ?? sec, `${fmt(mon)} mt`, `${fmt(tot)} mt`, `${rate.toFixed(1)}%`];
     });
   }, [data, maxYear]);
 
-  // Coverage by gear type (latest year)
+  // Coverage by gear type (latest year) — combined across both FMP areas
   const gearTable = useMemo(() => {
     if (!data || maxYear == null) return [];
     const gears = [...new Set(data.filter((r) => r.year === maxYear).map((r) => r.gear))].sort();
@@ -50,32 +50,20 @@ export default function Observer() {
       })
       .filter((r) => r.tot > 0)
       .sort((a, b) => b.tot - a.tot)
-      .map((r) => [r.gear, `${fmt(r.mon)} mt`, `${fmt(r.tot)} mt`, `${r.rate.toFixed(1)}%`]);
+      .map((r) => ["BSAI + GOA", r.gear, `${fmt(r.mon)} mt`, `${fmt(r.tot)} mt`, `${r.rate.toFixed(1)}%`]);
   }, [data, maxYear]);
 
-  // Catch by species group (latest year, Total rows, retained + discarded combined)
-  const speciesGroupTable = useMemo(() => {
+  // Per-FMP-area coverage rate breakdown (latest year)
+  const byFmpAreaCoverage = useMemo(() => {
     if (!data || maxYear == null) return [];
-    const totals = new Map<string, { retained: number; discarded: number }>();
-    for (const r of data) {
-      if (r.year === maxYear && r.monitored_or_total === "Total") {
-        const prev = totals.get(r.species_group) ?? { retained: 0, discarded: 0 };
-        if (r.disposition === "Retained") prev.retained += r.metric_tons ?? 0;
-        else if (r.disposition === "Discarded") prev.discarded += r.metric_tons ?? 0;
-        totals.set(r.species_group, prev);
-      }
-    }
-    return [...totals.entries()]
-      .map(([grp, v]) => ({ grp, total: v.retained + v.discarded, ...v }))
-      .filter((r) => r.total > 0)
-      .sort((a, b) => b.total - a.total)
-      .map((r) => [
-        r.grp,
-        `${fmt(r.retained)} mt`,
-        `${fmt(r.discarded)} mt`,
-        `${fmt(r.total)} mt`,
-        r.total > 0 ? `${((r.discarded / r.total) * 100).toFixed(1)}%` : "—",
-      ]);
+    const areas = [...new Set(data.filter((r) => r.year === maxYear).map((r) => r.fmp_area))].sort();
+    return areas.map((area) => {
+      const rows = data.filter((r) => r.year === maxYear && r.fmp_area === area);
+      const mon = rows.filter((r) => r.monitored_or_total === "Monitored" || r.monitored_or_total === "Observed").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const tot = rows.filter((r) => r.monitored_or_total === "Total").reduce((s, r) => s + (r.metric_tons ?? 0), 0);
+      const rate = tot > 0 ? Math.min(100, (mon / tot) * 100) : 0;
+      return [area, `${fmt(mon)} mt`, `${fmt(tot)} mt`, `${rate.toFixed(1)}%`];
+    });
   }, [data, maxYear]);
 
   // Overall coverage stats
@@ -150,51 +138,54 @@ export default function Observer() {
             the rate is a direct ratio of two reported quantities — not an
             extrapolation. Rates can exceed 100% in small sectors when reported
             monitored tons round above the corresponding total estimate; values
-            shown are clamped at 100%.
+            shown are clamped at 100%. Tables labeled "BSAI + GOA" aggregate
+            both Federal management areas; the per-FMP-area table below
+            disaggregates the coverage rate.
           </Note>
 
           {maxYear != null && (
             <>
-              <h2 className="h2">{maxYear} coverage by sector — BSAI + GOA federal groundfish</h2>
+              <h2 className="h2">{maxYear} coverage by FMP area — Federal groundfish</h2>
               <Card>
                 <Table
                   columns={[
+                    { label: "FMP area" },
+                    { label: "Monitored (mt)", num: true },
+                    { label: "Total catch (mt)", num: true },
+                    { label: "Coverage rate (%)", num: true },
+                  ]}
+                  rows={byFmpAreaCoverage}
+                  caption={`Region: BSAI and GOA, disaggregated. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
+                />
+              </Card>
+
+              <h2 className="h2">{maxYear} coverage by sector — BSAI + GOA federal groundfish (combined)</h2>
+              <Card>
+                <Table
+                  columns={[
+                    { label: "Region" },
                     { label: "Sector" },
-                    { label: "Monitored", num: true },
-                    { label: "Total catch", num: true },
-                    { label: "Coverage rate", num: true },
+                    { label: "Monitored (mt)", num: true },
+                    { label: "Total catch (mt)", num: true },
+                    { label: "Coverage rate (%)", num: true },
                   ]}
                   rows={summaryTable}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                  caption={`Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
                 />
               </Card>
 
-              <h2 className="h2">{maxYear} coverage by gear type — BSAI + GOA federal groundfish</h2>
+              <h2 className="h2">{maxYear} coverage by gear type — BSAI + GOA federal groundfish (combined)</h2>
               <Card>
                 <Table
                   columns={[
+                    { label: "Region" },
                     { label: "Gear" },
-                    { label: "Monitored", num: true },
-                    { label: "Total catch", num: true },
-                    { label: "Coverage rate", num: true },
+                    { label: "Monitored (mt)", num: true },
+                    { label: "Total catch (mt)", num: true },
+                    { label: "Coverage rate (%)", num: true },
                   ]}
                   rows={gearTable}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
-                />
-              </Card>
-
-              <h2 className="h2">{maxYear} catch by species group — BSAI + GOA federal groundfish</h2>
-              <Card>
-                <Table
-                  columns={[
-                    { label: "Species group" },
-                    { label: "Retained", num: true },
-                    { label: "Discarded", num: true },
-                    { label: "Total", num: true },
-                    { label: "Discard rate", num: true },
-                  ]}
-                  rows={speciesGroupTable}
-                  caption={`Source: NMFS AKRO monitored catch tables via Mainsail monitored_catch, year ${maxYear}`}
+                  caption={`Region: BSAI and GOA combined. Source: Seamark Analytics, derived from NMFS AKRO Catch Accounting System monitored catch tables, year ${maxYear}.`}
                 />
               </Card>
             </>

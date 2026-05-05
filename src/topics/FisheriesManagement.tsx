@@ -1,11 +1,6 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
-import { filterCountableEscapement } from "../api/datasetHelpers";
-import type {
-  SalmonCommercialHarvestDataRow,
-  SalmonEscapementRow,
-  EscapementGoalsHistoryRow,
-} from "../api/types";
+import type { SalmonCommercialHarvestDataRow } from "../api/types";
 import {
   Card,
   Crumb,
@@ -14,75 +9,73 @@ import {
   Pill,
   Table,
 } from "../components/primitives";
+import MultiLineTrend from "../components/charts/MultiLineTrend";
 
-const fmt = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("en-US");
+const SPECIES_ORDER = [
+  "chinook",
+  "sockeye",
+  "coho",
+  "pink",
+  "chum",
+] as const;
+type Species = (typeof SPECIES_ORDER)[number];
+
+type HarvestPoint = { year: number } & Record<Species, number | null>;
 
 export default function FisheriesManagement() {
   const { data: commercialData } =
     useDataset<SalmonCommercialHarvestDataRow>("salmon_commercial_harvest");
-  const { data: escapementData } =
-    useDataset<SalmonEscapementRow>("salmon_escapement");
-  const { data: goalsData } =
-    useDataset<EscapementGoalsHistoryRow>("escapement_goals_history");
 
-  const harvestYears = useMemo(() => {
-    if (!commercialData) return [];
-    const statewide = commercialData.filter((r) => r.region === "statewide");
-    return [...new Set(statewide.map((r) => r.year))].sort((a, b) => a - b).slice(-5);
-  }, [commercialData]);
-
-  const harvestBySpecies = useMemo(() => {
-    if (!commercialData || !harvestYears.length) return [];
-    const statewide = commercialData.filter((r) => r.region === "statewide");
-    const SPECIES_ORDER = ["chinook", "sockeye", "coho", "pink", "chum"];
-    return SPECIES_ORDER.map((sp) =>
-      [sp as string | number, ...harvestYears.map((yr) => {
-        const row = statewide.find((r) => r.species === sp && r.year === yr);
-        if (row?.harvest_fish == null) return "—" as string | number;
-        return fmt(row.harvest_fish) + (row.is_preliminary === 1 ? " †" : "");
-      })]
+  // Long time series of statewide commercial salmon harvest by species.
+  // Per CLAUDE.md: longest comparable window (1985-present), no imputation.
+  const { harvestSeries, latestYear, hasPreliminary } = useMemo(() => {
+    if (!commercialData) {
+      return {
+        harvestSeries: [] as HarvestPoint[],
+        latestYear: null as number | null,
+        hasPreliminary: false,
+      };
+    }
+    const statewide = commercialData.filter(
+      (r) => r.region === "statewide",
     );
-  }, [commercialData, harvestYears]);
-
-  const recentEscapement = useMemo(() => {
-    const countable = filterCountableEscapement(escapementData);
-    if (!countable.length) return { rows: [] as (string | number)[][], year: null as number | null };
-    const maxYear = Math.max(...countable.map((r) => r.year));
-    const rows = countable
-      .filter((r) => r.year === maxYear && r.actual_count != null)
-      .sort((a, b) => (b.actual_count ?? 0) - (a.actual_count ?? 0))
-      .slice(0, 25)
-      .map((r) => [
-        r.system_name,
-        r.species,
-        r.region ?? "—",
-        r.count_method ?? "—",
-        fmt(r.actual_count),
-        r.goal_lower != null && r.goal_upper != null
-          ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}`
-          : "—",
-        r.goal_met === 1 ? "Yes" : r.goal_met === 0 ? "No" : "—",
-      ]);
-    return { rows, year: maxYear };
-  }, [escapementData]);
-
-  const goalsRows = useMemo(() => {
-    if (!goalsData) return [];
-    return [...goalsData]
-      .sort((a, b) => a.system_name.localeCompare(b.system_name))
-      .map((r) => [
-        r.system_name,
-        r.species,
-        r.goal_type,
-        r.goal_lower != null && r.goal_upper != null
-          ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}`
-          : "—",
-        String(r.effective_year_start),
-        r.effective_year_end != null ? String(r.effective_year_end) : "present",
-        r.source_document ?? "—",
-      ]);
-  }, [goalsData]);
+    if (!statewide.length) {
+      return {
+        harvestSeries: [] as HarvestPoint[],
+        latestYear: null as number | null,
+        hasPreliminary: false,
+      };
+    }
+    const years = [...new Set(statewide.map((r) => r.year))].sort(
+      (a, b) => a - b,
+    );
+    let prelim = false;
+    const series: HarvestPoint[] = years.map((yr) => {
+      const point: HarvestPoint = {
+        year: yr,
+        chinook: null,
+        sockeye: null,
+        coho: null,
+        pink: null,
+        chum: null,
+      };
+      for (const sp of SPECIES_ORDER) {
+        const row = statewide.find(
+          (r) => r.species === sp && r.year === yr,
+        );
+        if (row && row.harvest_fish != null) {
+          point[sp] = row.harvest_fish;
+          if (row.is_preliminary === 1) prelim = true;
+        }
+      }
+      return point;
+    });
+    return {
+      harvestSeries: series,
+      latestYear: years[years.length - 1] ?? null,
+      hasPreliminary: prelim,
+    };
+  }, [commercialData]);
 
   return (
     <>
@@ -91,9 +84,7 @@ export default function FisheriesManagement() {
 
       <DataContext
         use={[
-          "salmon_commercial_harvest — ADF&G statewide harvest by species",
-          "salmon_escapement — ADF&G escapement counts by system",
-          "escapement_goals_history — ADF&G escapement goal history",
+          "salmon_commercial_harvest — ADF&G/NPAFC statewide harvest by species, 1985-present",
         ]}
         could={[
           "subsistence_harvest — federal/state subsistence take",
@@ -128,6 +119,7 @@ export default function FisheriesManagement() {
             ["Federal subsistence (rural, federal lands/waters)", "Federal public waters", "USFWS Office of Subsistence Management", "ANILCA Title VIII"],
             ["Recreational (sport)", "0–200 nm", "State inside 3 nm; charter halibut co-managed with IPHC/NMFS", "AK statutes + 50 CFR 300 Subpart E"],
           ]}
+          caption="Region: Alaska statewide. Source: Seamark Analytics, derived from federal and state statutes, FMPs, and the Halibut Convention Act of 1982."
         />
       </Card>
 
@@ -176,65 +168,33 @@ export default function FisheriesManagement() {
             ["Yukon River Panel", "United States & Canada", "Yukon Chinook, chum and coho management under the Yukon River Salmon Agreement", "1995"],
             ["North Pacific Anadromous Fish Commission (NPAFC)", "Canada, Japan, Republic of Korea, Russian Federation, United States", "High-seas salmon research and enforcement of no-directed-harvest rule beyond EEZs", "1993"],
           ]}
+          caption="Region: North Pacific (transboundary). Source: Seamark Analytics, derived from IPHC, Pacific Salmon Commission, Yukon River Panel, and NPAFC convention texts and member-agency publications."
         />
       </Card>
 
-      {commercialData && harvestBySpecies.length > 0 && (
-        <>
-          <h2 className="h2">Commercial salmon harvest — statewide by species (fish)</h2>
-          <Card>
-            <Table
-              columns={[
-                { label: "Species" },
-                ...harvestYears.map((yr) => ({ label: String(yr), num: true })),
-              ]}
-              rows={harvestBySpecies}
-              caption="Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary."
-            />
-          </Card>
-        </>
-      )}
-
-      {escapementData && recentEscapement.rows.length > 0 && (
+      {commercialData && harvestSeries.length > 0 && latestYear != null && (
         <>
           <h2 className="h2">
-            Salmon escapement — top systems by count, {recentEscapement.year} (Alaska statewide)
+            Alaska commercial salmon harvest by species, 1985–{latestYear}
           </h2>
           <Card>
-            <Table
-              columns={[
-                { label: "System" },
-                { label: "Species" },
-                { label: "Region" },
-                { label: "Method" },
-                { label: "Count", num: true },
-                { label: "Goal range" },
-                { label: "Goal met" },
-              ]}
-              rows={recentEscapement.rows}
-              caption={`Source: ADF&G escapement database via Mainsail salmon_escapement, year ${recentEscapement.year}`}
+            <MultiLineTrend
+              data={harvestSeries}
+              xKey="year"
+              seriesKeys={[...SPECIES_ORDER]}
+              title={`Alaska commercial salmon harvest by species, 1985–${latestYear}`}
+              xLabel="Year"
+              yLabel="fish"
+              unitSuffix="fish"
             />
-          </Card>
-        </>
-      )}
-
-      {goalsData && goalsRows.length > 0 && (
-        <>
-          <h2 className="h2">Escapement goals history — Alaska statewide</h2>
-          <Card>
-            <Table
-              columns={[
-                { label: "System" },
-                { label: "Species" },
-                { label: "Goal type" },
-                { label: "Goal range" },
-                { label: "From" },
-                { label: "To" },
-                { label: "Source document" },
-              ]}
-              rows={goalsRows}
-              caption="Source: ADF&G Board of Fisheries escapement goal history, via Mainsail escapement_goals_history"
-            />
+            <p className="card-sub" style={{ marginTop: 8 }}>
+              Region: Alaska statewide. Source: Seamark Analytics, derived
+              from ADF&amp;G annual Salmon Harvest Summary press releases
+              (2019+) and NPAFC Pacific Salmonid Catch Statistics (1985–2018).
+              Gaps render where a species has no reported value for a year;
+              values are not imputed.
+              {hasPreliminary && " Some recent years are flagged preliminary in the underlying salmon_commercial_harvest dataset (is_preliminary=1)."}
+            </p>
           </Card>
         </>
       )}

@@ -94,9 +94,9 @@ export default function Biomass() {
   const STOCK_CHARTS: StockChartConfig[] = [
     {
       stockId: "bsai_ebs_pollock",
-      title: "BSAI EBS Pollock — biomass and harvest specs, 1964–2026",
+      title: "BSAI EBS Pollock — biomass and harvest specs, 2007–2026",
       caption:
-        "Biomass: NPFMC 2024 SAFE Chapter 1, Table 26 — age-3+ EBS pollock at start of year. Recent decade catch concentrated at ages 4–6 (~63%). Specs: NMFS AKRO BS quota area.",
+        "Biomass: NPFMC 2024 SAFE Chapter 1, Table 26 — age-3+ EBS pollock at start of year. Recent decade catch concentrated at ages 4–6 (~63%). Specs and catch: NMFS AKRO BS quota area.",
       tacFilter: (r) =>
         r.fmp_area === "BSAI" &&
         r.species_complex === "Pollock" &&
@@ -105,9 +105,9 @@ export default function Biomass() {
     },
     {
       stockId: "goa_pollock",
-      title: "GOA Pollock — biomass and harvest specs, 1977–2026",
+      title: "GOA Pollock — biomass and harvest specs, 2007–2026",
       caption:
-        "Biomass: NPFMC 2024 SAFE Chapter 1, Table 1.23 — age-3+ GOA pollock at start of year. Specs: NMFS AKRO, federal portions only (state GHLs excluded).",
+        "Biomass: NPFMC 2024 SAFE Chapter 1, Table 1.23 — age-3+ GOA pollock at start of year. Specs and catch: NMFS AKRO, federal portions only (state GHLs excluded).",
       tacFilter: (r) =>
         r.fmp_area === "GOA" &&
         r.species_complex === "Pollock" &&
@@ -115,7 +115,7 @@ export default function Biomass() {
     },
     {
       stockId: "bsai_ebs_pcod",
-      title: "BSAI EBS Pacific Cod — biomass and harvest specs, 1978–2026",
+      title: "BSAI EBS Pacific Cod — biomass and harvest specs, 2007–2026",
       caption:
         "Biomass: NPFMC 2024 SAFE Chapter 2, Tables 2.26 + 2.28, Model 24.1 (author-recommended). Specs: NMFS AKRO BS subarea, federal portion (state GHL excluded).",
       tacFilter: (r) =>
@@ -126,7 +126,7 @@ export default function Biomass() {
     },
     {
       stockId: "goa_pcod",
-      title: "GOA Pacific Cod — biomass and harvest specs, 1977–2026",
+      title: "GOA Pacific Cod — biomass and harvest specs, 2007–2026",
       caption:
         "Biomass: NPFMC 2024 SAFE Chapter 2, Table 2.15 ('Current' model) — age-0+ total biomass. Specs: NMFS AKRO GOA, federal portion (state GHLs excluded).",
       tacFilter: (r) =>
@@ -136,7 +136,7 @@ export default function Biomass() {
     },
     {
       stockId: "alaska_sablefish",
-      title: "Alaska Sablefish — biomass and harvest specs, 1960–2026",
+      title: "Alaska Sablefish — biomass and harvest specs, 2007–2026",
       caption:
         "Biomass: NPFMC 2024 SAFE Chapter 3, Table 3.8 — age-2+ Alaska-wide sablefish. Specs: NMFS AKRO, BSAI + GOA combined (one Alaska-wide assessment apportioned to two FMPs).",
       tacFilter: (r) =>
@@ -144,20 +144,32 @@ export default function Biomass() {
     },
   ];
 
+  // Editorial window: trim biomass + specs charts to 2007-present.
+  // CLAUDE.md normally requires the longest comparable window; this is
+  // an explicit project owner choice that aligns biomass display with
+  // tac_specs coverage (which starts in 2007).
+  const CHART_START_YEAR = 2007;
+
   // Build one chart-data array per stock. Returns biomass series
-  // unioned with summed OFL/ABC/TAC for the configured filter.
-  // Pre-2007 years have no harvest specs (gaps in the chart) because
-  // tac_specs starts in 2007.
+  // unioned with summed OFL/ABC/TAC and realized catch for the
+  // configured filter. Series are filtered to year >= CHART_START_YEAR.
   const stockTrends = useMemo(() => {
     const out: Record<string, Array<Record<string, number | null>>> = {};
     for (const cfg of STOCK_CHARTS) {
       const map = new Map<number, Record<string, number | null>>();
 
-      // OFL/ABC/TAC: sum across all rows matching the filter for each year.
+      // OFL/ABC/TAC + catch: sum across all rows matching the filter for each year.
       if (data) {
         const byYear = new Map<
           number,
-          { ofl: number; abc: number; tac: number; hasAny: boolean }
+          {
+            ofl: number;
+            abc: number;
+            tac: number;
+            catch_mt: number;
+            hasAny: boolean;
+            hasCatch: boolean;
+          }
         >();
         for (const r of data) {
           if (!cfg.tacFilter(r)) continue;
@@ -165,11 +177,17 @@ export default function Biomass() {
             ofl: 0,
             abc: 0,
             tac: 0,
+            catch_mt: 0,
             hasAny: false,
+            hasCatch: false,
           };
           acc.ofl += r.ofl_mt ?? 0;
           acc.abc += r.abc_mt ?? 0;
           acc.tac += r.tac_mt ?? 0;
+          if (r.catch_mt != null) {
+            acc.catch_mt += r.catch_mt;
+            acc.hasCatch = true;
+          }
           acc.hasAny = true;
           byYear.set(r.year, acc);
         }
@@ -180,6 +198,7 @@ export default function Biomass() {
             "OFL (kt)": Math.round(v.ofl / 1000),
             "ABC (kt)": Math.round(v.abc / 1000),
             "TAC (kt)": Math.round(v.tac / 1000),
+            "Catch (kt)": v.hasCatch ? Math.round(v.catch_mt / 1000) : null,
           });
         }
       }
@@ -200,6 +219,7 @@ export default function Biomass() {
             "OFL (kt)": null,
             "ABC (kt)": null,
             "TAC (kt)": null,
+            "Catch (kt)": null,
           };
           map.set(year, {
             ...existing,
@@ -208,9 +228,9 @@ export default function Biomass() {
         }
       }
 
-      out[cfg.stockId] = [...map.values()].sort(
-        (a, b) => (a.year as number) - (b.year as number)
-      );
+      out[cfg.stockId] = [...map.values()]
+        .filter((r) => (r.year as number) >= CHART_START_YEAR)
+        .sort((a, b) => (a.year as number) - (b.year as number));
     }
     return out;
   }, [data, biomassData]);
@@ -220,14 +240,88 @@ export default function Biomass() {
 
   const bsai2026 = useMemo<AggregatedRow[]>(() => {
     if (!data) return [];
-    const rows = data.filter((r) => r.year === 2026 && r.fmp_area === "BSAI");
+    const rows = data.filter(
+      (r) =>
+        r.year === 2026 &&
+        r.fmp_area === "BSAI" &&
+        !hasFlag(r, "state_ghl")
+    );
     return aggregateByComplex(rows).sort((a, b) => b.tac - a.tac);
   }, [data]);
 
   const goa2026 = useMemo<AggregatedRow[]>(() => {
     if (!data) return [];
-    const rows = data.filter((r) => r.year === 2026 && r.fmp_area === "GOA");
+    const rows = data.filter(
+      (r) =>
+        r.year === 2026 &&
+        r.fmp_area === "GOA" &&
+        !hasFlag(r, "state_ghl")
+    );
     return aggregateByComplex(rows).sort((a, b) => b.tac - a.tac);
+  }, [data]);
+
+  // 2025 prior-year catch lookup, keyed by species_complex and FMP area.
+  // Used to add a "2025 catch (mt)" column to the 2026 specs tables.
+  const catch2025By = useMemo(() => {
+    const byBsai = new Map<string, number>();
+    const byGoa = new Map<string, number>();
+    if (!data) return { bsai: byBsai, goa: byGoa };
+    const bsaiRows = data.filter(
+      (r) =>
+        r.year === 2025 &&
+        r.fmp_area === "BSAI" &&
+        !hasFlag(r, "state_ghl")
+    );
+    for (const r of aggregateByComplex(bsaiRows)) {
+      byBsai.set(r.name, r.catch_mt);
+    }
+    const goaRows = data.filter(
+      (r) =>
+        r.year === 2025 &&
+        r.fmp_area === "GOA" &&
+        !hasFlag(r, "state_ghl")
+    );
+    for (const r of aggregateByComplex(goaRows)) {
+      byGoa.set(r.name, r.catch_mt);
+    }
+    return { bsai: byBsai, goa: byGoa };
+  }, [data]);
+
+  // Coverage flags: did 2025 produce non-zero catch for these areas?
+  const has2025BsaiCatch = useMemo(
+    () => [...catch2025By.bsai.values()].some((v) => v > 0),
+    [catch2025By]
+  );
+  const has2025GoaCatch = useMemo(
+    () => [...catch2025By.goa.values()].some((v) => v > 0),
+    [catch2025By]
+  );
+
+  // 2026 BSAI rows keyed by species_complex for the prior-year TAC lookup
+  // used to compute "% of 2025 TAC taken".
+  const tac2025By = useMemo(() => {
+    const byBsai = new Map<string, number>();
+    const byGoa = new Map<string, number>();
+    if (!data) return { bsai: byBsai, goa: byGoa };
+    const bsaiRows = data.filter(
+      (r) =>
+        r.year === 2025 &&
+        r.fmp_area === "BSAI" &&
+        !hasFlag(r, "state_ghl")
+    );
+    for (const r of aggregateByComplex(bsaiRows)) {
+      byBsai.set(r.name, r.tac);
+    }
+    const goaRows = data.filter(
+      (r) =>
+        r.year === 2025 &&
+        r.fmp_area === "GOA" &&
+        !hasFlag(r, "state_ghl")
+    );
+    for (const r of aggregateByComplex(goaRows)) {
+      byGoa.set(r.name, r.tac);
+    }
+    return { bsai: byBsai, goa: byGoa };
   }, [data]);
 
   // BSAI 2026 federal-OY check: sum the species_complex rollups, but exclude
@@ -467,25 +561,38 @@ export default function Biomass() {
             One chart per Tier 1 stock. The biomass line is the SAFE
             assessment's headline series; OFL/ABC/TAC are summed across
             the federal management areas that match the assessment's
-            scope (state Guideline Harvest Levels excluded). Pre-2007
-            OFL/ABC/TAC values are not in <code>tac_specs</code> and
-            render as gaps.
+            scope (state Guideline Harvest Levels excluded). The
+            time window is 2007–present so that biomass and harvest
+            specifications appear over the same span (<code>tac_specs</code>
+            coverage starts in 2007). Pollock charts overlay realized
+            catch alongside the specs; both biomass and catch are shown
+            in thousand metric tons (kt) on a single zero-based axis.
           </p>
 
           {STOCK_CHARTS.map((cfg) => {
             const trend = stockTrends[cfg.stockId] ?? [];
+            const isPollock =
+              cfg.stockId === "bsai_ebs_pollock" ||
+              cfg.stockId === "goa_pollock";
+            const seriesKeys = isPollock
+              ? [
+                  "Total biomass (kt)",
+                  "OFL (kt)",
+                  "ABC (kt)",
+                  "TAC (kt)",
+                  "Catch (kt)",
+                ]
+              : ["Total biomass (kt)", "OFL (kt)", "ABC (kt)", "TAC (kt)"];
+            const colors = isPollock
+              ? ["#2f5d8a", "#9ca3af", "#6b8fad", "#1a2332", "#b45309"]
+              : ["#2f5d8a", "#9ca3af", "#6b8fad", "#1a2332"];
             return (
               <Card key={cfg.stockId}>
                 <MultiLineTrend
                   data={trend}
                   xKey="year"
-                  seriesKeys={[
-                    "Total biomass (kt)",
-                    "OFL (kt)",
-                    "ABC (kt)",
-                    "TAC (kt)",
-                  ]}
-                  colors={["#2f5d8a", "#9ca3af", "#6b8fad", "#1a2332"]}
+                  seriesKeys={seriesKeys}
+                  colors={colors}
                   title={cfg.title}
                   yLabel="thousand mt"
                   unitSuffix="kt"
@@ -499,16 +606,18 @@ export default function Biomass() {
           <Card>
             <SpeciesBar
               data={bsaiEcosystemBar}
-              title={`BSAI groundfish TAC, ${latestYear} — all stocks`}
+              title={`BSAI groundfish TAC, ${latestYear} — all stocks (mt)`}
               unitLabel="mt"
               color="#2f5d8a"
             />
             <div className="data-caption">
-              Source: NMFS AKRO harvest specifications via Mainsail tac_specs.
-              Per-stock TAC uses the all-area rollup row when present and
-              the sum of subarea rows otherwise — never both — to avoid
-              double-counting species like Atka mackerel and Pacific ocean
-              perch that are stored at two granularities.
+              Region: BSAI federal management area. Source: Seamark
+              Analytics, derived from NMFS AKRO harvest specifications
+              (tac_specs dataset). Per-stock TAC uses the all-area
+              rollup row when present and the sum of subarea rows
+              otherwise — never both — to avoid double-counting species
+              like Atka mackerel and Pacific ocean perch that are
+              stored at two granularities.
             </div>
           </Card>
 
@@ -516,12 +625,14 @@ export default function Biomass() {
           <Card>
             <SpeciesBar
               data={goaEcosystemBar}
-              title={`GOA groundfish TAC, ${latestYear} — all stocks`}
+              title={`GOA groundfish TAC, ${latestYear} — all stocks (mt)`}
               unitLabel="mt"
               color="#7b6a4f"
             />
             <div className="data-caption">
-              Source: NMFS AKRO harvest specifications via Mainsail tac_specs
+              Region: GOA federal management area. Source: Seamark
+              Analytics, derived from NMFS AKRO harvest specifications
+              (tac_specs dataset).
             </div>
           </Card>
 
@@ -529,28 +640,74 @@ export default function Biomass() {
           <Card>
             <Table
               columns={[
-                { label: "Species" },
+                { label: "Species complex (BSAI)" },
                 { label: "OFL (mt)", num: true },
                 { label: "ABC (mt)", num: true },
                 { label: "TAC (mt)", num: true },
+                { label: "2025 catch (mt)", num: true },
+                { label: "% of 2025 TAC taken", num: true },
               ]}
-              rows={bsai2026.map((r) => [r.name, fmt(r.ofl), fmt(r.abc), fmt(r.tac)])}
-              caption="Source: NMFS AKRO harvest specifications via Mainsail tac_specs dataset"
+              rows={bsai2026.map((r) => {
+                const c = catch2025By.bsai.get(r.name);
+                const t = tac2025By.bsai.get(r.name);
+                const pct =
+                  c != null && t != null && t > 0 ? c / t : null;
+                return [
+                  r.name,
+                  fmt(r.ofl),
+                  fmt(r.abc),
+                  fmt(r.tac),
+                  c == null ? "—" : fmt(c),
+                  pct == null ? "—" : fmtPct(pct),
+                ];
+              })}
+              caption="Region: BSAI federal management area. Source: Seamark Analytics, derived from NMFS AKRO harvest specifications (tac_specs dataset). State Guideline Harvest Levels excluded; species complexes stored at multiple granularities use the all-area rollup row when present."
             />
+            {!has2025BsaiCatch && (
+              <Note>
+                2025 catch values are sparse or null in the current{" "}
+                <code>tac_specs</code> snapshot for the BSAI; the
+                "2025 catch" and "% of 2025 TAC taken" columns will
+                populate once NMFS catch accounting is finalized.
+              </Note>
+            )}
           </Card>
 
           <h2 className="h2">{latestYear} GOA Harvest Specifications</h2>
           <Card>
             <Table
               columns={[
-                { label: "Species" },
+                { label: "Species complex (GOA)" },
                 { label: "OFL (mt)", num: true },
                 { label: "ABC (mt)", num: true },
                 { label: "TAC (mt)", num: true },
+                { label: "2025 catch (mt)", num: true },
+                { label: "% of 2025 TAC taken", num: true },
               ]}
-              rows={goa2026.map((r) => [r.name, fmt(r.ofl), fmt(r.abc), fmt(r.tac)])}
-              caption="Source: NMFS AKRO harvest specifications via Mainsail tac_specs dataset"
+              rows={goa2026.map((r) => {
+                const c = catch2025By.goa.get(r.name);
+                const t = tac2025By.goa.get(r.name);
+                const pct =
+                  c != null && t != null && t > 0 ? c / t : null;
+                return [
+                  r.name,
+                  fmt(r.ofl),
+                  fmt(r.abc),
+                  fmt(r.tac),
+                  c == null ? "—" : fmt(c),
+                  pct == null ? "—" : fmtPct(pct),
+                ];
+              })}
+              caption="Region: GOA federal management area. Source: Seamark Analytics, derived from NMFS AKRO harvest specifications (tac_specs dataset). State Guideline Harvest Levels excluded; species complexes stored at multiple granularities use the all-area rollup row when present."
             />
+            {!has2025GoaCatch && (
+              <Note>
+                2025 catch values are sparse or null in the current{" "}
+                <code>tac_specs</code> snapshot for the GOA; the
+                "2025 catch" and "% of 2025 TAC taken" columns will
+                populate once NMFS catch accounting is finalized.
+              </Note>
+            )}
           </Card>
 
           {lastFullCatchYear == null ? (
@@ -568,13 +725,13 @@ export default function Biomass() {
                   <Card>
                     <Table
                       columns={[
-                        { label: "Species" },
+                        { label: "Species complex (BSAI)" },
                         { label: "TAC (mt)", num: true },
                         { label: "Catch (mt)", num: true },
                         { label: "% TAC taken", num: true },
                       ]}
                       rows={bsaiCatchVsTac}
-                      caption={`Source: NMFS AKRO harvest specifications via Mainsail tac_specs dataset (${lastFullCatchYear} fishing year, last full year on record)`}
+                      caption={`Region: BSAI federal management area. Source: Seamark Analytics, derived from NMFS AKRO harvest specifications (tac_specs dataset, ${lastFullCatchYear} fishing year — last full year on record).`}
                     />
                   </Card>
                 </>
@@ -586,13 +743,13 @@ export default function Biomass() {
                   <Card>
                     <Table
                       columns={[
-                        { label: "Species" },
+                        { label: "Species complex (GOA)" },
                         { label: "TAC (mt)", num: true },
                         { label: "Catch (mt)", num: true },
                         { label: "% TAC taken", num: true },
                       ]}
                       rows={goaCatchVsTac}
-                      caption={`Source: NMFS AKRO harvest specifications via Mainsail tac_specs dataset (${lastFullCatchYear} fishing year, last full year on record)`}
+                      caption={`Region: GOA federal management area. Source: Seamark Analytics, derived from NMFS AKRO harvest specifications (tac_specs dataset, ${lastFullCatchYear} fishing year — last full year on record).`}
                     />
                   </Card>
                 </>

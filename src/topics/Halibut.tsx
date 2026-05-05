@@ -234,7 +234,11 @@ export default function Halibut() {
     return { rows, year: maxYr };
   }, [catchData]);
 
-  // Sport catch-and-release mortality
+  // Sport catch-and-release mortality. Note: SWHS publishes counts of fish
+  // (not weight), so every column here is in fish numbers — including the
+  // C&R mortality estimate, which is released fish × the IPHC sport DMR.
+  // To convert to lbs, an average-weight assumption would be required,
+  // which we do not impose.
   const sportCR = useMemo(() => {
     if (!sportData) return { rows: [], hasDmr: false };
     const hal = sportData.filter((r) => r.species_code === "HA");
@@ -263,6 +267,52 @@ export default function Halibut() {
     });
     return { rows, hasDmr: crDmr != null };
   }, [sportData, dmrData]);
+
+  // Wide-format mortality-by-source table in metric tons, with spawning
+  // biomass alongside. Mirrors the Chinook annual-mortality-by-source
+  // pattern (one row per year, sources as columns, partial-coverage flag).
+  // We deliberately do NOT compute "biomass minus mortality" — biomass
+  // (mature spawners only) and mortality (all sizes/ages removed) are
+  // not directly subtractable; presenting both lets readers form their
+  // own ratio without Mainsail imposing one.
+  const mortalityWideTable = useMemo(() => {
+    if (!mortData) return { rows: [], anyPreliminary: false };
+    const sources = Object.keys(SOURCE_META);
+    const years = [...new Set(mortData.map((r) => r.year))].sort((a, b) => b - a);
+    const sbByYear = new Map<number, number | null>();
+    if (biomassData) {
+      for (const r of biomassData.filter((r) => r.model === "coastwide_long")) {
+        sbByYear.set(r.year, r.sb_tonnes);
+      }
+    }
+    let anyPreliminary = false;
+    const rows = years.map((yr) => {
+      const yearRows = mortData.filter((r) => r.year === yr);
+      const isPrelim = yearRows.some((r) => r.is_preliminary === 1);
+      if (isPrelim) anyPreliminary = true;
+      const cells: (string | number)[] = [
+        isPrelim ? `${yr} ◊` : String(yr),
+      ];
+      let total = 0;
+      let allPresent = true;
+      for (const src of sources) {
+        const row = yearRows.find((r) => r.source === src);
+        const val = row?.mortality_tonnes;
+        if (val == null) {
+          allPresent = false;
+          cells.push("—");
+        } else {
+          total += val;
+          cells.push(Math.round(val).toLocaleString());
+        }
+      }
+      cells.push(allPresent ? Math.round(total).toLocaleString() : `${Math.round(total).toLocaleString()} ◊`);
+      const sb = sbByYear.get(yr);
+      cells.push(sb != null ? Math.round(sb).toLocaleString() : "—");
+      return cells;
+    });
+    return { rows, anyPreliminary };
+  }, [mortData, biomassData]);
 
   // Map monitored_catch gear names → DMR gear_type labels
   const GEAR_TO_DMR: Record<string, string> = {
@@ -412,12 +462,63 @@ export default function Halibut() {
               columns={[
                 { label: "Source" },
                 ...Array.from({ length: 5 }, (_, i) => ({
-                  label: String(latestFinalYear - 4 + i),
+                  label: `${latestFinalYear - 4 + i} (Mlb)`,
                   num: true,
                 })),
               ]}
               rows={sourceTableRows}
-              caption="Source: IPHC annual stock assessment, via Mainsail iphc_mortality_by_source. Net lbs (million lbs)."
+              caption="Source: Seamark Analytics, derived from IPHC annual stock assessment, via Mainsail iphc_mortality_by_source. Values in net million pounds (Mlb). Region: IPHC coastwide (Areas 2A–4D)."
+            />
+          </Card>
+        </>
+      )}
+
+      {mortData && mortalityWideTable.rows.length > 0 && (
+        <>
+          <h2 className="h2">Annual mortality by source — IPHC coastwide, with spawning biomass</h2>
+          <Note>
+            <b>Methodology &amp; coverage.</b> Each mortality column is
+            published directly by IPHC's stock assessment in the{" "}
+            <code>iphc_mortality_by_source</code> dataset (metric tons of
+            net weight); the "Total" column sums those columns for the
+            year. Years with any preliminary component are flagged ◊.
+            <ul style={{ margin: "0.5em 0 0.5em 1.25em" }}>
+              <li><b>Directed commercial:</b> O32 IFQ landings (net weight).</li>
+              <li><b>Directed discard:</b> sub-legal (U32) wastage and other
+                directed discard mortality applied at the IPHC's published
+                rate.</li>
+              <li><b>Bycatch (non-directed):</b> halibut PSC mortality from
+                non-directed groundfish fisheries (NMFS / DFO, applied at
+                the relevant DMR).</li>
+              <li><b>Recreational:</b> sport kept + IPHC-modeled release
+                mortality across IPHC areas.</li>
+              <li><b>Subsistence:</b> reported subsistence and ceremonial
+                removals.</li>
+            </ul>
+            <b>Spawning biomass (SB) and mortality are not directly
+            subtractable.</b> Spawning biomass is the IPHC stock
+            assessment's modeled estimate of female spawners only;
+            total mortality includes removals across all sizes, sexes,
+            and ages (including U32 and bycatch of non-mature fish).
+            Both columns are shown here so readers can see the two
+            published series side by side; Mainsail does not compute a
+            "biomass minus mortality" figure because the two series do
+            not represent the same population.
+          </Note>
+          <Card>
+            <Table
+              columns={[
+                { label: "Year", yr: true },
+                { label: "Directed commercial (mt)", num: true },
+                { label: "Directed discard (mt)", num: true },
+                { label: "Bycatch (mt)", num: true },
+                { label: "Recreational (mt)", num: true },
+                { label: "Subsistence (mt)", num: true },
+                { label: "Total mortality (mt)", num: true },
+                { label: "Spawning biomass (mt)", num: true },
+              ]}
+              rows={mortalityWideTable.rows}
+              caption={`Source: Seamark Analytics, derived from IPHC annual stock assessment, via Mainsail iphc_mortality_by_source and iphc_spawning_biomass (coastwide_long model). All values in metric tons of net weight; spawning biomass is IPHC-modeled female SB. Region: IPHC coastwide (Areas 2A–4D).${mortalityWideTable.anyPreliminary ? " ◊ = preliminary year (one or more components flagged is_preliminary=1)." : ""}`}
             />
           </Card>
         </>
@@ -450,10 +551,10 @@ export default function Halibut() {
             <Table
               columns={[
                 { label: "Area" },
-                ...areaMortTable.years.map((yr) => ({ label: String(yr), num: true })),
+                ...areaMortTable.years.map((yr) => ({ label: `${yr} (Mlb)`, num: true })),
               ]}
               rows={areaMortTable.rows}
-              caption="Source: IPHC stock assessment via Mainsail iphc_mortality_by_area. Net lbs (million lbs). † = preliminary."
+              caption="Source: Seamark Analytics, derived from IPHC annual stock assessment, via Mainsail iphc_mortality_by_area. Values in net million pounds (Mlb). Region: IPHC regulatory areas 2A, 2B, 2C, 3A, 3B, 4A, 4B, 4CDE. † = preliminary."
             />
           </Card>
         </>
@@ -511,7 +612,7 @@ export default function Halibut() {
                 fmt(r.tcey_mlb),
                 fmt(r.tcey_tonnes, 0),
               ])}
-              caption="Source: IPHC annual meeting materials, via Mainsail iphc_tcey"
+              caption="Source: Seamark Analytics, derived from IPHC Annual Meeting materials, via Mainsail iphc_tcey. Region: IPHC regulatory areas 2A, 2B, 2C, 3A, 3B, 4A, 4B, 4CDE."
             />
           </Card>
         </>
@@ -547,7 +648,7 @@ export default function Halibut() {
                 { label: "Discarded (mt)", num: true },
               ]}
               rows={halinBycatchLatest.rows}
-              caption={`Source: NMFS AKRO monitored catch via Mainsail monitored_catch, year ${halinBycatchLatest.year}`}
+              caption={`Source: Seamark Analytics, derived from NMFS AKRO monitored catch reports, via Mainsail monitored_catch (Pacific Halibut, Discarded, Total rows), year ${halinBycatchLatest.year}. Region: BSAI + GOA federal groundfish FMP areas.`}
             />
           </Card>
         </>
@@ -570,12 +671,12 @@ export default function Halibut() {
               columns={[
                 { label: "Gear" },
                 { label: "FMP area" },
-                { label: "Discarded", num: true },
-                { label: "DMR", num: true },
-                { label: "Mortality est.", num: true },
+                { label: "Discarded (mt)", num: true },
+                { label: "DMR (%)", num: true },
+                { label: "Mortality est. (mt)", num: true },
               ]}
               rows={discardMortality.rows}
-              caption={`Source: NMFS AKRO monitored_catch × discard_mortality_rates, year ${discardMortality.year}. † = DMR entry expired; using last known rate.`}
+              caption={`Source: Seamark Analytics, derived from NMFS AKRO monitored catch × NMFS discard mortality rate tables, via Mainsail monitored_catch and discard_mortality_rates, year ${discardMortality.year}. Region: BSAI + GOA federal groundfish FMP areas. † = DMR entry expired; using last known rate.`}
             />
           </Card>
         </>
@@ -584,6 +685,16 @@ export default function Halibut() {
       {sportData && sportCR.rows.length > 0 && (
         <>
           <h2 className="h2">Sport halibut — catch, harvest &amp; release mortality (Alaska SWHS, statewide)</h2>
+          <Note>
+            <b>Units on this table.</b> Every column is in fish numbers
+            (counts), not pounds. ADF&amp;G's Statewide Harvest Survey
+            publishes sport halibut as a count of fish; the C&amp;R
+            mortality estimate is released fish × the IPHC sport DMR
+            (16%), so it too is a count of dead released fish. To
+            convert to net pounds — the unit IPHC uses for coastwide
+            mortality — an average-weight assumption is required,
+            which Mainsail does not impose.
+          </Note>
           {!sportCR.hasDmr && (
             <Note>
               <b>Sport C&amp;R DMR pending publish.</b> The{" "}
@@ -596,13 +707,13 @@ export default function Halibut() {
             <Table
               columns={[
                 { label: "Year", yr: true },
-                { label: "Total catch", num: true },
-                { label: "Kept", num: true },
-                { label: "Released", num: true },
-                { label: "C&R mortality est.", num: true },
+                { label: "Total catch (fish)", num: true },
+                { label: "Kept (fish)", num: true },
+                { label: "Released (fish)", num: true },
+                { label: "C&R mortality est. (fish)", num: true },
               ]}
               rows={sportCR.rows}
-              caption={`Source: ADF&G SWHS via Mainsail sport_harvest (species HA). C&R mortality = released × 16% (IPHC stock assessment methodology).`}
+              caption={`Source: Seamark Analytics, derived from ADF&G Statewide Harvest Survey (species HA) via Mainsail sport_harvest. C&R mortality estimate = released fish × 16% (IPHC stock-assessment release-mortality rate). Region: Alaska statewide.`}
             />
           </Card>
         </>
@@ -634,7 +745,7 @@ export default function Halibut() {
                 fmt(r.allocation_mt, 1),
                 r.pct_landed != null ? `${r.pct_landed}%` : "—",
               ])}
-              caption="Source: NMFS AKRO IFQ reports, via Mainsail ifq_landings"
+              caption="Source: Seamark Analytics, derived from NMFS AKRO IFQ landings reports, via Mainsail ifq_landings. Region: IPHC regulatory areas 2C, 3A, 3B, 4A, 4B, 4CDE (Alaska)."
             />
           </Card>
         </>

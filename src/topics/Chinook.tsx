@@ -237,11 +237,6 @@ export default function Chinook() {
     return Object.entries(last).filter(([k]) => k !== "year").reduce((s, [, v]) => s + (v as number), 0);
   }, [pscTrend]);
 
-  const commercialChinook = useMemo(() => {
-    if (!commercialData) return [];
-    return commercialData.filter((r) => r.species === "chinook" && r.region === "statewide").sort((a, b) => b.year - a.year);
-  }, [commercialData]);
-
   // Commercial by region (latest year)
   const commercialByRegion = useMemo(() => {
     if (!commercialData) return { rows: [], year: null as number | null };
@@ -256,17 +251,6 @@ export default function Chinook() {
       ]);
     return { rows, year: maxYear };
   }, [commercialData]);
-
-  const sportChinook = useMemo(() => {
-    if (!sportData) return [];
-    const map = new Map<number, number>();
-    for (const r of sportData) {
-      if (r.species_code === "KS" && r.record_type === "harvest") {
-        map.set(r.year, (map.get(r.year) ?? 0) + (r.fish_count ?? 0));
-      }
-    }
-    return [...map.entries()].sort(([a], [b]) => b - a).map(([year, fish]) => ({ year, fish }));
-  }, [sportData]);
 
   // Sport by region (latest year)
   const sportByRegion = useMemo(() => {
@@ -284,12 +268,51 @@ export default function Chinook() {
   // Chinook escapement — most recent year
   const chinookEscapement = useMemo(() => {
     const countable = filterCountableEscapement(escapementData);
-    if (!countable.length) return { rows: [], year: null as number | null };
-    const chnk = countable.filter((r) => r.species.toLowerCase().includes("chinook") || r.species.toLowerCase().includes("king"));
-    if (!chnk.length) return { rows: [], year: null };
+    if (!countable.length) {
+      return {
+        rows: [],
+        year: null as number | null,
+        systemCount: 0,
+        regionCounts: [] as Array<[string, number]>,
+        methods: [] as string[],
+      };
+    }
+    const chnk = countable.filter(
+      (r) =>
+        r.species.toLowerCase().includes("chinook") ||
+        r.species.toLowerCase().includes("king")
+    );
+    if (!chnk.length) {
+      return {
+        rows: [],
+        year: null,
+        systemCount: 0,
+        regionCounts: [] as Array<[string, number]>,
+        methods: [] as string[],
+      };
+    }
     const maxYear = Math.max(...chnk.map((r) => r.year));
-    const rows = chnk
-      .filter((r) => r.year === maxYear && r.actual_count != null)
+    const yearRows = chnk.filter((r) => r.year === maxYear && r.actual_count != null);
+
+    // Distinct systems in the most recent reporting year
+    const systems = new Set(yearRows.map((r) => r.system_name));
+    const systemCount = systems.size;
+
+    // System count per region (use unique system_name per region)
+    const regionMap = new Map<string, Set<string>>();
+    for (const r of yearRows) {
+      const reg = r.region ?? "Unspecified";
+      if (!regionMap.has(reg)) regionMap.set(reg, new Set());
+      regionMap.get(reg)!.add(r.system_name);
+    }
+    const regionCounts: Array<[string, number]> = [...regionMap.entries()]
+      .map(([reg, set]): [string, number] => [reg, set.size])
+      .sort((a, b) => b[1] - a[1]);
+
+    // Distinct count_method values present in the chinook subset (all years)
+    const methods = [...new Set(chnk.map((r) => r.count_method).filter((m): m is string => m != null))].sort();
+
+    const rows = yearRows
       .sort((a, b) => (b.actual_count ?? 0) - (a.actual_count ?? 0))
       .slice(0, 20)
       .map((r) => [
@@ -300,7 +323,7 @@ export default function Chinook() {
         r.goal_lower != null && r.goal_upper != null ? `${fmt(r.goal_lower)}–${fmt(r.goal_upper)}` : "—",
         r.goal_met === 1 ? "Yes" : r.goal_met === 0 ? "No" : "—",
       ]);
-    return { rows, year: maxYear };
+    return { rows, year: maxYear, systemCount, regionCounts, methods };
   }, [escapementData]);
 
   // Fish counts — chinook at weirs/sonar (most recent year)
@@ -477,7 +500,7 @@ export default function Chinook() {
               ]}
               rows={chinookMortalityTable}
               caption={
-                "◊ = partial coverage; the row total sums only the columns reported for that year and understates true mortality. ‡ = counted escapement is the sum of actual_count across river systems present in the salmon_escapement dataset for that year — partial coverage; not a complete return total."
+                "Region: Alaska statewide. All columns in fish counts. ◊ = partial coverage; the row total sums only the columns reported for that year and understates true mortality. ‡ = counted escapement is the sum of actual_count across river systems present in the salmon_escapement dataset for that year — partial coverage; not a complete return total. Source: Seamark Analytics, derived from ADF&G annual Salmon Harvest Summary (commercial), NMFS BSAI/GOA chinook PSC reports (bycatch), NPAFC Pacific Salmonid Catch Statistics (subsistence), and ADF&G SWHS (sport)."
               }
             />
           </Card>
@@ -512,7 +535,7 @@ export default function Chinook() {
                 { label: "Chinook PSC (fish)", num: true },
               ]}
               rows={pscByFishery}
-              caption={`Source: NMFS weekly PSC reports via Mainsail psc_weekly, year ${pscLatestYear}`}
+              caption={`Source: Seamark Analytics, derived from NMFS weekly PSC reports (via Mainsail psc_weekly), year ${pscLatestYear}.`}
             />
           </Card>
         </>
@@ -528,29 +551,13 @@ export default function Chinook() {
                 { label: "Chinook PSC (fish)", num: true },
               ]}
               rows={pscByArea}
-              caption={`Source: NMFS weekly PSC reports via Mainsail psc_weekly, year ${pscLatestYear}`}
+              caption={`Source: Seamark Analytics, derived from NMFS weekly PSC reports (via Mainsail psc_weekly), year ${pscLatestYear}.`}
             />
           </Card>
         </>
       )}
 
-      <h2 className="h2">Commercial harvest — statewide Chinook</h2>
       {commLoading && <p className="section-intro">Loading commercial harvest data…</p>}
-      {commercialData && (
-        <Card>
-          <Table
-            columns={[
-              { label: "Year", yr: true },
-              { label: "Harvest (fish)", num: true },
-            ]}
-            rows={commercialChinook.map((r) => [
-              r.year,
-              fmt(r.harvest_fish) + (r.is_preliminary === 1 ? " †" : ""),
-            ])}
-            caption="Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary."
-          />
-        </Card>
-      )}
 
       {commercialByRegion.rows.length > 0 && (
         <>
@@ -563,26 +570,13 @@ export default function Chinook() {
                 { label: "Harvest (lbs)", num: true },
               ]}
               rows={commercialByRegion.rows}
-              caption={`Source: ADF&G annual Salmon Harvest Summary, via Mainsail salmon_commercial_harvest. † = preliminary.`}
+              caption={`Source: Seamark Analytics, derived from ADF&G annual Salmon Harvest Summary (via Mainsail salmon_commercial_harvest). † = preliminary.`}
             />
           </Card>
         </>
       )}
 
-      <h2 className="h2">Sport harvest — King salmon (statewide)</h2>
       {sportLoading && <p className="section-intro">Loading sport harvest data…</p>}
-      {sportData && sportChinook.length > 0 && (
-        <Card>
-          <Table
-            columns={[
-              { label: "Year", yr: true },
-              { label: "Harvest (fish)", num: true },
-            ]}
-            rows={sportChinook.slice(0, 10).map((r) => [r.year, fmt(r.fish)])}
-            caption="Source: ADF&G SWHS via Mainsail sport_harvest (species_code KS = King salmon)"
-          />
-        </Card>
-      )}
 
       {sportByRegion.rows.length > 0 && (
         <>
@@ -595,7 +589,7 @@ export default function Chinook() {
                 { label: "Harvest (fish)", num: true },
               ]}
               rows={sportByRegion.rows}
-              caption={`Source: ADF&G SWHS via Mainsail sport_harvest, year ${sportByRegion.year}`}
+              caption={`Source: Seamark Analytics, derived from ADF&G Statewide Harvest Survey (via Mainsail sport_harvest), year ${sportByRegion.year}.`}
             />
           </Card>
         </>
@@ -609,12 +603,12 @@ export default function Chinook() {
             columns={[
               { label: "Year", yr: true },
               { label: "Stock reporting group" },
-              { label: "Mean attribution", num: true },
-              { label: "Total catch", num: true },
-              { label: "Samples", num: true },
+              { label: "Mean attribution (%)", num: true },
+              { label: "Total catch (fish)", num: true },
+              { label: "Samples (n)", num: true },
             ]}
             rows={gsiData.map((r) => [r.year, r.region, fmtPctValue(r.mean_pct), fmt(r.total_catch), fmt(r.n_samples)])}
-            caption="Source: AFSC Auke Bay Laboratories GSI report, via Mainsail chinook_gsi (partial — 2023 only)"
+            caption="Region: BSAI pollock fishery (Alaska). Source: Seamark Analytics, derived from AFSC Auke Bay Laboratories GSI report (via Mainsail chinook_gsi). Partial coverage — 2023 only."
           />
         </Card>
       )}
@@ -622,18 +616,61 @@ export default function Chinook() {
       {chinookEscapement.rows.length > 0 && (
         <>
           <h2 className="h2">Chinook escapement — key systems, {chinookEscapement.year} (Alaska statewide)</h2>
+          <Note>
+            <b>Methodology &amp; coverage.</b> Source dataset is
+            <code> salmon_escapement</code> (ADF&amp;G escapement database),
+            filtered with <code>filterCountableEscapement</code> to drop rows
+            whose <code>count_method</code> begins with
+            <code> not_operated_</code> or <code>partial_season_</code> —
+            i.e., projects that were not run, or that ran for only part of the
+            run timing window and therefore do not represent a complete
+            census. Those rows cannot be compared to annual goals.
+            <ul style={{ margin: "0.5em 0 0.5em 1.25em" }}>
+              <li>
+                <b>Count methods present in the chinook subset:</b>{" "}
+                {chinookEscapement.methods.length > 0
+                  ? chinookEscapement.methods.join(", ")
+                  : "—"}
+                . These cover weir, sonar, aerial-survey, and tower-count
+                projects (specific values reflect ADF&amp;G's project-level
+                method labels in the published data).
+              </li>
+              <li>
+                <b>Goal types</b> in <code>goal_type</code> are BEG
+                (Biological Escapement Goal), SEG (Sustainable Escapement
+                Goal), OEG (Optimal Escapement Goal), and IM (Inriver/Inseason
+                Management) ranges, set or adopted by the Alaska Board of
+                Fisheries.
+              </li>
+              <li>
+                <b>Partial coverage.</b> The table represents the river
+                systems that ADF&amp;G monitors and reports through the
+                public escapement database. Many smaller systems are not
+                enumerated, and some monitored systems do not appear every
+                year. Counts are not a complete return total for Alaska
+                chinook.
+              </li>
+              <li>
+                <b>Systems by region in {chinookEscapement.year}:</b>{" "}
+                {chinookEscapement.regionCounts
+                  .map(([reg, n]) => `${reg}: ${n}`)
+                  .join("; ")}
+                .
+              </li>
+            </ul>
+          </Note>
           <Card>
             <Table
               columns={[
                 { label: "System" },
                 { label: "Region" },
                 { label: "Method" },
-                { label: "Count", num: true },
-                { label: "Goal range" },
+                { label: "Count (fish)", num: true },
+                { label: "Goal range (fish)" },
                 { label: "Goal met" },
               ]}
               rows={chinookEscapement.rows}
-              caption={`Source: ADF&G escapement database via Mainsail salmon_escapement, year ${chinookEscapement.year}`}
+              caption={`Source: Seamark Analytics, derived from ADF&G escapement database (via Mainsail salmon_escapement), year ${chinookEscapement.year}. n = ${chinookEscapement.systemCount} river systems represented in the ${chinookEscapement.year} reporting (Alaska statewide); table shows up to the top 20 by count.`}
             />
           </Card>
         </>
@@ -646,11 +683,11 @@ export default function Chinook() {
             <Table
               columns={[
                 { label: "Location" },
-                { label: "Cumulative count", num: true },
+                { label: "Cumulative count (fish)", num: true },
                 { label: "As of" },
               ]}
               rows={chinookCounts.rows}
-              caption={`Source: ADF&G weir/sonar database via Mainsail fish_counts, year ${chinookCounts.year}`}
+              caption={`Source: Seamark Analytics, derived from ADF&G weir/sonar database (via Mainsail fish_counts), year ${chinookCounts.year}.`}
             />
           </Card>
         </>
