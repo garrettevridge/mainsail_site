@@ -36,6 +36,62 @@ export interface ChinookGsiRow {
   n_samples: number;
 }
 
+// chum_gsi — BSAI pollock chum bycatch genetic stock identification.
+// v1 ships 2023 BSAI B-season aggregate from the NPFMC C2 Chum Salmon
+// Genetics Report (Barry et al., April 2024). Six reporting groups:
+// NE Asia, SE Asia, W Alaska, Up/Mid Yukon, SW Alaska, E GOA/PNW.
+// mean_pct is a percentage value (e.g. 16.3 = 16.3%).
+// point_count / lower_95_ci / upper_95_ci are fish counts derived
+// from total_catch × the GSI mean and 95% CI.
+export interface ChumGsiRow {
+  id: number;
+  year: number;
+  fmp_area: string;
+  region: string;
+  mean_pct: number;
+  point_count: number;
+  lower_95_ci: number;
+  upper_95_ci: number;
+  total_catch: number;
+  n_samples: number;
+  source_report_year: number;
+  source_url: string;
+}
+
+// psc_annual_historical — annual chinook PSC mortality by FMP area,
+// 1991-present. BSAI series combines NMFS's 1991-2010 hand-coded PDF
+// with rolled-forward NMFS HTML pages 2011+; GOA series is rolled-forward
+// HTML 1991+. Use this for long-window mortality-by-source charts;
+// psc_weekly remains the source for sub-year and by-fishery breakdowns.
+export interface PscAnnualHistoricalRow {
+  fact_id: string;
+  source_id: string;
+  region: "BSAI" | "GOA";
+  year: number;
+  species: string; // currently "chinook" only
+  mortality_count: number | null;
+  granularity: string;
+  is_preliminary: 0 | 1;
+  source_document: string | null;
+  source_url: string | null;
+}
+
+// subsistence_harvest_statewide — NPAFC-sourced statewide annual
+// subsistence harvest by species, 1985-present. Companion to the
+// granular community-level subsistence_harvest dataset; runs one year
+// fresher (NPAFC publishes 2023 vs the dashboard's 2022) and provides
+// pre-1985 community gaps coverage.
+export interface SubsistenceHarvestStatewideRow {
+  fact_id: string;
+  year: number;
+  species: "chinook" | "sockeye" | "coho" | "pink" | "chum";
+  harvest_count: number | null;
+  harvest_weight_mt: number | null;
+  is_preliminary: 0 | 1;
+  source_document: string | null;
+  source_url: string | null;
+}
+
 export interface FishCountsRow {
   id: number;
   location: string;

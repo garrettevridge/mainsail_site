@@ -3,12 +3,13 @@ import { useDataset } from "../api/manifest";
 import { filterCountableEscapement } from "../api/datasetHelpers";
 import type {
   PscWeeklyDataRow,
+  PscAnnualHistoricalRow,
   ChinookGsiRow,
   SalmonCommercialHarvestDataRow,
   SportHarvestDataRow,
   SalmonEscapementRow,
   FishCountsRow,
-  SubsistenceHarvestDataRow,
+  SubsistenceHarvestStatewideRow,
 } from "../api/types";
 import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
@@ -32,6 +33,8 @@ function normalizeFishery(tf: string): string {
 export default function Chinook() {
   const { data: pscData, isLoading: pscLoading, error: pscError } =
     useDataset<PscWeeklyDataRow>("psc_weekly");
+  const { data: pscHistorical } =
+    useDataset<PscAnnualHistoricalRow>("psc_annual_historical");
   const { data: gsiData, isLoading: gsiLoading } =
     useDataset<ChinookGsiRow>("chinook_gsi");
   const { data: commercialData, isLoading: commLoading } =
@@ -42,17 +45,23 @@ export default function Chinook() {
     useDataset<SalmonEscapementRow>("salmon_escapement");
   const { data: fishCountsData } =
     useDataset<FishCountsRow>("fish_counts");
-  const { data: subsistenceData } =
-    useDataset<SubsistenceHarvestDataRow>("subsistence_harvest");
+  const { data: subsistenceStatewide } =
+    useDataset<SubsistenceHarvestStatewideRow>("subsistence_harvest_statewide");
 
   const FISHERIES = ["Pollock (midwater)", "Pollock (bottom)", "Pacific Cod", "Other groundfish"];
 
-  // ── Mortality-by-source stack (last 20 years) ─────────────────────────────
-  // Four buckets, all in fish counts (no unit conversion needed):
-  //   • Commercial (directed) — ADF&G salmon_commercial_harvest, statewide chinook
-  //   • Bycatch (PSC)         — psc_weekly CHNK, summed across non-confidential rows
-  //   • Subsistence           — subsistence_harvest chinook_harvest_fish summed across communities
-  //   • Sport (kept)          — sport_harvest species_code=KS, record_type=harvest
+  // ── Mortality-by-source stack ─────────────────────────────────────────────
+  // Four buckets, all in fish counts (no unit conversion needed). Each bucket
+  // is sourced from the longest-window dataset published for that component:
+  //   • Commercial (directed) — salmon_commercial_harvest, statewide chinook.
+  //     NPAFC backfill provides 1985-2018; ADF&G press releases provide 2019+.
+  //   • Bycatch (PSC)         — psc_annual_historical, BSAI+GOA chinook
+  //     mortality 1991-present (NMFS PDF 1991-2010 + NMFS HTML rollups
+  //     2011+). psc_weekly remains the source for the by-fishery and
+  //     by-area sub-charts below.
+  //   • Subsistence           — subsistence_harvest_statewide (NPAFC),
+  //     chinook 1985-2023.
+  //   • Sport (kept)          — sport_harvest species_code=KS, record_type=harvest.
   //
   // PSC fish are treated as 100% mortality (standard practice — non-directed
   // catch arrives dead in the codend and is discarded). Sport "harvest" is
@@ -60,8 +69,9 @@ export default function Chinook() {
   // site-specific hooking-mortality studies (e.g. Kenai River, Bendock &
   // Alexandersdottir, FDS 91-39) but does not publish a single fleetwide
   // sport release-mortality rate the way IPHC does for halibut, so we omit
-  // it rather than impose one. Subsistence reporting ends in 2022; later
-  // years render as a gap rather than a zero.
+  // it rather than impose one. Years where any component is missing render
+  // as a gap (zero) for that bucket — see the "Reported total" column in the
+  // table below for partial-coverage flags.
   const MORTALITY_BUCKETS = [
     "Commercial (directed)",
     "Bycatch (PSC)",
@@ -70,7 +80,7 @@ export default function Chinook() {
   ];
 
   const chinookMortalityStack = useMemo(() => {
-    if (!commercialData && !pscData && !subsistenceData && !sportData) return [];
+    if (!commercialData && !pscHistorical && !subsistenceStatewide && !sportData) return [];
     const byYear = new Map<number, Record<string, number | null>>();
     const ensure = (yr: number) => {
       if (!byYear.has(yr)) byYear.set(yr, { year: yr });
@@ -85,19 +95,18 @@ export default function Chinook() {
         e["Commercial (directed)"] = (e["Commercial (directed)"] as number ?? 0) + r.harvest_fish;
       }
     }
-    if (pscData) {
-      for (const r of pscData) {
-        if (r.species_code !== "CHNK" || r.is_confidential === 1) continue;
-        if (r.psc_count == null) continue;
+    if (pscHistorical) {
+      for (const r of pscHistorical) {
+        if (r.species !== "chinook" || r.mortality_count == null) continue;
         const e = ensure(r.year);
-        e["Bycatch (PSC)"] = (e["Bycatch (PSC)"] as number ?? 0) + r.psc_count;
+        e["Bycatch (PSC)"] = (e["Bycatch (PSC)"] as number ?? 0) + r.mortality_count;
       }
     }
-    if (subsistenceData) {
-      for (const r of subsistenceData) {
-        if (r.chinook_harvest_fish == null) continue;
+    if (subsistenceStatewide) {
+      for (const r of subsistenceStatewide) {
+        if (r.species !== "chinook" || r.harvest_count == null) continue;
         const e = ensure(r.year);
-        e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.chinook_harvest_fish;
+        e["Subsistence"] = (e["Subsistence"] as number ?? 0) + r.harvest_count;
       }
     }
     if (sportData) {
@@ -110,10 +119,7 @@ export default function Chinook() {
     }
 
     if (!byYear.size) return [];
-    const maxYr = Math.max(...byYear.keys());
-    const minYr = maxYr - 19;
     return [...byYear.values()]
-      .filter((r) => (r.year as number) >= minYr && (r.year as number) <= maxYr)
       .map((r): Record<string, string | number> => ({
         year: r.year as number,
         // Render each bucket as a number (0 when missing) so Recharts stacks
@@ -124,7 +130,7 @@ export default function Chinook() {
         "Sport (kept)":          (r["Sport (kept)"]          as number) ?? 0,
       }))
       .sort((a, b) => (a.year as number) - (b.year as number));
-  }, [commercialData, pscData, subsistenceData, sportData]);
+  }, [commercialData, pscHistorical, subsistenceStatewide, sportData]);
 
   // ── Annual totals table — mortality buckets + escapement column ──────────
   // Adds a sum-of-counted-escapement column for context. Escapement here is
@@ -329,10 +335,11 @@ export default function Chinook() {
       <DataContext
         use={[
           "psc_weekly — NMFS weekly PSC reports (Chinook bycatch by fishery)",
+          "psc_annual_historical — NMFS annual Chinook PSC mortality, BSAI+GOA, 1991-present",
           "chinook_gsi — GSI stock composition of Chinook bycatch",
-          "salmon_commercial_harvest — ADF&G commercial harvest by region",
+          "salmon_commercial_harvest — ADF&G/NPAFC statewide commercial harvest, 1985-present",
           "sport_harvest — ADF&G SWHS sport harvest (Chinook)",
-          "subsistence_harvest — ADF&G Division of Subsistence community surveys (Chinook)",
+          "subsistence_harvest_statewide — NPAFC-sourced statewide subsistence harvest, 1985-2023",
           "salmon_escapement — ADF&G escapement counts (Chinook systems)",
           "fish_counts — weir/sonar daily and cumulative fish passage",
         ]}
@@ -370,7 +377,7 @@ export default function Chinook() {
 
       {chinookMortalityStack.length > 0 && (
         <>
-          <h2 className="h2">Chinook mortality by source, last 20 years</h2>
+          <h2 className="h2">Chinook mortality by source — full available time series</h2>
           <Card>
             <StackedTrend
               data={chinookMortalityStack}
@@ -384,17 +391,19 @@ export default function Chinook() {
               }
             />
             <div className="data-caption">
-              Sources: ADF&amp;G salmon_commercial_harvest (statewide chinook),
-              NMFS psc_weekly (CHNK, non-confidential), ADF&amp;G
-              subsistence_harvest (chinook_harvest_fish summed across reporting
-              communities), ADF&amp;G SWHS sport_harvest (KS, harvested fish).
-              All buckets in fish counts. PSC and commercial figures are
-              treated as 100% mortality. Sport reflects kept fish only —
-              release mortality is not included; ADF&amp;G has site-specific
-              hooking-mortality studies (e.g. Kenai River, Bendock &amp;
-              Alexandersdottir, FDS 91-39) but does not publish a fleetwide
-              rate. Subsistence reporting ends in 2022; later years render as
-              a gap, not a zero.
+              Sources: salmon_commercial_harvest (statewide chinook;
+              ADF&amp;G press releases 2019+, NPAFC post-COAR finals 1985-2018),
+              psc_annual_historical (NMFS BSAI+GOA chinook PSC mortality
+              1991-present), subsistence_harvest_statewide (NPAFC
+              statewide chinook 1985-2023), ADF&amp;G SWHS sport_harvest
+              (KS, harvested fish). All buckets in fish counts. PSC and
+              commercial figures are treated as 100% mortality. Sport
+              reflects kept fish only — release mortality is not included;
+              ADF&amp;G has site-specific hooking-mortality studies (e.g.
+              Kenai River, Bendock &amp; Alexandersdottir, FDS 91-39) but
+              does not publish a fleetwide rate. Components with different
+              start/end years render as zero outside their published window;
+              see the table below for partial-coverage flags.
             </div>
           </Card>
 
@@ -405,26 +414,36 @@ export default function Chinook() {
             or backfilled. Counts are fish, not pounds.
             <ul style={{ margin: "0.5em 0 0.5em 1.25em" }}>
               <li>
-                <b>Commercial (directed):</b> ADF&amp;G annual Salmon Harvest
-                Summary, statewide chinook (<code>salmon_commercial_harvest</code>,
-                <code> region = "statewide"</code>). Currently published 2019–2025;
-                pre-2019 statewide rollups are not yet in the manifest.
-                Counted as 100% mortality (landed fish).
+                <b>Commercial (directed):</b> statewide chinook
+                (<code>salmon_commercial_harvest</code>,
+                <code> region = "statewide"</code>). Two sources stitched
+                together: NPAFC <i>Pacific Salmonid Catch Statistics</i>
+                yearbook for 1985-2018 (post-COAR ADF&amp;G finals as
+                reported to NPAFC) and ADF&amp;G annual <i>Salmon Harvest
+                Summary</i> press releases for 2019+. The two are sourced
+                from the same underlying ADF&amp;G commercial fish ticket
+                data, one publication hop apart. Counted as 100% mortality
+                (landed fish).
               </li>
               <li>
-                <b>Bycatch (PSC):</b> NMFS weekly PSC reports, BSAI groundfish,
-                CHNK rows, non-confidential (<code>psc_weekly</code>). Coverage
-                begins 2013 — pre-2013 NMFS Catch Accounting System estimates
-                are not yet in the manifest. Counted as 100% mortality
-                (standard NPFMC practice — non-directed catch arrives dead in
-                the codend and is discarded).
+                <b>Bycatch (PSC):</b> NMFS annual chinook PSC mortality
+                (<code>psc_annual_historical</code>, BSAI+GOA, 1991-present).
+                BSAI 1991-2010 is the NMFS AKRO PDF series; BSAI 2011+ and
+                GOA 1991+ are NMFS HTML rollups. Counted as 100% mortality
+                (standard NPFMC practice — non-directed catch arrives dead
+                in the codend and is discarded). The "by target fishery"
+                and "by reporting area" tables further down use
+                <code> psc_weekly</code> instead, since the historical
+                series doesn't carry sub-annual breakdown.
               </li>
               <li>
-                <b>Subsistence:</b> ADF&amp;G Division of Subsistence community
-                household surveys (<code>subsistence_harvest</code>,
-                summed across <code>chinook_harvest_fish</code>). Coverage
-                ends 2022; later years are gaps in the source publication
-                schedule, not zeros. Counted as 100% mortality (kept fish).
+                <b>Subsistence:</b> NPAFC statewide subsistence harvest
+                (<code>subsistence_harvest_statewide</code>), chinook
+                1985-2023. NPAFC publishes the year × species statewide
+                aggregate one year ahead of the granular ADF&amp;G
+                Division of Subsistence community-survey dataset
+                (<code>subsistence_harvest</code>). Counted as 100%
+                mortality (kept fish).
               </li>
               <li>
                 <b>Sport (kept):</b> ADF&amp;G Statewide Harvest Survey
@@ -440,9 +459,10 @@ export default function Chinook() {
             only the components that exist for that year; rows where any
             component is missing are flagged with ◊. <b>True total mortality
             is higher than the ◊ figure</b> by whatever the missing component
-            would have contributed. Years 2019–2022 are the only ones where
-            all four components are currently reported, and are the
-            defensible all-source snapshot.
+            would have contributed. The all-source defensible window is the
+            intersection of the four publication windows — years where
+            commercial, PSC (1991+), subsistence (1985-2023), and sport are
+            all reported.
           </Note>
           <Card>
             <Table
@@ -636,12 +656,6 @@ export default function Chinook() {
         </>
       )}
 
-      <Note>
-        <b>Subsistence harvest.</b> The ADF&amp;G Division of Subsistence
-        surveys dataset (<code>subsistence_harvest</code>) is 111,000 rows
-        covering 1960–2022. A pre-aggregated view is needed for efficient display;
-        it will be wired here when available.
-      </Note>
     </>
   );
 }

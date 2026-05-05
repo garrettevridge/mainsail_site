@@ -8,12 +8,18 @@ import type {
   SalmonEscapementRow,
   PscWeeklyDataRow,
   SubsistenceHarvestDataRow,
+  ChumGsiRow,
 } from "../api/types";
 import { Card, Crumb, DataContext, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("en-US");
+
+// chum_gsi.mean_pct is published as a percentage value already
+// (e.g. 16.3 = 16.3%); format the value directly without re-multiplying.
+const fmtPctValue = (n: number | null | undefined) =>
+  n == null ? "—" : `${n.toFixed(1)}%`;
 
 const COUNTRY_COLORS: Record<string, string> = {
   US:     "#1a2332",
@@ -36,6 +42,8 @@ export default function Chum() {
     useDataset<PscWeeklyDataRow>("psc_weekly");
   const { data: subsistenceData } =
     useDataset<SubsistenceHarvestDataRow>("subsistence_harvest");
+  const { data: gsiData, isLoading: gsiLoading } =
+    useDataset<ChumGsiRow>("chum_gsi");
 
   // ── Mortality-by-source stack (last 20 years) ─────────────────────────────
   // Same four-bucket structure as the Chinook page. All in fish counts;
@@ -267,10 +275,10 @@ export default function Chum() {
           "sport_harvest — ADF&G SWHS statewide sport harvest (chum)",
           "subsistence_harvest — ADF&G Division of Subsistence community surveys (chum)",
           "psc_weekly — NMFS weekly PSC reports (BSAI chum bycatch)",
+          "chum_gsi — AFSC genetic stock identification of BSAI pollock chum bycatch",
           "salmon_escapement — ADF&G escapement counts (chum systems)",
         ]}
         could={[
-          "chum_gsi — GSI stock composition of chum PSC bycatch",
           "hatchery_returns — NPAFC hatchery return/survival rates",
           "chum_coded_wire_tag — CWT recoveries by hatchery of origin",
           "ocean_harvest — high-seas chum harvest data (Japan, Russia)",
@@ -421,6 +429,38 @@ export default function Chum() {
             />
           </Card>
         </>
+      )}
+
+      <h2 className="h2">Genetic stock identification (GSI) — BSAI pollock chum bycatch attribution</h2>
+      {gsiLoading && <p className="section-intro">Loading GSI data…</p>}
+      {gsiData && gsiData.length > 0 && (
+        <Card>
+          <Table
+            columns={[
+              { label: "Year", yr: true },
+              { label: "FMP area" },
+              { label: "Stock reporting group" },
+              { label: "Mean attribution", num: true },
+              { label: "95% CI (fish)", num: true },
+              { label: "Point estimate (fish)", num: true },
+              { label: "Total catch", num: true },
+              { label: "Samples", num: true },
+            ]}
+            rows={[...gsiData]
+              .sort((a, b) => b.year - a.year || b.mean_pct - a.mean_pct)
+              .map((r) => [
+                r.year,
+                r.fmp_area,
+                r.region,
+                fmtPctValue(r.mean_pct),
+                `${fmt(r.lower_95_ci)}–${fmt(r.upper_95_ci)}`,
+                fmt(r.point_count),
+                fmt(r.total_catch),
+                fmt(r.n_samples),
+              ])}
+            caption="Source: NPFMC C2 Chum Salmon Genetics Report (Barry et al., AFSC Auke Bay Laboratories), via Mainsail chum_gsi. v1 covers BSAI 2023 B-season aggregate only; richer stratifications (sector / time-period / longitude / spatial cluster) and 2011-2022 backfill are tracked separately."
+          />
+        </Card>
       )}
 
       <h2 className="h2">North Pacific hatchery releases — chum salmon</h2>
