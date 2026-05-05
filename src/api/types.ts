@@ -107,12 +107,13 @@ export interface TacSpecsRow {
                                      // do NOT count against the federal OY.
 }
 
-// stock_assessment_biomass — NPFMC SAFE-derived biomass time series.
-// Phase 2 (2026-04-29): five Tier 1 stocks — BSAI EBS pollock 1964-2024,
-// GOA pollock 1977-2024, BSAI EBS Pacific cod 1978-2024, GOA Pacific cod
-// 1977-2024, Alaska sablefish 1960-2024. ~270 rows total.
-// Each SAFE assessment can revise prior-year estimates, so source_safe_year
-// pins each row to a specific assessment cycle.
+// stock_assessment_biomass — Federal Alaska groundfish biomass time series.
+// Hybrid pipeline (mainsail_data ADR 0003): total_biomass_kt + cutoff
+// from hand-coded 2024 SAFE constants, ssb_kt + recruit_* from NOAA
+// Stock SMART API. ~277 rows for five Tier 1 stocks: BSAI EBS pollock
+// 1964-2024, GOA pollock 1970-2024, BSAI EBS Pacific cod 1977-2024,
+// GOA Pacific cod 1977-2024, Alaska sablefish 1960-2024.
+// `source_safe_year` pins each row to a specific assessment vintage.
 export interface StockAssessmentBiomassRow {
   biomass_id: string;
   stock_id: string;             // canonical stock id, e.g. "bsai_ebs_pollock"
@@ -124,10 +125,6 @@ export interface StockAssessmentBiomassRow {
   // Each stock's assessment uses its own age cutoff; see biomass_age_cutoff.
   total_biomass_kt: number | null;
   biomass_age_cutoff: string | null; // "age_3+" | "age_2+" | "age_0+" | "total"
-  // Pollock-only convenience alias; mirrors total_biomass_kt for stocks
-  // where the cutoff is exactly age 3+. NULL for other stocks. Kept for
-  // backward compatibility with Phase 1 readers.
-  age_3plus_biomass_kt: number | null;
   ssb_kt: number | null;
   recruit_millions: number | null;
   recruit_age: number | null;
