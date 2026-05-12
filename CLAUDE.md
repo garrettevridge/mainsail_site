@@ -34,6 +34,37 @@ rule here serves that purpose.
   preferred over "U.S." in dataset values, abbreviations OK in tight
   UI labels with a key. The rule applies to presentation; it does
   NOT apply to URL slugs, file names, or technical identifiers.
+- **Real-dollar base year is pinned.** All monetary figures default
+  to real (inflation-adjusted) dollars using a single site-wide base
+  year, currently **2025**. The base year is pinned — not floating —
+  so figures don't shift under the reader on every data refresh.
+  Re-pin roughly every 5 years and log the change in CHANGELOG.
+  Charts that show nominal values must label them as nominal in the
+  axis title.
+- **Bycatch context uses denominators the source publishes.** When
+  contextualizing bycatch against stock size, use values agencies
+  actually publish: counted escapement for Chinook/chum, coastwide
+  spawning biomass for halibut. Do not reconstruct "total run size"
+  or other modeled denominators — those are methodology decisions for
+  the original agencies, not for Mainsail.
+
+## Information architecture
+
+The site's top-level structure and per-page table inventory live in
+[`docs/INFORMATION_ARCHITECTURE.md`](docs/INFORMATION_ARCHITECTURE.md).
+Update that doc when adding or restructuring top-level pages.
+
+## Visual direction
+
+- Reference is NYT quantitative section, slightly denser.
+- Headers/titles/display copy use the **serif** family
+  (Source Serif 4). Narrative body, table cells, chart
+  axes/labels/legends use **sans-serif** (Inter). Number cells use
+  monospaced tabular figures. All three are wired in
+  `tailwind.config.js` / `src/index.css` — no new font imports needed.
+- The landing page leads with a **horizontal row of section buttons**
+  (Communities, Harvest, Markets, Management, Bycatch). Interior
+  pages may keep the existing left sidebar.
 
 ## Data integrity
 
