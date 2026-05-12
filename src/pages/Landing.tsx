@@ -6,8 +6,8 @@ import { useDataset } from "../api/manifest";
 import type {
   IphcSourceMortalityRow,
   TacSpecsRow,
-  PscAnnualHistoricalRow,
   SalmonCommercialHarvestDataRow,
+  CfecEarningsRow,
 } from "../api/types";
 
 const fmt = (n: number | null | undefined) =>
@@ -17,11 +17,28 @@ export default function Landing() {
   const { data: iphcMortality } =
     useDataset<IphcSourceMortalityRow>("iphc_mortality_by_source");
   const { data: tacData } = useDataset<TacSpecsRow>("tac_specs");
-  const { data: pscData } =
-    useDataset<PscAnnualHistoricalRow>("psc_annual_historical");
   const { data: commercialData } = useDataset<SalmonCommercialHarvestDataRow>(
     "salmon_commercial_harvest",
   );
+  const { data: cfecData } = useDataset<CfecEarningsRow>("cfec_earnings");
+
+  // Active CFEC permits — latest year. Sum total_permits_fished across all
+  // fishery_codes. Permit holders with permits across multiple fisheries
+  // are counted once per permit (not once per holder); CFEC publishes
+  // permits, not unique holders, in this rollup.
+  const permitsStat = useMemo(() => {
+    if (!cfecData) return null;
+    const years = [...new Set(cfecData.map((r) => r.year))].sort(
+      (a, b) => b - a,
+    );
+    for (const yr of years) {
+      const v = cfecData
+        .filter((r) => r.year === yr)
+        .reduce((s, r) => s + (r.total_permits_fished ?? 0), 0);
+      if (v > 0) return { year: yr, count: v };
+    }
+    return null;
+  }, [cfecData]);
 
   // Coastwide halibut total mortality, latest year — full-coverage IPHC ledger.
   const halibutStat = useMemo(() => {
@@ -79,18 +96,6 @@ export default function Landing() {
     return null;
   }, [tacData]);
 
-  // Chinook PSC, latest year.
-  const chinookPscStat = useMemo(() => {
-    if (!pscData) return null;
-    const years = [...new Set(pscData.map((r) => r.year))].sort((a, b) => b - a);
-    for (const yr of years) {
-      const v = pscData
-        .filter((r) => r.year === yr && r.species === "chinook")
-        .reduce((s, r) => s + (r.mortality_count ?? 0), 0);
-      if (v > 0) return { year: yr, count: v };
-    }
-    return null;
-  }, [pscData]);
 
   // Statewide salmon harvest (volume in fish), latest year — comprehensive
   // because ADF&G/NPAFC covers every Alaska commercial salmon fishery.
@@ -186,12 +191,12 @@ export default function Landing() {
         </div>
         <div className="stat">
           <div className="stat-val">
-            {chinookPscStat ? fmt(chinookPscStat.count) : "—"}
+            {permitsStat ? fmt(permitsStat.count) : "—"}
           </div>
-          <div className="stat-lbl">Chinook PSC mortality</div>
+          <div className="stat-lbl">Active CFEC permits</div>
           <div className="stat-sub">
-            {chinookPscStat
-              ? `BSAI + GOA, ${chinookPscStat.year}, fish`
+            {permitsStat
+              ? `Statewide, ${permitsStat.year}, permits fished`
               : "loading"}
           </div>
         </div>
