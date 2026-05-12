@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-05-12 — IA pivot: broaden site from deep stories to "economic 101" walkthrough
+
+Documentation-only commit recording a planned restructuring of the
+site. The site is being broadened from seven deep single-topic data
+stories (Chinook, Chum, Halibut, Discards, Observer, Biomass,
+Fisheries Management) into a layered overview aimed at a general
+Alaskan audience that has little prior exposure to Alaska commercial
+fisheries. Top-level structure becomes **Landing → Communities →
+Harvest → Markets → Fisheries Management → Bycatch**, with the
+existing deep pages retained as second-level / linked content.
+Discards moves from a standalone page into a sub-section of Harvest.
+This will be built **in this repo**, not in a separate Webflow
+front-end (an earlier plan that has now been dropped).
+
+New editorial rules added to `CLAUDE.md`: real-dollar base year is
+pinned site-wide (initially 2025, re-pinned ~every 5 years and logged
+in CHANGELOG) so figures don't shift under the reader on each data
+refresh; bycatch context uses denominators the source agencies
+actually publish (counted escapement for Chinook/chum, coastwide
+spawning biomass for halibut) rather than reconstructed run-size
+totals. Page-by-page table inventory, build order, and the list of
+new datasets required from `mainsail_data` (NMFS commercial landings
+with regional breakouts, NMFS first-wholesale value, NMFS "Fisheries
+of the United States" port tables, CFEC vessel/permit registry, NMFS
+processor count, NMFS Foreign Trade exports, FAO FishStat capture
+production, CPI-U deflator) are in the new
+`docs/INFORMATION_ARCHITECTURE.md`. No code changes in this commit;
+the existing site continues to render unchanged.
+
+---
+
 ## 2026-05-05 — Wire long-window Chinook mortality sources + chum GSI
 
 Picks up four new datasets that the `mainsail_data` engine published on 2026-05-05 and threads them into the Chinook and Chum topic pages. **Chinook mortality stack** now sources Bycatch (PSC) from `psc_annual_historical` (NMFS BSAI+GOA chinook PSC mortality 1991-present, combining the AKRO 1991-2010 PDF and 2011+ HTML rollups) instead of `psc_weekly` — extends the prior 2013-only weekly coverage by 22 years; `psc_weekly` is retained as the source for the by-target-fishery and by-reporting-area sub-tables since the historical series doesn't carry sub-annual breakdown. Subsistence now sources from `subsistence_harvest_statewide` (NPAFC-sourced statewide chinook 1985-2023) instead of summing community-level rows from `subsistence_harvest` — extends back to 1985 and runs one year fresher (NPAFC has 2023 vs the dashboard's 2022). The 20-year window cap is removed; the chart and table now show the full available time series, currently 1985-2026 (42 years). Commercial bucket continues to read `salmon_commercial_harvest`, which will automatically extend back to 1985 once the engine's NPAFC commercial 1985-2018 backfill (committed in mainsail_data, awaiting next refresh-annual run) reaches S3 — no further site change needed. Methodology Note rewritten to document the four publication windows and the new partial-coverage rule. **Chum page** gains a "Genetic stock identification (GSI) — BSAI pollock chum bycatch attribution" section reading `chum_gsi`, mirroring the Chinook GSI table; renders the six reporting groups (NE Asia, SE Asia, W Alaska, Up/Mid Yukon, SW Alaska, E GOA/PNW) with mean attribution %, 95% CI in fish counts, point estimate, total catch, and sample size. v1 covers BSAI 2023 B-season aggregate only, sourced from the NPFMC C2 Chum Salmon Genetics Report (Barry et al., AFSC Auke Bay). New row types: `ChumGsiRow`, `PscAnnualHistoricalRow`, `SubsistenceHarvestStatewideRow`. Build clean.
