@@ -69,6 +69,9 @@ export default function Bycatch() {
 
   return (
     <article>
+      <div className="hero tint" style={{ background: "linear-gradient(135deg, #7a1f1f 0%, #b85042 100%)" }}>
+        <span className="hero-eyebrow">Bycatch · Section 05</span>
+      </div>
       <Crumb topic="Bycatch" />
       <span className="section-pill">05 · Section</span>
       <h1 className="page-title">Bycatch</h1>

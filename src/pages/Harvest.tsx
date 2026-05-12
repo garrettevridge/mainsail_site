@@ -65,6 +65,9 @@ export default function Harvest() {
 
   return (
     <article>
+      <div className="hero tint" style={{ background: "linear-gradient(135deg, #0E2841 0%, #1f5573 100%)" }}>
+        <span className="hero-eyebrow">Harvest · Section 02</span>
+      </div>
       <Crumb topic="Harvest" />
       <span className="section-pill">02 · Section</span>
       <h1 className="page-title">Harvest</h1>

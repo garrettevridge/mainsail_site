@@ -131,6 +131,9 @@ export default function Communities() {
 
   return (
     <article>
+      <div className="hero tint" style={{ background: "linear-gradient(135deg, #2C5F2D 0%, #84B59F 100%)" }}>
+        <span className="hero-eyebrow">Communities · Section 01</span>
+      </div>
       <Crumb topic="Communities" />
       <span className="section-pill">01 · Section</span>
       <h1 className="page-title">Communities</h1>

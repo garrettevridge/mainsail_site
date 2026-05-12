@@ -208,6 +208,9 @@ export default function Markets() {
 
   return (
     <article>
+      <div className="hero tint" style={{ background: "linear-gradient(135deg, #7d4f00 0%, #b88c2e 100%)" }}>
+        <span className="hero-eyebrow">Markets · Section 03</span>
+      </div>
       <Crumb topic="Markets" />
       <span className="section-pill">03 · Section</span>
       <h1 className="page-title">Markets</h1>

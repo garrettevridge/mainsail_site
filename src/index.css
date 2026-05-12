@@ -20,46 +20,130 @@
 
 @layer components {
   /* Crumb */
-  .crumb { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; }
+  .crumb { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; margin-top: 6px; }
   .crumb .sep { color: var(--rule); margin: 0 8px; }
   .crumb .topic { color: var(--accent); }
+
+  /* Hero band — full-bleed top strip used on Landing & section pages.
+     Either an image (background-image set inline) or a tint band (gradient).
+     Designed to sit ABOVE the crumb/title block. */
+  .hero {
+    width: 100%;
+    height: 360px;
+    position: relative;
+    margin: -40px -32px 24px;
+    width: calc(100% + 64px);
+    background-position: center 40%;
+    background-size: cover;
+    background-color: var(--ink);
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.55) 100%);
+  }
+  .hero-eyebrow {
+    position: absolute;
+    left: 32px;
+    bottom: 28px;
+    z-index: 2;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.9);
+    font-weight: 700;
+  }
+  .hero-caption {
+    position: absolute;
+    right: 32px;
+    bottom: 14px;
+    z-index: 2;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+  }
+  /* Solid-tint hero variant (no image — for pages where we don't yet have art) */
+  .hero.tint {
+    height: 220px;
+    background: linear-gradient(135deg, #0e2841 0%, #156082 100%);
+  }
+  .hero.tint::after { display: none; }
+
+  /* Pull quote — large serif callout inline within prose. */
+  .pull-quote {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin: 32px 0;
+    padding-left: 22px;
+    border-left: 3px solid var(--accent);
+    max-width: 720px;
+    font-weight: 500;
+  }
+  .pull-quote .pq-attr {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-top: 12px;
+  }
+
+  /* Large inline stat — for embedding within copy, e.g., "$3.26B" mid-paragraph */
+  .inline-stat {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
 
   /* Page titles and ledes */
   .page-title {
     font-family: var(--font-serif);
     font-weight: 600;
-    letter-spacing: -0.02em;
-    font-size: 44px;
-    line-height: 1.05;
-    margin: 10px 0 14px;
+    letter-spacing: -0.025em;
+    font-size: 62px;
+    line-height: 1.02;
+    margin: 16px 0 22px;
     color: var(--ink);
   }
   .page-lede {
     font-family: var(--font-serif);
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: 17px;
+    line-height: 1.6;
     color: var(--ink-soft);
-    max-width: 780px;
-    margin: 0 0 14px;
+    max-width: 760px;
+    margin: 0 0 18px;
   }
   .page-lede.first-sentence {
-    font-size: 20px;
+    font-size: 23px;
     line-height: 1.4;
     color: var(--ink);
-    margin-bottom: 16px;
+    margin-bottom: 22px;
     font-weight: 400;
+    max-width: 760px;
   }
 
   /* Section headers */
   .h2 {
     font-family: var(--font-serif);
     font-weight: 600;
-    font-size: 24px;
-    letter-spacing: -0.01em;
-    margin: 40px 0 4px;
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 56px 0 8px;
     color: var(--ink);
-    padding-top: 18px;
-    border-top: 1px solid var(--rule);
+    padding-top: 28px;
+    border-top: 1px solid var(--ink);
   }
   .h3 {
     font-family: var(--font-sans);
@@ -73,9 +157,10 @@
   .section-intro {
     font-family: var(--font-serif);
     color: var(--ink-soft);
-    max-width: 760px;
-    margin: 4px 0 14px;
-    font-size: 15px;
+    max-width: 720px;
+    margin: 6px 0 22px;
+    font-size: 16px;
+    line-height: 1.55;
   }
 
   /* Card */
@@ -211,34 +296,34 @@
   .key-facts {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 36px;
-    margin: 28px 0 36px;
-    border-top: 2px solid var(--ink);
-    padding-top: 18px;
+    gap: 48px;
+    margin: 36px 0 56px;
+    border-top: 3px solid var(--ink);
+    padding-top: 26px;
   }
   .key-fact-val {
     font-family: var(--font-serif);
-    font-size: 44px;
+    font-size: 68px;
     font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.025em;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
     color: var(--ink);
-    margin-bottom: 10px;
+    margin-bottom: 16px;
   }
   .key-fact-lbl {
     font-family: var(--font-sans);
-    font-size: 10.5px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--muted);
+    letter-spacing: 0.16em;
+    color: var(--accent);
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .key-fact-sub {
     font-family: var(--font-serif);
-    font-size: 13.5px;
+    font-size: 14.5px;
     color: var(--ink-soft);
-    line-height: 1.5;
+    line-height: 1.55;
   }
   @media (max-width: 900px) {
     .key-facts {
@@ -341,53 +426,60 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0;
-    margin: 22px 0 28px;
-    border-top: 1.5px solid var(--ink);
-    border-bottom: 1px solid var(--rule);
+    margin: 24px 0 32px;
+    border-top: 3px solid var(--ink);
   }
   .section-btn {
     display: block;
-    padding: 14px 16px 18px 2px;
-    border-right: 1px solid var(--rule-soft);
+    padding: 22px 22px 28px 0;
+    border-right: 1px solid var(--rule);
     color: var(--ink);
     text-decoration: none;
-    transition: background 120ms ease;
+    transition: background 120ms ease, transform 120ms ease;
   }
-  .section-btn:last-child { border-right: none; }
+  .section-btn:last-child { border-right: none; padding-right: 4px; }
   .section-btn:hover { background: var(--table-alt); text-decoration: none; }
   .section-btn .section-num {
     display: block;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 10.5px;
     color: var(--accent);
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
   }
   .section-btn .section-title {
     display: block;
     font-family: var(--font-serif);
-    font-size: 16.5px;
+    font-size: 22px;
     font-weight: 600;
     color: var(--ink);
-    margin-bottom: 4px;
-    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
   }
   .section-btn .section-blurb {
     display: block;
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--ink-soft);
-    line-height: 1.45;
+    line-height: 1.5;
+    font-family: var(--font-serif);
   }
 
   /* Section pill — small tag on interior pages showing parent section */
   .section-pill {
     display: inline-block;
     font-family: var(--font-sans);
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.18em;
     color: var(--accent);
     font-weight: 700;
+    margin-top: 8px;
     margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
   }
 
   /* Preliminary marker (enforced by CLAUDE.md) */

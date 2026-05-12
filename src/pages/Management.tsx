@@ -12,6 +12,9 @@ import {
 export default function Management() {
   return (
     <article>
+      <div className="hero tint" style={{ background: "linear-gradient(135deg, #1e2761 0%, #3c4f9c 100%)" }}>
+        <span className="hero-eyebrow">Fisheries Management · Section 04</span>
+      </div>
       <Crumb topic="Fisheries Management" />
       <span className="section-pill">04 · Section</span>
       <h1 className="page-title">Fisheries Management</h1>

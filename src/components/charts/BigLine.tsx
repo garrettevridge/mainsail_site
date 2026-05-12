@@ -1,6 +1,6 @@
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -9,9 +9,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// A large, deliberately spare line chart for hero / landing presentation.
-// No legend, no dot markers, one heavy ink line on a clean grid.
-// Use this when the chart IS the section, not when it sits among many others.
+// A large, deliberately spare time-series chart for hero / landing
+// presentation. Single heavy line, soft area fill underneath, clean grid,
+// optional vertical reference markers for regulatory context. Use this when
+// the chart IS the section, not when it sits among many others.
 
 type Datum = { [key: string]: string | number | null | undefined };
 
@@ -40,20 +41,27 @@ export default function BigLine({
   data,
   xKey,
   yKey,
-  height = 420,
+  height = 440,
   yLabel,
   yFormatter = fmtCompact,
   unitSuffix = "",
   refYears = [],
-  color = "#121212",
+  color = "#1f5573",
 }: BigLineProps) {
+  const gradId = `bigline-grad-${yKey}`;
   return (
-    <div style={{ margin: "10px 0 6px" }}>
+    <div style={{ margin: "12px 0 8px" }}>
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart
+        <AreaChart
           data={[...data]}
-          margin={{ top: 24, right: 32, left: 12, bottom: 12 }}
+          margin={{ top: 28, right: 36, left: 14, bottom: 14 }}
         >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+            </linearGradient>
+          </defs>
           <CartesianGrid
             strokeDasharray="0"
             stroke="var(--rule-soft)"
@@ -63,13 +71,13 @@ export default function BigLine({
             dataKey={xKey}
             type="number"
             domain={["dataMin", "dataMax"]}
-            tick={{ fill: "var(--ink-soft)", fontSize: 11 }}
+            tick={{ fill: "var(--ink-soft)", fontSize: 11.5 }}
             tickLine={{ stroke: "var(--rule)" }}
-            axisLine={{ stroke: "var(--ink)" }}
+            axisLine={{ stroke: "var(--ink)", strokeWidth: 1.5 }}
             tickFormatter={(v) => String(v)}
           />
           <YAxis
-            tick={{ fill: "var(--ink-soft)", fontSize: 11 }}
+            tick={{ fill: "var(--ink-soft)", fontSize: 11.5 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={yFormatter}
@@ -83,31 +91,33 @@ export default function BigLine({
                     style: {
                       fill: "var(--muted)",
                       fontSize: 10.5,
-                      letterSpacing: "0.1em",
+                      letterSpacing: "0.12em",
                       textTransform: "uppercase",
                       fontFamily: "var(--font-sans)",
-                      fontWeight: 600,
+                      fontWeight: 700,
                     },
                   }
                 : undefined
             }
-            width={56}
+            width={60}
           />
           <Tooltip
-            cursor={{ stroke: "var(--rule)", strokeWidth: 1 }}
+            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: "3 3" }}
             contentStyle={{
               background: "var(--bg)",
-              border: "1px solid var(--rule)",
-              borderRadius: 2,
+              border: "1px solid var(--ink)",
+              borderRadius: 0,
               fontFamily: "var(--font-sans)",
               fontSize: 12,
-              padding: "8px 12px",
+              padding: "10px 14px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
             }}
             labelStyle={{
               color: "var(--ink)",
               fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
+              fontSize: 12,
               marginBottom: 4,
+              fontWeight: 600,
             }}
             formatter={(v) =>
               typeof v === "number"
@@ -122,27 +132,34 @@ export default function BigLine({
             <ReferenceLine
               key={ref.year}
               x={ref.year}
-              stroke="var(--rule)"
-              strokeDasharray="3 3"
+              stroke="var(--muted)"
+              strokeDasharray="2 4"
               label={{
                 value: ref.label,
                 position: "top",
-                fill: "var(--muted)",
-                fontSize: 10,
+                fill: "var(--ink-soft)",
+                fontSize: 10.5,
                 fontFamily: "var(--font-sans)",
+                fontWeight: 600,
               }}
             />
           ))}
-          <Line
+          <Area
             type="monotone"
             dataKey={yKey}
             stroke={color}
-            strokeWidth={2}
+            strokeWidth={2.5}
+            fill={`url(#${gradId})`}
             dot={false}
-            activeDot={{ r: 4, fill: color, stroke: "var(--bg)", strokeWidth: 2 }}
+            activeDot={{
+              r: 5,
+              fill: color,
+              stroke: "var(--bg)",
+              strokeWidth: 2,
+            }}
             isAnimationActive={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

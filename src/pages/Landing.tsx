@@ -127,8 +127,19 @@ export default function Landing() {
 
   return (
     <article>
+      <div
+        className="hero"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1505142468610-359e7d316be0?auto=format&fit=crop&w=2200&q=80')",
+        }}
+      >
+        <span className="hero-eyebrow">Mainsail · Alaska Fisheries</span>
+        <span className="hero-caption">North Pacific · cover image, Unsplash</span>
+      </div>
+
       <Crumb topic="Overview" />
-      <h1 className="page-title">Alaska Seafood, at a Glance</h1>
+      <h1 className="page-title">Alaska Seafood,<br />at a Glance</h1>
 
       <p className="page-lede first-sentence">
         For more than 150 years, commercial fisheries have anchored Alaska's
