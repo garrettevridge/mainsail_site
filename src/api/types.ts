@@ -337,3 +337,60 @@ export interface SalmonCommercialHarvestDataRow {
   source_document: string | null;
   source_url: string | null;
 }
+
+// cfec_earnings — ADF&G CFEC by-fishery permit / earnings / harvest weight,
+// 1975-present. One row per (year, fishery_code). Reflects only fish caught
+// under a CFEC permit (commercial), not subsistence or sport. Suppressed
+// rows have is_suppressed=1; suppressed_fields enumerates which columns are
+// nulled to satisfy CFEC's rule-of-three.
+export interface CfecEarningsRow {
+  fishery_code: string;
+  fishery_desc: string;
+  year: number;
+  is_preliminary: 0 | 1;
+  res_permits_total: number | null;
+  nonres_permits_total: number | null;
+  total_permits: number | null;
+  res_permits_fished: number | null;
+  nonres_permits_fished: number | null;
+  total_permits_fished: number | null;
+  res_total_lbs: number | null;
+  nonres_total_lbs: number | null;
+  total_lbs: number | null;
+  res_total_earnings: number | null;
+  nonres_total_earnings: number | null;
+  total_earnings: number | null;
+  avg_permit_price: number | null;
+  is_suppressed: 0 | 1;
+  suppressed_fields: string | null;
+}
+
+// foss_trade — NMFS Foreign Trade (FOSS) export/import records by HTS code
+// and destination country. Currently 2025-present.
+export interface FossTradeRow {
+  year: number;
+  month: number | null;
+  hts_number: string;
+  product_name: string;
+  fus_group1: string | null;
+  fus_group2: string | null;
+  country_code: string;
+  country_name: string; // ALL CAPS from source — normalize to UN short-name at render
+  continent: string | null;
+  flow: "export" | "import";
+  quantity_kg: number | null;
+  value_usd: number | null;
+  unit_value_usd_kg: number | null;
+}
+
+// alaska_export_share — Mainsail-computed Alaska share of US exports by
+// species and year, with method + confidence tags.
+export interface AlaskaExportShareRow {
+  species: string;
+  year: number;
+  flow: "export" | "import";
+  alaska_share: number | null;
+  method: string;
+  confidence: "high" | "medium" | "low" | string;
+  total_value_usd: number | null;
+}
