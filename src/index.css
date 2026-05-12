@@ -251,6 +251,149 @@
     margin-right: 6px;
   }
 
+  /* Top nav — site-wide horizontal section navigation */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .top-nav-inner {
+    max-width: var(--col-max);
+    margin: 0 auto;
+    padding: 14px 32px 12px;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+  }
+  .top-nav .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .top-nav .brand:hover { text-decoration: none; }
+  .top-nav .brand-bar {
+    display: inline-block;
+    background: var(--ink);
+    width: 18px;
+    height: 2px;
+  }
+  .top-nav .brand-text {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .top-nav .brand-sub {
+    font-family: var(--font-sans);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .top-nav-sections {
+    display: flex;
+    gap: 22px;
+    flex: 1;
+    margin-left: 12px;
+  }
+  .top-nav-link {
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+    letter-spacing: 0.01em;
+  }
+  .top-nav-link:hover { color: var(--ink); text-decoration: none; }
+  .top-nav-link.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+  .top-nav-meta {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.3;
+  }
+  .top-nav-meta .meta-label {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    font-size: 9.5px;
+  }
+  .top-nav-meta .meta-date {
+    font-size: 11px;
+    color: var(--ink);
+  }
+
+  /* Section row — horizontal top-level nav on the landing page */
+  .section-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 22px 0 28px;
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-btn {
+    display: block;
+    padding: 14px 16px 18px 2px;
+    border-right: 1px solid var(--rule-soft);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 120ms ease;
+  }
+  .section-btn:last-child { border-right: none; }
+  .section-btn:hover { background: var(--table-alt); text-decoration: none; }
+  .section-btn .section-num {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .section-btn .section-title {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 16.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .section-btn .section-blurb {
+    display: block;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    line-height: 1.45;
+  }
+
+  /* Section pill — small tag on interior pages showing parent section */
+  .section-pill {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
   /* Preliminary marker (enforced by CLAUDE.md) */
   .preliminary-flag {
     display: inline-block;
