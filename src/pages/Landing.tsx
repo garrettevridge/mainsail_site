@@ -4,55 +4,26 @@ import { SECTIONS } from "../sections/registry";
 import { Crumb, Note } from "../components/primitives";
 import { useDataset } from "../api/manifest";
 import type {
-  CfecEarningsRow,
   IphcSourceMortalityRow,
   TacSpecsRow,
   PscAnnualHistoricalRow,
+  SalmonCommercialHarvestDataRow,
 } from "../api/types";
-import BigLine from "../components/charts/BigLine";
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 export default function Landing() {
-  const { data: cfecData } =
-    useDataset<CfecEarningsRow>("cfec_earnings");
   const { data: iphcMortality } =
     useDataset<IphcSourceMortalityRow>("iphc_mortality_by_source");
   const { data: tacData } = useDataset<TacSpecsRow>("tac_specs");
   const { data: pscData } =
     useDataset<PscAnnualHistoricalRow>("psc_annual_historical");
+  const { data: commercialData } = useDataset<SalmonCommercialHarvestDataRow>(
+    "salmon_commercial_harvest",
+  );
 
-  // Long-window total commercial harvest, statewide, in pounds.
-  // Sum total_lbs across every CFEC fishery_code per year. Permits-based
-  // (commercial only); halibut IFQ + sablefish IFQ + crab + salmon nets + all
-  // groundfish state and federal fisheries roll up here.
-  const harvestSeries = useMemo(() => {
-    if (!cfecData) return [];
-    const byYear = new Map<number, { lbs: number; earnings: number }>();
-    for (const r of cfecData) {
-      if (!byYear.has(r.year)) byYear.set(r.year, { lbs: 0, earnings: 0 });
-      const acc = byYear.get(r.year)!;
-      if (r.total_lbs != null) acc.lbs += r.total_lbs;
-      if (r.total_earnings != null) acc.earnings += r.total_earnings;
-    }
-    return [...byYear.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([year, { lbs, earnings }]) => ({ year, lbs, earnings }));
-  }, [cfecData]);
-
-  const latestHarvestYear = harvestSeries.length
-    ? harvestSeries[harvestSeries.length - 1].year
-    : null;
-  const earliestHarvestYear = harvestSeries.length
-    ? harvestSeries[0].year
-    : null;
-
-  const latestHarvest = harvestSeries.length
-    ? harvestSeries[harvestSeries.length - 1]
-    : null;
-
-  // Coastwide halibut total mortality, latest year.
+  // Coastwide halibut total mortality, latest year — full-coverage IPHC ledger.
   const halibutStat = useMemo(() => {
     if (!iphcMortality) return null;
     const years = [...new Set(iphcMortality.map((r) => r.year))].sort(
@@ -121,6 +92,24 @@ export default function Landing() {
     return null;
   }, [pscData]);
 
+  // Statewide salmon harvest (volume in fish), latest year — comprehensive
+  // because ADF&G/NPAFC covers every Alaska commercial salmon fishery.
+  const salmonStat = useMemo(() => {
+    if (!commercialData) return null;
+    const statewide = commercialData.filter((r) => r.region === "statewide");
+    if (!statewide.length) return null;
+    const years = [...new Set(statewide.map((r) => r.year))].sort(
+      (a, b) => b - a,
+    );
+    for (const yr of years) {
+      const fish = statewide
+        .filter((r) => r.year === yr)
+        .reduce((s, r) => s + (r.harvest_fish ?? 0), 0);
+      if (fish > 0) return { year: yr, fish };
+    }
+    return null;
+  }, [commercialData]);
+
   return (
     <article>
       <Crumb topic="Overview" />
@@ -133,69 +122,13 @@ export default function Landing() {
       <p className="page-lede">
         The same ecosystems that sustained Indigenous peoples for thousands of
         years now feed the largest wild-capture seafood industry in the United
-        States — and one of the largest in the world. The chart below traces
-        the limited-entry commercial fishery — salmon, halibut, sablefish,
-        crab, herring, state-water groundfish — from the mid-1970s, when the
-        Limited Entry Act reshaped Alaska's permit system, through to last
-        season. The federal BSAI pollock catcher-processor fleet sits outside
-        this series (it's licensed under federal LLP, not CFEC) and lands
-        roughly 3 billion pounds annually on top.
+        States — and one of the largest in the world. Today the sector is
+        mature: roughly 100 active shore-based processors, several thousand
+        commercial vessels, and dockside landings worth billions of dollars
+        each year. The five sections below walk through how the industry
+        works.
       </p>
 
-      {harvestSeries.length > 0 &&
-        latestHarvestYear != null &&
-        earliestHarvestYear != null && (
-          <>
-            <h2 className="h2">
-              CFEC limited-entry harvest, {earliestHarvestYear}–{latestHarvestYear}
-            </h2>
-            <p className="section-intro">
-              Total pounds landed across every CFEC permit-fishery — salmon
-              nets, halibut and sablefish IFQ, crab, herring, dive fisheries,
-              state-water groundfish. Excludes the federal BSAI pollock
-              catcher-processor fleet (licensed under federal LLP, not CFEC).
-            </p>
-            <BigLine
-              data={harvestSeries}
-              xKey="year"
-              yKey="lbs"
-              yLabel="pounds landed"
-              unitSuffix="lbs"
-              refYears={[
-                { year: 1975, label: "Limited Entry Act" },
-                { year: 1995, label: "Halibut IFQ" },
-              ]}
-            />
-            <p className="data-caption" style={{ marginTop: 4 }}>
-              Region: Alaska statewide, all CFEC-permitted commercial fisheries
-              summed. Source: Seamark Analytics, derived from ADF&amp;G CFEC
-              permit fishery earnings reports.
-              {latestHarvest && (
-                <>
-                  {" "}
-                  Latest year ({latestHarvestYear}):{" "}
-                  <span className="font-mono">
-                    {fmt(Math.round(latestHarvest.lbs / 1_000_000))}M
-                  </span>{" "}
-                  pounds,{" "}
-                  <span className="font-mono">
-                    $
-                    {fmt(Math.round(latestHarvest.earnings / 1_000_000))}M
-                  </span>{" "}
-                  to permit holders (nominal USD; real-dollar conversion
-                  pending the CPI-U deflator).
-                </>
-              )}
-            </p>
-          </>
-        )}
-
-      <h2 className="h2">Five threads</h2>
-      <p className="section-intro">
-        The rest of this site is organized into five threads — communities,
-        what gets caught, where it goes, how the rules are made, and the
-        species taken as bycatch alongside the directed catch.
-      </p>
       <nav className="section-row" aria-label="Top-level sections">
         {SECTIONS.map((s, i) => (
           <Link key={s.slug} to={`/${s.slug}`} className="section-btn">
@@ -210,32 +143,20 @@ export default function Landing() {
 
       <h2 className="h2">By the numbers</h2>
       <p className="section-intro">
-        A few headline figures from the deeper pages, latest year on the wire.
+        Headline figures from comprehensive, agency-published datasets — each
+        the most recent year on the wire.
       </p>
       <div className="stats">
         <div className="stat">
           <div className="stat-val">
-            {latestHarvest
-              ? `${(latestHarvest.lbs / 1_000_000).toFixed(0)}M lb`
+            {salmonStat
+              ? `${(salmonStat.fish / 1_000_000).toFixed(0)}M`
               : "—"}
           </div>
-          <div className="stat-lbl">CFEC limited-entry harvest</div>
+          <div className="stat-lbl">Salmon commercial harvest</div>
           <div className="stat-sub">
-            {latestHarvestYear
-              ? `Statewide, ${latestHarvestYear}, excludes BSAI pollock CPs`
-              : "loading"}
-          </div>
-        </div>
-        <div className="stat">
-          <div className="stat-val">
-            {latestHarvest
-              ? `$${(latestHarvest.earnings / 1_000_000_000).toFixed(2)}B`
-              : "—"}
-          </div>
-          <div className="stat-lbl">CFEC permit earnings</div>
-          <div className="stat-sub">
-            {latestHarvestYear
-              ? `Statewide, ${latestHarvestYear}, nominal USD`
+            {salmonStat
+              ? `Statewide, ${salmonStat.year}, fish — all 5 species`
               : "loading"}
           </div>
         </div>
@@ -252,7 +173,9 @@ export default function Landing() {
         </div>
         <div className="stat">
           <div className="stat-val">
-            {bsaiTacStat ? `${fmt(Math.round(bsaiTacStat.mt))} mt` : "—"}
+            {bsaiTacStat
+              ? `${fmt(Math.round(bsaiTacStat.mt / 1000))}k mt`
+              : "—"}
           </div>
           <div className="stat-lbl">BSAI groundfish TAC</div>
           <div className="stat-sub">
@@ -261,16 +184,27 @@ export default function Landing() {
               : "loading"}
           </div>
         </div>
+        <div className="stat">
+          <div className="stat-val">
+            {chinookPscStat ? fmt(chinookPscStat.count) : "—"}
+          </div>
+          <div className="stat-lbl">Chinook PSC mortality</div>
+          <div className="stat-sub">
+            {chinookPscStat
+              ? `BSAI + GOA, ${chinookPscStat.year}, fish`
+              : "loading"}
+          </div>
+        </div>
       </div>
 
       <Note>
-        <b>About these numbers.</b> Statistics are taken directly from agency
-        publications — ADF&amp;G CFEC, NMFS, IPHC, NPFMC — with no Mainsail
-        re-modeling. Ex-vessel earnings are shown in nominal dollars; the
-        site will switch to real dollars (base year 2025) once the CPI-U
-        deflator dataset reaches S3. Chinook PSC for the latest year on
-        record: <span className="font-mono">{chinookPscStat ? fmt(chinookPscStat.count) : "—"}</span>{" "}
-        fish ({chinookPscStat?.year ?? "—"}). Full IA in{" "}
+        <b>About these numbers.</b> A true statewide-all-species commercial
+        landings figure (total pounds, total ex-vessel value in real dollars)
+        is pending the NMFS commercial landings ingest. The stat block above
+        uses comprehensive, full-coverage agency datasets — IPHC's coastwide
+        halibut ledger, NPFMC's federal groundfish TAC, NMFS's PSC mortality
+        roll-ups, and ADF&amp;G's statewide salmon harvest — to anchor the
+        page without combining incomplete series. Full IA in{" "}
         <a
           href="https://github.com/garrettevridge/mainsail_site/blob/main/docs/INFORMATION_ARCHITECTURE.md"
           target="_blank"
