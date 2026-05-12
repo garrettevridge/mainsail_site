@@ -13,7 +13,6 @@ import type {
 import {
   Card,
   Crumb,
-  DataContext,
   Legend,
   Note,
   ProportionBar,
@@ -386,33 +385,9 @@ export default function Halibut() {
 
   return (
     <>
-      <Crumb topic="Halibut Mortality by Source" />
+      <Crumb topic="Halibut Mortality by Source" section={{ label: "Bycatch", href: "/bycatch" }} />
       <h1 className="page-title">Halibut Mortality by Source</h1>
 
-      <DataContext
-        use={[
-          "iphc_mortality_by_source — coastwide mortality by source (commercial, bycatch, recreational, subsistence)",
-          "iphc_mortality_by_area — mortality by regulatory area (2A–4D)",
-          "iphc_spawning_biomass — female spawning biomass 1888–present",
-          "iphc_tcey — adopted total constant exploitation yield by area",
-          "ifq_landings — IFQ halibut landings by year and area",
-          "monitored_catch — halibut bycatch (discarded) by fleet and gear",
-          "sport_harvest — ADF&G SWHS halibut catch vs. harvest (releases implied)",
-          "discard_mortality_rates — DMR by gear including IPHC sport C&R rate (16%)",
-        ]}
-        could={[
-          "iphc_setline_survey — annual setline survey CPUE indices",
-          "iphc_age_composition — age/sex sampling from commercial landings",
-          "cdq_halibut_allocations — CDQ group halibut allocations",
-          "sport_halibut_creel — ADF&G creel survey charter catch estimates",
-        ]}
-        ideas={[
-          "Bycatch share of total mortality trend (% non-directed)",
-          "TCEY vs. actual mortality by area over time",
-          "Biomass vs. mortality ratio (exploitation rate)",
-          "IFQ utilization rate by area (% allocation landed)",
-        ]}
-      />
 
       {isLoading && <p className="section-intro">Loading IPHC data…</p>}
 

@@ -206,51 +206,6 @@
   .chart-title { font-family: var(--font-serif); font-size: 15.5px; font-weight: 600; margin-bottom: 2px; color: var(--ink); }
   .chart-sub   { font-family: var(--font-serif); font-size: 12px; color: var(--muted); margin-bottom: 12px; }
 
-  /* Data context matrix */
-  .data-ctx {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    margin: 14px 0 28px;
-    overflow: hidden;
-  }
-  .data-ctx-col {
-    padding: 14px 16px;
-    border-right: 1px solid var(--rule);
-    font-size: 12.5px;
-    line-height: 1.55;
-  }
-  .data-ctx-col:last-child { border-right: none; }
-  .data-ctx-head {
-    font-family: var(--font-sans);
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-weight: 700;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .data-ctx-head.use   { color: var(--accent); }
-  .data-ctx-head.could { color: var(--accent-2); }
-  .data-ctx-head.ideas { color: var(--muted); }
-  .data-ctx-col ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .data-ctx-col ul li {
-    color: var(--ink-soft);
-    padding: 2px 0;
-  }
-  .data-ctx-col ul li::before {
-    content: "–";
-    color: var(--rule);
-    margin-right: 6px;
-  }
-
   /* Top nav — site-wide horizontal section navigation */
   .top-nav {
     position: sticky;

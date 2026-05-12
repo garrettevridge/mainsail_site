@@ -15,7 +15,6 @@ export type { LegendItem } from "./Legend";
 export { default as ProportionBar } from "./ProportionBar";
 export type { ProportionPart } from "./ProportionBar";
 export { default as TopNav } from "./TopNav";
-export { default as DataContext } from "./DataContext";
 export { default as PlannedElements } from "./PlannedElements";
 export type {
   PlannedElement,

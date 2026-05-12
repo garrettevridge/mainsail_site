@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
 import type { MonitoredCatchRow } from "../api/types";
-import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
+import { Card, Crumb, Note, StatGrid, Table } from "../components/primitives";
 
 const SECTOR_LABELS: Record<string, string> = {
   "Catcher/Processor":               "Catcher/Processor",
@@ -77,26 +77,9 @@ export default function Observer() {
 
   return (
     <>
-      <Crumb topic="Observer Coverage" />
+      <Crumb topic="Observer Coverage" section={{ label: "Fisheries Management", href: "/management" }} />
       <h1 className="page-title">Observer Coverage</h1>
 
-      <DataContext
-        use={[
-          "monitored_catch — NMFS AKRO monitored catch by sector, gear, FMP area",
-        ]}
-        could={[
-          "observer_deployments — individual deployment records (vessel, dates, area)",
-          "em_review_rates — electronic monitoring review rates by vessel class",
-          "observer_costs — at-sea observer cost reimbursement data",
-          "bycatch_rates — PSC rate per unit of target catch by gear/area",
-        ]}
-        ideas={[
-          "Coverage rate trend by gear type (trawl vs. longline vs. pot)",
-          "EM vs. at-sea observer comparison since 2020 rollout",
-          "Coverage gap map: vessels under threshold by port",
-          "Discard rate vs. coverage rate correlation",
-        ]}
-      />
 
       {isLoading && <p className="section-intro">Loading observer coverage data…</p>}
       {error && <Note>Could not load monitored catch data from S3.</Note>}

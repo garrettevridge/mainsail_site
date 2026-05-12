@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useDataset } from "../api/manifest";
 import type { TacSpecsRow, StockAssessmentBiomassRow } from "../api/types";
-import { Card, Crumb, DataContext, KV, Note, StatGrid, Table } from "../components/primitives";
+import { Card, Crumb, KV, Note, StatGrid, Table } from "../components/primitives";
 import MultiLineTrend from "../components/charts/MultiLineTrend";
 import SpeciesBar from "../components/charts/SpeciesBar";
 
@@ -425,27 +425,9 @@ export default function Biomass() {
 
   return (
     <>
-      <Crumb topic="Biomass, TAC & ABC" />
+      <Crumb topic="Biomass, TAC & ABC" section={{ label: "Fisheries Management", href: "/management" }} />
       <h1 className="page-title">Biomass, TAC &amp; ABC</h1>
 
-      <DataContext
-        use={[
-          "tac_specs — NMFS harvest specifications (OFL/ABC/TAC) for BSAI & GOA",
-          "stock_assessment_biomass — NPFMC SAFE biomass time series (Phase 2: 5 Tier 1 stocks — pollock, cod, sablefish)",
-          "monitored_catch — NMFS actual catch by species, gear, sector",
-        ]}
-        could={[
-          "bottom_trawl_survey — AFSC bottom trawl biomass indices",
-          "acoustic_trawl_survey — pollock acoustic biomass estimates",
-          "stock_assessment_reference_points — B0, B40%, B35%, B20% per stock",
-        ]}
-        ideas={[
-          "Phase 3 stocks (BSAI/GOA POP, northern rockfish, Atka, arrowtooth, yellowfin sole)",
-          "Phase 4: probe Stock SMART before building a SAFE PDF extractor",
-          "Exploitation rate (TAC / total biomass) over time per stock",
-          "Multi-vintage assessment retrospectives (each SAFE revises priors)",
-        ]}
-      />
 
       {isLoading && <p className="section-intro">Loading harvest specifications…</p>}
       {error && <Note>Could not load harvest specification data from S3.</Note>}

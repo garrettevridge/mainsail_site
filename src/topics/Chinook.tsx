@@ -11,7 +11,7 @@ import type {
   FishCountsRow,
   SubsistenceHarvestStatewideRow,
 } from "../api/types";
-import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
+import { Card, Crumb, Note, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
 
 const fmt = (n: number | null | undefined) =>
@@ -380,33 +380,9 @@ export default function Chinook() {
 
   return (
     <>
-      <Crumb topic="Chinook Mortality & Genetics" />
+      <Crumb topic="Chinook Mortality & Genetics" section={{ label: "Bycatch", href: "/bycatch" }} />
       <h1 className="page-title">Chinook Mortality &amp; Genetics</h1>
 
-      <DataContext
-        use={[
-          "psc_weekly — NMFS weekly PSC reports (Chinook bycatch by fishery)",
-          "psc_annual_historical — NMFS annual Chinook PSC mortality, BSAI+GOA, 1991-present",
-          "chinook_gsi — GSI stock composition of Chinook bycatch",
-          "salmon_commercial_harvest — ADF&G/NPAFC statewide commercial harvest, 1985-present",
-          "sport_harvest — ADF&G SWHS sport harvest (Chinook)",
-          "subsistence_harvest_statewide — NPAFC-sourced statewide subsistence harvest, 1985-2023",
-          "salmon_escapement — ADF&G escapement counts (Chinook systems)",
-          "fish_counts — weir/sonar daily and cumulative fish passage",
-        ]}
-        could={[
-          "chinook_age_sex_size — biological sampling at weirs",
-          "chinook_coded_wire_tag — CWT recovery data by brood year",
-          "sport_release_mortality — fleetwide hooking-mortality rate (none currently published by ADF&G)",
-          "ADF&G in-season management actions by drainage",
-        ]}
-        ideas={[
-          "GSI stock composition trend over time (which rivers' fish?)",
-          "PSC as % of river-specific escapement goal",
-          "Weir passage date distribution (run timing shift)",
-          "PSC cap utilization by fishery, year-to-date",
-        ]}
-      />
 
       {pscData && (
         <StatGrid

@@ -10,7 +10,7 @@ import type {
   SubsistenceHarvestStatewideRow,
   ChumGsiRow,
 } from "../api/types";
-import { Card, Crumb, DataContext, Note, StatGrid, Table } from "../components/primitives";
+import { Card, Crumb, Note, StatGrid, Table } from "../components/primitives";
 import StackedTrend from "../components/charts/StackedTrend";
 
 const fmt = (n: number | null | undefined) =>
@@ -321,31 +321,9 @@ export default function Chum() {
 
   return (
     <>
-      <Crumb topic="Chum Salmon Mortality & Genetics" />
+      <Crumb topic="Chum Salmon Mortality & Genetics" section={{ label: "Bycatch", href: "/bycatch" }} />
       <h1 className="page-title">Chum Salmon Mortality &amp; Genetics</h1>
 
-      <DataContext
-        use={[
-          "salmon_commercial_harvest — ADF&G statewide + regional commercial harvest",
-          "hatchery_releases — NPAFC hatchery releases by country (chum)",
-          "sport_harvest — ADF&G SWHS statewide sport harvest (chum)",
-          "subsistence_harvest_statewide — NPAFC-sourced statewide subsistence harvest, chum 1985-2023",
-          "psc_weekly — NMFS weekly PSC reports (BSAI chum bycatch)",
-          "chum_gsi — AFSC genetic stock identification of BSAI pollock chum bycatch",
-          "salmon_escapement — ADF&G escapement counts (chum systems)",
-        ]}
-        could={[
-          "hatchery_returns — NPAFC hatchery return/survival rates",
-          "chum_coded_wire_tag — CWT recoveries by hatchery of origin",
-          "ocean_harvest — high-seas chum harvest data (Japan, Russia)",
-        ]}
-        ideas={[
-          "Hatchery release vs. wild escapement ratio by region",
-          "Chum PSC as % of escapement goal by drainage",
-          "N. Pacific hatchery production share vs. wild runs",
-          "Commercial harvest trend by gear type (drift vs. set net)",
-        ]}
-      />
 
       {(latestCommercial || hatcheryLatestYear) && (
         <StatGrid
