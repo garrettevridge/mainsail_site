@@ -337,3 +337,179 @@ export interface SalmonCommercialHarvestDataRow {
   source_document: string | null;
   source_url: string | null;
 }
+
+// ── IA-pivot datasets (Communities / Harvest / Markets / Landing pages) ──────
+// Eight datasets shipped by mainsail_data PRs #14, #15, #16, #17 to back
+// the IA pivot. See:
+//   - ADR 0007: https://github.com/garrettevridge/mainsail_data/blob/main/docs/decisions/0007-ia-pivot-datasets-and-deflator.md
+//   - Briefings 26–33: https://github.com/garrettevridge/mainsail_data/tree/main/docs/briefings
+//
+// Shared vocabularies — IA-pivot brief §8 and `_alaska_taxonomy.py`:
+
+/** 8 standard region keys the IA-pivot rolls up to.
+ *  `nmfs_commercial_landings` ships region='Statewide' only in v1
+ *  (the FOSS endpoint is state-grain); the full vocabulary is
+ *  reserved so a Phase 2 AKFIN CAS / CFEC-by-area adapter can
+ *  populate finer rows without a contract bump. */
+export type Region =
+  | "Statewide"
+  | "BSAI"
+  | "Bristol Bay"
+  | "Kodiak"
+  | "PWS"
+  | "Southeast"
+  | "AYK"
+  | "Westward";
+
+/** 7-bucket species rollup used by `nmfs_commercial_landings`,
+ *  `first_wholesale_value`, and `nmfs_trade_exports`. Anything that
+ *  doesn't map to one of the named buckets lands in "Other". */
+export type SpeciesGroup =
+  | "Pollock"
+  | "Salmon"
+  | "Halibut"
+  | "Sablefish"
+  | "Crab"
+  | "Flatfish"
+  | "Other";
+
+/** BLS CPI-U deflator. Join every monetary chart on `year` and
+ *  multiply `nominal * deflator_to_base` to render real USD in
+ *  `base_year` purchasing power. Currently pinned to 2025; re-pinning
+ *  is a single-table republish on the engine side (no consumer code
+ *  changes — the chart axis label reads `base_year` dynamically).
+ *  Source: BLS series CUUR0000SA0, hand-coded annual averages. */
+export interface CpiUDeflatorRow {
+  fact_id: string;
+  year: number;
+  cpi_index: number;       // 1982-84 = 100
+  base_year: number;       // currently 2025
+  deflator_to_base: number; // multiplier: nominal * this = real_USD_in_base_year
+  is_preliminary: 0 | 1;
+  source_url: string;
+  provenance: string | null;
+}
+
+/** NMFS commercial landings rollup. v1 ships region='Statewide' only —
+ *  the FOSS landings endpoint does not surface NMFS reporting area or
+ *  ADF&G management area for Alaska. The site footnotes this on the
+ *  Harvest page region selector. */
+export interface NmfsCommercialLandingsRow {
+  fact_id: string;
+  year: number;
+  region: Region;
+  species_group: SpeciesGroup;
+  landings_lbs: number | null;
+  ex_vessel_value_usd_nominal: number | null; // nominal — join cpi_u_deflator
+  is_preliminary: 0 | 1;
+  methodology_note: string | null;
+  source_id: string;
+  source_url: string | null;
+  provenance: string | null;
+}
+
+/** First-wholesale value: processor → next buyer (NOT ex-vessel; NOT
+ *  retail). Rolled up from `coar_production` by species_group at
+ *  statewide grain. Carries the COAR 3-processor suppression flag. */
+export interface FirstWholesaleValueRow {
+  fact_id: string;
+  year: number;
+  species_group: SpeciesGroup;
+  first_wholesale_value_usd_nominal: number | null;
+  first_wholesale_volume_lbs: number | null; // gross product weight, not round weight
+  is_suppressed: 0 | 1;
+  is_preliminary: 0 | 1;
+  source_id: string;
+  source_url: string | null;
+  methodology_note: string | null;
+  provenance: string | null;
+}
+
+/** NMFS "Fisheries of the United States" port tables. Site filters to
+ *  `is_alaska === 1` for the Communities page; pre-filtering on the
+ *  engine side would erase the national-rank context. Some ports
+ *  appear in only one of the FUS Tables 2 (landings) and 3 (revenue),
+ *  so the rank on the missing axis is null. */
+export interface NmfsTopUsPortsRow {
+  fact_id: string;
+  year: number;                  // data year (NOT publication year)
+  port_name: string;
+  state: string;                 // 2-letter
+  landings_lbs: number | null;
+  ex_vessel_value_usd_nominal: number | null;
+  national_rank_by_volume: number | null; // 1 = top
+  national_rank_by_value: number | null;
+  is_alaska: 0 | 1;
+  fus_publication_year: number | null;
+  source_url: string | null;
+  provenance: string | null;
+}
+
+/** ADF&G CFEC permit + permit-holder counts, rolled up from
+ *  cfec_earnings BIT to statewide × (year, dimension). NOT comparable
+ *  to NMFS processor counts (different counting units, different
+ *  jurisdictions — don't sum or ratio). */
+export interface CfecRegistryRow {
+  fact_id: string;
+  year: number;
+  dimension: "active_vessels" | "active_permits" | "active_permit_holders";
+  count: number | null;
+  resident_share: number | null;     // 0..1 fraction
+  is_preliminary: 0 | 1;
+  source_id: string;
+  source_url: string | null;
+  methodology_note: string | null;
+  provenance: string | null;
+}
+
+/** NMFS Alaska processor count from FEUS + APR. v1 scaffold with
+ *  NULL counts pending PDF transcription. Federal-permit only — NOT
+ *  the same denominator as ADF&G state-permit processor counts. */
+export interface NmfsProcessorCountRow {
+  fact_id: string;
+  year: number;
+  sector: "shore_based" | "at_sea" | "all";
+  processor_count: number | null;
+  is_preliminary: 0 | 1;
+  source_id: string;
+  source_url: string | null;
+  methodology_note: string | null;
+  provenance: string | null;
+}
+
+/** NMFS Foreign Trade exports rollup. Year × HTS × destination
+ *  country. Country names follow the UN short-name designation.
+ *  `alaska_origin_attribution` flags whether the HTS code is
+ *  Alaska-attributable: 'implied' for Alaska-dominant codes (Alaska
+ *  pollock, sablefish, halibut, salmon roe), 'unknown' otherwise. */
+export interface NmfsTradeExportsRow {
+  fact_id: string;
+  year: number;
+  hts_code: string;
+  hts_description: string | null;
+  destination_country: string;            // UN short-name
+  destination_country_code: string | null; // ISO 3166-1 alpha-2 where available
+  export_volume_kg: number | null;
+  export_value_usd_nominal: number | null;
+  species_group: SpeciesGroup | null;     // null = unmappable, e.g. surimi blends
+  alaska_origin_attribution: "explicit" | "implied" | "unknown";
+  is_preliminary: 0 | 1;
+  source_id: string;
+  provenance: string | null;
+}
+
+/** FAO FishStat global wild-capture production by country. Alaska is
+ *  intentionally NOT a row — the Markets page computes Alaska as a
+ *  synthetic peer bar from nmfs_commercial_landings. Pre-normalized
+ *  to UN short-name (e.g., "United States" not "United States of
+ *  America", "Republic of Korea" not "Korea, Republic of"). */
+export interface FaoFishstatCaptureRow {
+  fact_id: string;
+  year: number;
+  country: string;             // UN short-name
+  iso3: string | null;          // ISO 3166-1 alpha-3
+  capture_tonnes: number | null;
+  source_id: string;
+  source_url: string | null;
+  provenance: string | null;
+}
