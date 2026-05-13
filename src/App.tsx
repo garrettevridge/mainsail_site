@@ -1,27 +1,25 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
-import FisheriesManagement from "./topics/FisheriesManagement";
-import Biomass from "./topics/Biomass";
-import Observer from "./topics/Observer";
-import Halibut from "./topics/Halibut";
-import Chinook from "./topics/Chinook";
-import Chum from "./topics/Chum";
-import Discards from "./topics/Discards";
+import Landing from "./topics/Landing";
+import Harvest from "./topics/Harvest";
+import Communities from "./topics/Communities";
+import Markets from "./topics/Markets";
+import Management from "./topics/Management";
+import Bycatch from "./topics/Bycatch";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <Navigate to="/topics/fisheries-management" replace /> },
-      { path: "topics/fisheries-management", element: <FisheriesManagement /> },
-      { path: "topics/biomass",              element: <Biomass /> },
-      { path: "topics/observer",             element: <Observer /> },
-      { path: "topics/halibut",              element: <Halibut /> },
-      { path: "topics/chinook",              element: <Chinook /> },
-      { path: "topics/chum",                 element: <Chum /> },
-      { path: "topics/discards",             element: <Discards /> },
+      { index: true, element: <Navigate to="/topics/landing" replace /> },
+      { path: "topics/landing",     element: <Landing /> },
+      { path: "topics/harvest",     element: <Harvest /> },
+      { path: "topics/communities", element: <Communities /> },
+      { path: "topics/markets",     element: <Markets /> },
+      { path: "topics/management",  element: <Management /> },
+      { path: "topics/bycatch",     element: <Bycatch /> },
       { path: "*", element: <NotFound /> },
     ],
   },
