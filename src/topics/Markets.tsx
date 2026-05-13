@@ -52,6 +52,29 @@ export default function Markets() {
   const { data: fao } = useDataset<FaoCaptureRow>("fao_fishstat_capture");
   const { data: cpi } = useDataset<CpiRow>("cpi_u_deflator");
 
+  // Total Alaska-attributed export value (USD) per year
+  // total_value_usd × alaska_share, summed across all species in the dataset
+  const totalAkExports = useMemo(() => {
+    if (!share) return { data: [] as Array<{ year: number; value_m: number }>, range: "" };
+    const exportRows = share.filter(
+      (r) => r.flow === "export" && r.alaska_share != null && r.total_value_usd != null,
+    );
+    const byYear = new Map<number, number>();
+    for (const r of exportRows) {
+      byYear.set(
+        r.year,
+        (byYear.get(r.year) ?? 0) + (r.total_value_usd ?? 0) * (r.alaska_share ?? 0),
+      );
+    }
+    const data = [...byYear.entries()]
+      .map(([year, v]) => ({ year, value_m: v / 1_000_000 }))
+      .sort((a, b) => a.year - b.year);
+    return {
+      data,
+      range: data.length ? `${data[0].year}–${data.at(-1)?.year}` : "",
+    };
+  }, [share]);
+
   // Alaska export share by species over time
   const exportShareSeries = useMemo(() => {
     if (!share) return { data: [], keys: [] as string[] };
@@ -140,6 +163,22 @@ export default function Markets() {
   return (
     <>
       <h1 className="page-title">Markets</h1>
+
+      <h2 className="h2">Total Alaska exports, {totalAkExports.range}</h2>
+      <Card>
+        {totalAkExports.data.length > 0 && (
+          <TimeSeriesLine
+            data={totalAkExports.data}
+            xKey="year"
+            yKey="value_m"
+            yLabel="USD millions (nominal)"
+            unitSuffix="M USD"
+          />
+        )}
+        <div className="data-caption">
+          Source: <code>alaska_export_share</code> · sum across 10 species (cod, crab, fishmeal, fish oil, flatfish, halibut, herring, pollock, rockfish, sablefish) of <code>total_value_usd</code> × <code>alaska_share</code>. Nominal USD; no salmon line in the source dataset yet.
+        </div>
+      </Card>
 
       <h2 className="h2">Alaska-origin export share by species</h2>
       <Card>
