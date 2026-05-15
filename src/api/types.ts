@@ -338,6 +338,27 @@ export interface SalmonCommercialHarvestDataRow {
   source_url: string | null;
 }
 
+// chinook_drainage_totals — Mainsail-derived rollup picking ONE canonical
+// row per (year, drainage) from salmon_escapement, so a downstream consumer
+// can SUM(actual_count) GROUP BY year for a defensible Alaska Chinook
+// escapement total without double-counting drainagewide reconstructions
+// against their component tributaries. 19 drainages; mixed measurement
+// basis (spawning_escapement, total_sonar_passage, large_fish_only); see
+// chinook_drainage_totals.yaml for the canonical-row rule.
+export interface ChinookDrainageTotalsRow {
+  fact_id: string;
+  source_id: string;
+  year: number;
+  drainage: string;
+  region: string | null;
+  system_name: string;
+  goal_type: string | null;
+  actual_count: number | null;
+  count_method: string | null;
+  measurement_basis: string | null;
+  notes: string | null;
+}
+
 // ── IA-pivot datasets (Communities / Harvest / Markets / Landing pages) ──────
 // Eight datasets shipped by mainsail_data PRs #14, #15, #16, #17 to back
 // the IA pivot. See:

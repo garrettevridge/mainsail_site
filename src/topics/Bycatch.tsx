@@ -6,6 +6,10 @@ import type {
   ChinookGsiRow,
   ChumGsiRow,
   DiscardMortalityRateRow,
+  SalmonCommercialHarvestDataRow,
+  SportHarvestDataRow,
+  SubsistenceHarvestStatewideRow,
+  ChinookDrainageTotalsRow,
 } from "../api/types";
 import { Card, Table } from "../components/primitives";
 import SpeciesBar from "../components/charts/SpeciesBar";
@@ -18,11 +22,75 @@ export default function Bycatch() {
   const { data: chinookGsi } = useDataset<ChinookGsiRow>("chinook_gsi");
   const { data: chumGsi } = useDataset<ChumGsiRow>("chum_gsi");
   const { data: dmr } = useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
+  const { data: commercial } = useDataset<SalmonCommercialHarvestDataRow>("salmon_commercial_harvest");
+  const { data: sport } = useDataset<SportHarvestDataRow>("sport_harvest");
+  const { data: subsistence } = useDataset<SubsistenceHarvestStatewideRow>("subsistence_harvest_statewide");
+  const { data: escapement } = useDataset<ChinookDrainageTotalsRow>("chinook_drainage_totals");
 
-  // PSC annual — BSAI/GOA stacked per species, 1991-present
-  const pscStackedBySpecies = (species: "chinook" | "chum") => {
+  // Chinook annual accounting — Alaska statewide, by source.
+  // - Bycatch: BSAI + GOA combined (federal-waters PSC mortality).
+  // - Commercial / Sport / Subsistence: statewide totals.
+  // - Escapement: SUM of chinook_drainage_totals.actual_count by year
+  //   (already de-duplicated for drainagewide reconstructions vs tributaries).
+  // Series are stacked for magnitude comparison, not because they sum to a
+  // strict single denominator (see chart caption).
+  const chinookAccounting = useMemo(() => {
+    const byYear = new Map<number, { Bycatch: number; Commercial: number; Sport: number; Subsistence: number; Escapement: number }>();
+    const bump = (yr: number, key: "Bycatch" | "Commercial" | "Sport" | "Subsistence" | "Escapement", v: number) => {
+      if (!Number.isFinite(v) || v <= 0) return;
+      const row = byYear.get(yr) ?? { Bycatch: 0, Commercial: 0, Sport: 0, Subsistence: 0, Escapement: 0 };
+      row[key] += v;
+      byYear.set(yr, row);
+    };
+
+    if (psc) {
+      for (const r of psc) {
+        if (r.species !== "chinook") continue;
+        if (r.mortality_count == null) continue;
+        bump(r.year, "Bycatch", r.mortality_count);
+      }
+    }
+    if (commercial) {
+      for (const r of commercial) {
+        if (r.species !== "chinook") continue;
+        if (r.harvest_fish == null) continue;
+        bump(r.year, "Commercial", r.harvest_fish);
+      }
+    }
+    if (sport) {
+      for (const r of sport) {
+        if (r.species_name !== "Chinook salmon") continue;
+        if (r.record_type !== "harvest") continue; // kept fish only
+        if (r.fish_count == null) continue;
+        bump(r.year, "Sport", r.fish_count);
+      }
+    }
+    if (subsistence) {
+      for (const r of subsistence) {
+        if (r.species !== "chinook") continue;
+        if (r.harvest_count == null) continue;
+        bump(r.year, "Subsistence", r.harvest_count);
+      }
+    }
+    if (escapement) {
+      for (const r of escapement) {
+        if (r.actual_count == null) continue;
+        bump(r.year, "Escapement", r.actual_count);
+      }
+    }
+
+    const data = [...byYear.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([year, v]) => ({ year, ...v }));
+    const years = data.map((d) => d.year);
+    const range = years.length ? `${years[0]}–${years.at(-1)}` : "";
+    return { data, range };
+  }, [psc, commercial, sport, subsistence, escapement]);
+
+  // PSC annual — chum stacked BSAI/GOA (unchanged).
+  const pscChum = useMemo(() => {
     if (!psc) return { data: [] as Array<Record<string, number>>, range: "" };
-    const rows = psc.filter((r) => r.species === species);
+    const rows = psc.filter((r) => r.species === "chum");
     const years = [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b);
     const data = years.map((yr) => ({
       year: yr,
@@ -31,10 +99,7 @@ export default function Bycatch() {
     }));
     const range = years.length ? `${years[0]}–${years.at(-1)}` : "";
     return { data, range };
-  };
-
-  const pscChinook = useMemo(() => pscStackedBySpecies("chinook"), [psc]);  // eslint-disable-line react-hooks/exhaustive-deps
-  const pscChum    = useMemo(() => pscStackedBySpecies("chum"),    [psc]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [psc]);
 
   // Halibut bycatch mortality — directed + non-directed discard, 1980+
   const halibutBycatch = useMemo(() => {
@@ -81,20 +146,20 @@ export default function Bycatch() {
     <>
       <h1 className="page-title">Bycatch</h1>
 
-      <h2 className="h2">Chinook PSC mortality — BSAI &amp; GOA, {pscChinook.range}</h2>
+      <h2 className="h2">Chinook annual accounting — Alaska statewide, {chinookAccounting.range}</h2>
       <Card>
-        {pscChinook.data.length > 0 && (
+        {chinookAccounting.data.length > 0 && (
           <StackedTrend
-            data={pscChinook.data}
+            data={chinookAccounting.data}
             xKey="year"
-            stackKeys={["BSAI", "GOA"]}
-            colors={["#1a3a6b", "#a8331c"]}
+            stackKeys={["Bycatch", "Commercial", "Sport", "Subsistence", "Escapement"]}
+            colors={["#a8331c", "#1a3a6b", "#6b8fad", "#b45309", "#3a6b3a"]}
             yLabel="fish"
-            yFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)}
+            yFormatter={(v) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)}
           />
         )}
         <div className="data-caption">
-          Source: <code>psc_annual_historical</code> · NMFS AKRO · Chinook only · stacked BSAI + GOA mortality counts. 2025–2026 flagged preliminary in source.
+          Sources stacked by year: <code>psc_annual_historical</code> (Bycatch — BSAI + GOA combined chinook mortality, NMFS AKRO), <code>salmon_commercial_harvest</code> (Commercial — statewide directed harvest), <code>sport_harvest</code> (Sport — kept fish, SWHS regions summed statewide), <code>subsistence_harvest_statewide</code> (Subsistence — NPAFC USA/Alaska total), <code>chinook_drainage_totals</code> (Escapement — Mainsail rollup, sum across 19 drainages). Coverage builds up over time: bycatch 1991+, commercial &amp; subsistence 1985+, sport 2005+, escapement starts 1968 (Nushagak) and broadens as more drainages come online. Bycatch is a federal-waters subset; the other four are Alaska statewide. Recent years may be partially-reported (2025 commercial preliminary; sport runs ~18 months in arrears).
         </div>
       </Card>
 
