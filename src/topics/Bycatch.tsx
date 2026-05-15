@@ -87,19 +87,55 @@ export default function Bycatch() {
     return { data, range };
   }, [psc, commercial, sport, subsistence, escapement]);
 
-  // PSC annual — chum stacked BSAI/GOA (unchanged).
-  const pscChum = useMemo(() => {
-    if (!psc) return { data: [] as Array<Record<string, number>>, range: "" };
-    const rows = psc.filter((r) => r.species === "chum");
-    const years = [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b);
-    const data = years.map((yr) => ({
-      year: yr,
-      BSAI: rows.find((r) => r.year === yr && r.region === "BSAI")?.mortality_count ?? 0,
-      GOA:  rows.find((r) => r.year === yr && r.region === "GOA")?.mortality_count  ?? 0,
-    }));
+  // Chum annual accounting — Alaska statewide, by source. No escapement
+  // series — chum doesn't have an equivalent of chinook_drainage_totals
+  // (no statewide drainage rollup is published for chum).
+  const chumAccounting = useMemo(() => {
+    const byYear = new Map<number, { Bycatch: number; Commercial: number; Sport: number; Subsistence: number }>();
+    const bump = (yr: number, key: "Bycatch" | "Commercial" | "Sport" | "Subsistence", v: number) => {
+      if (!Number.isFinite(v) || v <= 0) return;
+      const row = byYear.get(yr) ?? { Bycatch: 0, Commercial: 0, Sport: 0, Subsistence: 0 };
+      row[key] += v;
+      byYear.set(yr, row);
+    };
+
+    if (psc) {
+      for (const r of psc) {
+        if (r.species !== "chum") continue;
+        if (r.mortality_count == null) continue;
+        bump(r.year, "Bycatch", r.mortality_count);
+      }
+    }
+    if (commercial) {
+      for (const r of commercial) {
+        if (r.species !== "chum") continue;
+        if (r.harvest_fish == null) continue;
+        bump(r.year, "Commercial", r.harvest_fish);
+      }
+    }
+    if (sport) {
+      for (const r of sport) {
+        if (r.species_name !== "Chum salmon") continue;
+        if (r.record_type !== "harvest") continue;
+        if (r.fish_count == null) continue;
+        bump(r.year, "Sport", r.fish_count);
+      }
+    }
+    if (subsistence) {
+      for (const r of subsistence) {
+        if (r.species !== "chum") continue;
+        if (r.harvest_count == null) continue;
+        bump(r.year, "Subsistence", r.harvest_count);
+      }
+    }
+
+    const data = [...byYear.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([year, v]) => ({ year, ...v }));
+    const years = data.map((d) => d.year);
     const range = years.length ? `${years[0]}–${years.at(-1)}` : "";
     return { data, range };
-  }, [psc]);
+  }, [psc, commercial, sport, subsistence]);
 
   // Halibut bycatch mortality — directed + non-directed discard, 1980+
   const halibutBycatch = useMemo(() => {
@@ -163,20 +199,20 @@ export default function Bycatch() {
         </div>
       </Card>
 
-      <h2 className="h2">Chum PSC mortality — BSAI &amp; GOA, {pscChum.range}</h2>
+      <h2 className="h2">Chum annual accounting — Alaska statewide, {chumAccounting.range}</h2>
       <Card>
-        {pscChum.data.length > 0 && (
+        {chumAccounting.data.length > 0 && (
           <StackedTrend
-            data={pscChum.data}
+            data={chumAccounting.data}
             xKey="year"
-            stackKeys={["BSAI", "GOA"]}
-            colors={["#1a3a6b", "#a8331c"]}
+            stackKeys={["Bycatch", "Commercial", "Sport", "Subsistence"]}
+            colors={["#a8331c", "#1a3a6b", "#6b8fad", "#b45309"]}
             yLabel="fish"
-            yFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)}
+            yFormatter={(v) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)}
           />
         )}
         <div className="data-caption">
-          Source: <code>psc_annual_historical</code> · NMFS AKRO · chum salmon · stacked BSAI + GOA mortality counts. GOA reporting starts 2013; BSAI runs the full 1991+ window. 2025–2026 flagged preliminary in source.
+          Sources stacked by year: <code>psc_annual_historical</code> (Bycatch — BSAI + GOA combined chum mortality, NMFS AKRO; GOA reporting starts 2013, BSAI 1991+), <code>salmon_commercial_harvest</code> (Commercial — statewide directed harvest), <code>sport_harvest</code> (Sport — kept fish, SWHS regions summed statewide), <code>subsistence_harvest_statewide</code> (Subsistence — NPAFC USA/Alaska total). Coverage: bycatch &amp; commercial 1991+, subsistence 1985+, sport 2005+. Bycatch is a federal-waters subset; the other three are Alaska statewide. Commercial chum dominates the stack (10–20M fish/year) — bycatch and sport are 2–3 orders of magnitude smaller and may appear as thin slivers. No escapement series — chum has no statewide drainage rollup analogous to <code>chinook_drainage_totals</code>. Recent years may be partially-reported (2025 commercial preliminary; sport runs ~18 months in arrears).
         </div>
       </Card>
 
