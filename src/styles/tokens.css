@@ -1,34 +1,47 @@
-/* Mainsail design tokens.
-   Source: READ THIS/design_handoff_mainsail_dashboard — design system spec.
-   Theme alternates (cream, dark) are kept as reference but unused until the
-   Tweaks panel is shipped. */
+/* Seamark design tokens — whitepaper format.
+   Source: Seamark_Whitepaper_v1 reference HTML.
+   Warm cream paper with a single accent (terracotta). */
 
 :root {
-  /* Surfaces — light theme */
-  --bg:        #ffffff;
-  --panel:     #ffffff;
-  --ink:       #121212;
-  --ink-soft:  #333333;
-  --muted:     #666666;
-  --rule:      #dcdcdc;
-  --rule-soft: #ececec;
-  --table-alt: #fafafa;
+  /* Surfaces */
+  --bg:        #fafaf7;
+  --bg-2:      #f3f1ea;
+  --bg-3:      #ecead9;
 
-  /* Primary-color accents (red / blue / yellow) */
-  --accent-blue:   #1a5fb4;
-  --accent-red:    #b4261a;
-  --accent-yellow: #c79a0c;
+  /* Ink */
+  --ink:       #111110;
+  --ink-2:     #4a4845;
+  --ink-3:     #7a7770;
+  --ink-4:     #a8a59e;
 
-  /* Mapped */
-  --accent:   var(--accent-blue);
-  --accent-2: var(--accent-red);
-  --accent-3: var(--accent-yellow);
+  /* Accent */
+  --accent:      #b8421e;
+  --accent-2:    #c4502d;
+  --accent-soft: #f4e2d8;
+
+  /* Rules */
+  --rule:      #1c1c1a;
+  --rule-2:    #cfcdc4;
+  --rule-3:    #e5e2d8;
+
+  /* Confirm / annotation */
+  --confirm:    #8a5a00;
+  --confirm-bg: #fbf3dd;
+  --confirm-rl: #e8d49a;
+
+  /* Series palette (chart categorical) — earthy, tonally consistent */
+  --s-1: #b8421e; /* accent terracotta */
+  --s-2: #6b8fad; /* slate blue */
+  --s-3: #7b6a4f; /* warm taupe */
+  --s-4: #a08a3b; /* ochre */
+  --s-5: #3f5c4a; /* moss */
+  --s-6: #4a4845; /* deep ink */
+  --s-7: #c97f4a; /* clay */
+  --s-8: #8a5a85; /* dusk purple */
 
   /* Typography */
-  --font-serif: "Source Serif 4", Georgia, serif;
-  --font-sans:  "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono:  "JetBrains Mono", ui-monospace, monospace;
-
-  --base-size: 14.5px;
-  --col-max: 1060px;
+  --font-serif:   "Source Serif Pro", Georgia, serif;
+  --font-sans:    "Archivo", system-ui, -apple-system, sans-serif;
+  --font-display: "Archivo Black", "Archivo", sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
 }
