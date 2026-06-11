@@ -23,7 +23,9 @@ export default function Scale() {
     return [...byYear.entries()]
       .sort((a, b) => a[0] - b[0])
       .map(([year, vals]) => {
-        const total = Object.values(vals).reduce((a, b) => a + b, 0) || 1;
+        // Normalize over the charted species only, so the bands sum to exactly
+        // 100% and the area reads as a clean composition.
+        const total = SPECIES_ORDER.reduce((a, k) => a + (vals[k] ?? 0), 0) || 1;
         const row: Record<string, number> = { year };
         for (const k of SPECIES_ORDER) row[k] = ((vals[k] ?? 0) / total) * 100;
         return row;
@@ -33,48 +35,26 @@ export default function Scale() {
   return (
     <section id="scale" className="sm-section">
       <div className="sm-marker">
-        <span className="num">01 / Scale</span>
-        <span className="title">Why the scale of this matters</span>
+        <span className="num">The scale</span>
+        <span className="title">Why the scale matters</span>
       </div>
 
       <h2 className="sm-h2">
         Among the largest <span className="accent">in the world.</span>
       </h2>
 
-      <div className="sm-placeholder">
-        <span className="cap">Prose — establish scale</span>
-        <span className="body">
-          Open with magnitudes: Alaska seafood produces more than 60% of total
-          U.S. seafood by volume; the state's fisheries support 42,000 direct
-          jobs; over 140 rural and remote communities depend on the industry
-          for wages, infrastructure, and tax revenue. Frame the regulatory
-          complexity: federal versus state jurisdiction, the North Pacific
-          Fishery Management Council process, ADF&amp;G area management, the
-          IPHC for halibut, the CDQ program for Western Alaska, IFQ
-          allocations, and dozens of fishery-specific plans. Compare to other
-          major fisheries globally where helpful — Alaska's harvests rank
-          against entire countries.
-        </span>
-      </div>
-
-      <div className="sm-stat-row">
-        <div className="sm-stat">
-          <div className="sm-stat-num">60%+</div>
-          <div className="sm-stat-lbl">U.S. seafood volume produced in Alaska</div>
-        </div>
-        <div className="sm-stat">
-          <div className="sm-stat-num">42,000</div>
-          <div className="sm-stat-lbl">Direct Alaska jobs supported</div>
-        </div>
-        <div className="sm-stat">
-          <div className="sm-stat-num">140+</div>
-          <div className="sm-stat-lbl">Communities dependent on the industry</div>
-        </div>
-        <div className="sm-stat">
-          <div className="sm-stat-num">$5.2B</div>
-          <div className="sm-stat-lbl">Annual value added to AK economy</div>
-        </div>
-      </div>
+      <p className="sm-p">
+        The numbers are easy to underestimate from the Lower 48. Alaska produces
+        more than 60 percent of all U.S. seafood by volume — more than every
+        other state combined. The industry supports on the order of 42,000
+        direct jobs and underwrites the wages, infrastructure, and tax base of
+        well over 140 rural and remote communities, many of which have no other
+        economic engine and no road to one. Measured against the rest of the
+        world rather than the rest of the country, a single Alaska fishery can
+        out-land an entire national catch: the Bering Sea pollock harvest alone
+        rivals the total wild capture of most fishing nations on earth. (Figures
+        from standard industry economic analyses; see ASMI / McKinley Research.)
+      </p>
 
       <ChartCard
         label={`Fig 1.1 · composition · 1985–${chartData.at(-1)?.year ?? ""}`}
@@ -100,6 +80,7 @@ export default function Scale() {
               height={320}
               yFormatter={(v: number) => `${v.toFixed(0)}%`}
               yLabel="Share of landings (%)"
+              yDomain={[0, 100]}
             />
             <Legend
               items={SPECIES_ORDER.map((s, i) => ({ label: s, color: SERIES[i] }))}
@@ -110,18 +91,20 @@ export default function Scale() {
         )}
       </ChartCard>
 
-      <div className="sm-placeholder">
-        <span className="cap">Prose — the regulatory architecture</span>
-        <span className="body">
-          Brief plain-English walkthrough of the management stack: NPFMC sets
-          federal harvest specs each December based on NOAA stock assessments;
-          ADF&amp;G manages state waters and salmon; IPHC manages halibut
-          bilaterally with Canada. Annual surveys, stock assessments, public
-          comment periods, council motions. Every step is open to public
-          participation. This section is meant to ground readers — the rest
-          of the whitepaper will assume this baseline.
-        </span>
-      </div>
+      <p className="sm-p">
+        Managing something this large takes a deep stack of institutions, and a
+        reader does not need all of it — only the shape. Each December, the North
+        Pacific Fishery Management Council sets the coming year's federal harvest
+        specifications, building on stock assessments from NOAA's Alaska
+        Fisheries Science Center. The Alaska Department of Fish and Game manages
+        state waters and nearly all of the salmon. The International Pacific
+        Halibut Commission manages halibut jointly with Canada. Layered on top
+        are programs that shape who fishes and where — the Community Development
+        Quota program for Western Alaska, individual fishing quota (IFQ)
+        allocations, and dozens of fishery-specific plans. Every layer runs on
+        the same public rhythm of surveys, assessments, comment periods, and
+        votes. The rest of this paper assumes that baseline.
+      </p>
     </section>
   );
 }

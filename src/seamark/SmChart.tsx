@@ -12,7 +12,7 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import { SERIES, RULE_3, INK_3 } from "./colors";
+import { SERIES, RULE_3, INK_3, BAND_STROKE } from "./colors";
 
 type Datum = Record<string, number | string | null>;
 
@@ -24,6 +24,8 @@ interface StackedAreaProps {
   height?: number;
   yFormatter?: (v: number) => string;
   yLabel?: string;
+  /** Fixed y-axis domain, e.g. [0, 100] for a share chart. */
+  yDomain?: [number, number];
 }
 
 const defaultFmt = (v: number) => {
@@ -43,6 +45,7 @@ export function StackedArea({
   height = 320,
   yFormatter = defaultFmt,
   yLabel,
+  yDomain,
 }: StackedAreaProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -53,6 +56,8 @@ export function StackedArea({
           stroke={INK_3}
           tickLine={false}
           tickFormatter={yFormatter}
+          domain={yDomain}
+          allowDataOverflow={!!yDomain}
           label={
             yLabel
               ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK_3, fontSize: 11 }
@@ -70,9 +75,10 @@ export function StackedArea({
             type="monotone"
             dataKey={k}
             stackId="a"
-            stroke={colors[i % colors.length]}
+            stroke={BAND_STROKE}
+            strokeWidth={0.75}
             fill={colors[i % colors.length]}
-            fillOpacity={0.85}
+            fillOpacity={0.92}
             isAnimationActive={false}
           />
         ))}
@@ -106,6 +112,8 @@ export function StackedBar({
             dataKey={k}
             stackId="a"
             fill={colors[i % colors.length]}
+            stroke={BAND_STROKE}
+            strokeWidth={0.5}
             isAnimationActive={false}
           />
         ))}

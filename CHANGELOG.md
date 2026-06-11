@@ -1,5 +1,124 @@
 # Changelog
 
+## 2026-06-11 — Whitepaper: hub-and-spoke (explorable) restructure
+
+Moved the whitepaper off a single linear scroll into a hub-and-spoke
+layout, so a lay reader gets a short complete read and the depth is
+available on demand rather than forced into one long page.
+
+- **Spine (landing `/`):** hero → Introduction → A short history →
+  Conclusion → an "Explore the data" map of topic cards. A five-minute
+  read on its own.
+- **Spokes:** every detailed section is now a focused single-topic view
+  at its own URL (`/chinook`, `/halibut`, `/federal-tac`, …), reached
+  from a persistent grouped left-rail navigator (The fish · How the
+  system works · Context). Each topic has back-to-overview and
+  prev/next links.
+- **Routing:** wired `react-router-dom` (BrowserRouter + nested routes);
+  new `Shell`, `Spine`, `TopicView`, and a `topics.ts` registry that
+  drives both the routes and the sidebar.
+- **New sections:** `History` (drafted from the owner's outline, with
+  unverified facts flagged for confirmation) and `StateManagement` (the
+  State of Alaska process, the counterpart to the federal TAC spoke).
+- Section markers de-numbered (each topic now stands alone); the
+  appendix concept retired in favor of the Context group.
+
+Note: deploying this needs SPA fallback (serve `index.html` for unknown
+paths) on the static host. The Word-export pipeline now only captures
+the current route and will need to walk all routes for a full-doc
+export.
+
+## 2026-06-08 — Whitepaper: data-first restructure (simplify for a lay reader)
+
+Major restructure toward a simpler spine: **"this is what the best
+available data say,"** with the opinion concentrated in a single signed
+conclusion rather than threaded through every section. Targets the
+median reader who wants to know more, not the expert.
+
+- **New shape:** Opening (questions + method, no thesis) → four data
+  movements (01 Scale · 02 Catch & bycatch · 03 Salmon [Chinook/Chum/
+  Western Alaska grouped] · 04 Halibut) → **Conclusion** ("What we make
+  of it" — the one signed section) → **Appendix** (harvest caps &
+  biomass, observer coverage, climate, habitat, other fisheries).
+- **Body neutralized:** stripped the threaded advocacy, the "trawl is
+  not one word" framing, and the steelman openers; the body now presents
+  data plainly. `docs/THEORY.md` rewritten to match (data-first,
+  opinion-last; strictly-neutral body voice).
+- **Call-out boxes:** new `SmCallout` component; observer-coverage box in
+  the Catch & bycatch movement and a discard-mortality (DMR) box in the
+  Halibut movement — mechanism explained in the narrative with the
+  supporting facts/table nearby, per the brief.
+- TOC and section markers renumbered; appendix demotion of the
+  management-mechanics sections.
+
+## 2026-06-04 — Whitepaper: thesis pivot to a signed perspective
+
+The Seamark whitepaper moves from neutral exposition to a **stated
+argument**, captured in `docs/THEORY.md` as the north star for all
+section prose. Thesis: *the benefits of the Bering Sea pollock fishery
+are worth its cost.* The rhetorical engine is the distinction the
+debate refuses to make — **"trawl" is not one word** — anchored by the
+data (pelagic pollock trawl discards 0.4% of catch by weight and is ~1%
+of halibut bycatch, down ~91% since 2013; bottom trawl 8% and ~33%).
+
+**Governance.** Added a "Two voices" carve-out at the top of
+`CLAUDE.md`: the whitepaper (`src/seamark/**`) may argue a position and
+make causation claims in Seamark's named voice; Mainsail's data-engine
+surfaces stay neutral; and the **entire data layer of both** remains
+bound by every data-integrity rule (zero axes, published denominators,
+manifest-only sourcing, no silent computed transforms).
+
+**Method.** Each contested-cost section is built *steelman → test*:
+state the strongest, most empathetic version of the case against pollock
+first, then bring the data and show where it holds and breaks (Chinook,
+chum, Western Alaska). The A80 / bottom-trawl separation is handled
+*subtly* — never a stated disavowal; the halibut by-fleet data simply
+names the Amendment 80 sector as the largest groundfish source.
+
+**New content.** Sport-fishery cost added to the ledger: charter/rec
+halibut mortality (IPHC-published, ~20% of coastwide total — exceeds all
+groundfish bycatch) and sport Chinook catch-and-release mortality
+(released = catch − harvest from `sport_harvest`, × a 10% rate that is
+flagged in-prose as an explicit methodology assumption, not a published
+figure). Intro reframed around the cost/reward ledger; Closing lands the
+verdict.
+
+## 2026-06-02 — Whitepaper revision: editorial voice, new tables, chart cleanup
+
+Substantial pass on the Seamark single-page whitepaper following an
+editorial review of the exported narrative draft.
+
+**Voice & structure.** Rewrote the narrative in Seamark's stated
+first-person perspective: a heritage-forward Introduction (150+ years,
+state "benefit to Alaskans" vs. federal "benefit to the nation"
+mandates, frayed public discourse), higher-level framing of the
+federal management process in §02 (survey → SSC → biomass → OFL → TAC →
+harvest), a frustration-then-data framing for the bycatch section, and
+an aspirational Closing on Alaskan leadership. Removed all
+`sm-stat-row` callout boxes per editorial direction and wove the
+figures into prose instead.
+
+**New data components.** Added a reusable typed `SmTable` component and
+two data tables: *BSAI biomass vs. annual take* (pollock, Pacific cod,
+sablefish — `stock_assessment_biomass` × `monitored_catch`) and
+*halibut bycatch by gear/fleet* (`monitored_catch` Pacific Halibut
+discards). Extended the pollock biomass chart back to 1960 and
+reconstructed actual harvest from catch accounting (`tac_specs.catch_mt`
+is unpopulated). All prose `XX` placeholders replaced with live,
+manifest-computed figures.
+
+**Chart styling.** Redesigned the `SERIES` palette for legibility
+(teal-led categorical scale; brand terracotta reserved for emphasis),
+added paper-colored band separators on stacked area/bar charts, forced
+sans-serif (Inter) on all Recharts axis/legend/tooltip text, and pinned
+the composition chart to a clean 0–100 % y-domain.
+
+**Pending data.** Items that require upstream ingest (all-species
+landings back to 1950, discard species composition, multi-year Chinook
+GSI × run reconstructions, marine-survival indices, observer-coverage,
+climate, and EFH-habitat series) are flagged inline and catalogued in
+`docs/PENDING_DATA.md`.
+
 ## 2026-05-12 — IA pivot: broaden site from deep stories to "economic 101" walkthrough
 
 Documentation-only commit recording a planned restructuring of the

@@ -5,7 +5,36 @@ authored by a human or an AI assistant. This site's purpose is
 neutral and objective presentation of Alaska fisheries data. Every
 rule here serves that purpose.
 
+## Two voices: neutral engine vs. signed perspective
+
+This repo hosts two kinds of surface, and they play by different rules
+for **prose and framing** — never for data.
+
+- **Mainsail's data-engine surfaces** (tables, dashboards, dataset
+  pages, anything in Mainsail's own voice) are strictly neutral, per
+  the rules below.
+- **The Seamark whitepaper** (`src/seamark/**`) is a **signed,
+  perspective document**. It may state a thesis, argue a position, and
+  make causation claims **in Seamark's named voice** with sources — see
+  `docs/THEORY.md` for the current argument. This is intentional and
+  approved.
+
+**The data layer is neutral in both.** Every rule under "Neutral
+presentation," "Data integrity," and the rest of this document binds
+the whitepaper exactly as it binds the engine: zero-based axes, longest
+comparable window, published denominators, anchored numbers, official
+names, pinned real-dollar base year, preliminary flags, manifest-only
+sourcing, and no silent computed transforms. The argument lives in the
+prose; the charts never tilt the table. Where the whitepaper applies a
+rate the source did not (e.g. sport catch-and-release mortality), it is
+documented as an explicit methodology choice in the prose, never baked
+into a chart.
+
 ## Neutral presentation — non-negotiable
+
+*(Binds Mainsail's data-engine prose, and the entire data layer of the
+Seamark whitepaper. The whitepaper's narrative voice is carved out for
+perspective per the section above.)*
 
 - **Every chart reads the same way to every reader.** We do not
   select scales, time windows, or phrasing to favor any particular

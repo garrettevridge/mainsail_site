@@ -30,26 +30,27 @@ export default function Discards() {
   return (
     <section id="discards" className="sm-section">
       <div className="sm-marker">
-        <span className="num">04 / Discards</span>
-        <span className="title">Discards and discard mortality rates</span>
+        <span className="num">Discards &amp; mortality rates</span>
+        <span className="title">What's thrown back, and what survives</span>
       </div>
 
       <h2 className="sm-h2">
         What goes back, <span className="accent">and what survives.</span>
       </h2>
 
-      <div className="sm-placeholder">
-        <span className="cap">Prose — what discards are</span>
-        <span className="body">
-          Discards are the portion of catch returned to the sea — sometimes
-          alive, often not. Discard Mortality Rates (DMRs) are species- and
-          gear-specific estimates of what fraction of discards die. DMRs
-          are how regulators convert observed discards into total fishing
-          mortality. Walk through the concept plainly, note that federal
-          fisheries publish DMRs by species and gear, and explain why DMRs
-          are often the subject of legitimate scientific disagreement.
-        </span>
-      </div>
+      <p className="sm-p">
+        Discards are the part of the catch put back in the sea — sometimes
+        alive, often not. Whether a discarded fish counts against the stock
+        depends on whether it survives, and that is where Discard Mortality
+        Rates come in. A DMR is a species- and gear-specific estimate of the
+        fraction of discarded fish that die: it is the multiplier that turns
+        the raw discard tonnage in the chart above into the fishing mortality
+        the assessment actually books. Federal fisheries publish DMRs by
+        species and gear, and revise them as new survival studies come in. They
+        are also a legitimate subject of scientific disagreement — a halibut
+        flexed over a trawl rail and a halibut unhooked from a longline do not
+        die at the same rate, and pinning down those rates is genuinely hard.
+      </p>
 
       <ChartCard
         label={`Fig 4.1 · ${discardData[0]?.year ?? ""}–${discardData.at(-1)?.year ?? ""}`}
@@ -134,15 +135,15 @@ export default function Discards() {
         </div>
       </div>
 
-      <div className="sm-placeholder">
-        <span className="cap">Prose — state coverage gap</span>
-        <span className="body">
-          Note the limitation: state fisheries do not publish DMRs at the
-          same resolution. Many state fisheries report total catch and
-          target catch but not species-by-species discard accounting
-          comparable to federal fisheries.
-        </span>
-      </div>
+      <p className="sm-p">
+        One limitation is worth stating plainly. The table above is a federal
+        artifact. State-managed fisheries do not publish DMRs at this
+        resolution; many report total and target catch but not the
+        species-by-species discard accounting that the federal groundfish
+        fisheries produce. So the precision in this section — like the precision
+        throughout the federal half of this paper — is a feature of the federal
+        observer system, not of Alaska fisheries as a whole.
+      </p>
     </section>
   );
 }

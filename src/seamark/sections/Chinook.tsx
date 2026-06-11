@@ -63,6 +63,64 @@ export default function Chinook() {
     return [...byYear.values()].sort((a, b) => (a.year as number) - (b.year as number));
   }, [psc, commercial, sport, subsistence, drainage]);
 
+  // Chinook bycatch as a share of all Chinook taken by people — the sum of the
+  // published removal categories (commercial + sport + subsistence + bycatch),
+  // excluding in-river escapement. Averaged over recent years where every
+  // category has reported, so partial-year tails don't distort it.
+  const bycatchShare = useMemo(() => {
+    const complete = accountingData.filter(
+      (r) =>
+        (r["Commercial"] ?? 0) > 0 &&
+        (r["Sport"] ?? 0) > 0 &&
+        (r["Subsistence"] ?? 0) > 0 &&
+        (r["Pollock bycatch"] ?? 0) > 0
+    );
+    const recent = complete.slice(-5);
+    if (recent.length === 0) return null;
+    const shares = recent.map((r) => {
+      const removals =
+        (r["Commercial"] ?? 0) +
+        (r["Sport"] ?? 0) +
+        (r["Subsistence"] ?? 0) +
+        (r["Pollock bycatch"] ?? 0);
+      return (r["Pollock bycatch"] / removals) * 100;
+    });
+    const avg = shares.reduce((a, b) => a + b, 0) / shares.length;
+    return {
+      avg: Math.round(avg),
+      lo: Math.round(Math.min(...shares)),
+      hi: Math.round(Math.max(...shares)),
+    };
+  }, [accountingData]);
+
+  // Sport-fishery Chinook caught-and-released mortality. `sport_harvest` carries
+  // both total catch and kept harvest, so released = catch − harvest (source
+  // data). The mortality rate applied to released fish is an EXPLICIT
+  // methodology assumption stated in the prose — not a published figure.
+  const SPORT_RELEASE_MORTALITY = 0.1; // documented assumption (see prose)
+  const sportRelease = useMemo(() => {
+    if (!sport) return null;
+    const byYear = new Map<number, { catch: number; harvest: number }>();
+    for (const r of sport) {
+      if (r.species_name !== "Chinook salmon" || r.fish_count == null) continue;
+      const o = byYear.get(r.year) ?? { catch: 0, harvest: 0 };
+      if (r.record_type === "catch") o.catch += r.fish_count;
+      else if (r.record_type === "harvest") o.harvest += r.fish_count;
+      byYear.set(r.year, o);
+    }
+    const candidates = [...byYear.entries()].filter(([, o]) => o.catch > 0 && o.harvest > 0);
+    if (candidates.length === 0) return null;
+    const [year, o] = candidates.reduce((a, b) => (b[0] > a[0] ? b : a));
+    const released = o.catch - o.harvest;
+    if (released <= 0) return null;
+    return {
+      year,
+      released,
+      mortality: Math.round(released * SPORT_RELEASE_MORTALITY),
+      ratePct: Math.round(SPORT_RELEASE_MORTALITY * 100),
+    };
+  }, [sport]);
+
   const gsiLatest = useMemo(() => {
     if (!gsi || gsi.length === 0) return { year: null as number | null, rows: [] as ChinookGsiRow[] };
     const year = Math.max(...gsi.map((r) => r.year));
@@ -78,27 +136,21 @@ export default function Chinook() {
   return (
     <section id="chinook" className="sm-section">
       <div className="sm-marker">
-        <span className="num">03a / Chinook</span>
-        <span className="title">BSAI and Gulf of Alaska bycatch</span>
+        <span className="num">Chinook bycatch</span>
+        <span className="title">BSAI and Gulf of Alaska</span>
       </div>
 
       <h2 className="sm-h2">
         Chinook salmon bycatch, <span className="accent">in context.</span>
       </h2>
 
-      <div className="sm-placeholder">
-        <span className="cap">Prose — what the data shows</span>
-        <span className="body">
-          Present the basic facts: BSAI pollock trawl Chinook bycatch
-          averages roughly 8,000–12,000 fish in recent years against a cap of
-          60,000; GOA pollock Chinook bycatch is much smaller (low thousands).
-          Then the comparison that matters: how this compares to other
-          sources of Chinook mortality across Alaska — commercial salmon
-          harvests, sport harvests, subsistence, in-river mortality. Be
-          precise: do not minimize. The point is to put bycatch in scale, not
-          to dismiss it.
-        </span>
-      </div>
+      <p className="sm-p">
+        Chinook salmon are taken incidentally in the Bering Sea and Gulf of
+        Alaska pollock fisheries each year — recently in the thousands to low
+        tens of thousands of fish. A federal cap, introduced in 2011, limits
+        BSAI Chinook bycatch in the pollock trawl fishery to 60,000 fish. The
+        chart below shows the counts by management area and year.
+      </p>
 
       <ChartCard
         label="Fig 3.1 · primary · 1991–present"
@@ -133,6 +185,18 @@ export default function Chinook() {
         )}
       </ChartCard>
 
+      <p className="sm-p">
+        Chinook are removed from the system in several other ways: commercial
+        nets, sport anglers, and subsistence harvest, alongside the counted
+        escapement that returns to spawn. Across recent years, groundfish bycatch
+        accounted for roughly{" "}
+        {bycatchShare
+          ? `${bycatchShare.avg} percent (ranging ${bycatchShare.lo}–${bycatchShare.hi}%)`
+          : "well under a fifth"}{" "}
+        of all Chinook taken by people — commercial, sport, subsistence, and
+        bycatch combined. The chart below stacks those sources together by year.
+      </p>
+
       <ChartCard
         label="Fig 3.2 · context · long record"
         source="NMFS PSC · ADF&G commercial · ADF&G SWHS · NPAFC subsistence · Mainsail drainage rollup"
@@ -166,6 +230,28 @@ export default function Chinook() {
           <div className="sm-chart-body placeholder tall">Loading…</div>
         )}
       </ChartCard>
+
+      <p className="sm-p">
+        The sport figure counts only the Chinook anglers keep, not those they
+        catch and release. Released fish outnumber kept fish in the sport Chinook
+        fishery
+        {sportRelease ? `: roughly ${sportRelease.released.toLocaleString()} released in ${sportRelease.year}` : ""}
+        . Applying a commonly-used {sportRelease ? sportRelease.ratePct : 10}-percent
+        catch-and-release mortality rate — a methodology assumption, not a
+        published figure — implies on the order of{" "}
+        {sportRelease ? sportRelease.mortality.toLocaleString() : "tens of thousands of"}{" "}
+        additional Chinook deaths beyond the landed sport catch.
+      </p>
+
+      <p className="sm-p">
+        Bycatch is not drawn evenly from every run; it is a genetic mixture, and
+        stock-of-origin sampling shows where it comes from. The case study below
+        summarizes the latest genetics. <strong>Pending data:</strong> run-by-run
+        attribution — translating a year's bycatch into the number of fish that
+        would have reached the Yukon, the Kuskokwim, and other indicator rivers —
+        requires the multi-year genetics series joined to drainage run
+        reconstructions, not yet wired into this engine.
+      </p>
 
       <div className="sm-case">
         <div className="sm-case-label">Case study · genetics</div>

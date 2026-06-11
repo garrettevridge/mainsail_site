@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Whitepaper export tooling, generated docs, and working Word files (not site code)
+whitepaper_export/
+*.docx
+~$*
