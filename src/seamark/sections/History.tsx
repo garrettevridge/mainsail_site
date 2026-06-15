@@ -16,58 +16,48 @@ export default function History() {
       </h2>
 
       <p className="sm-p">
-        Commercial fishing off Alaska is roughly 150 years old. The first
-        non-Native commercial fishermen were cod schooners out of Seattle and San
-        Francisco; halibut followed, and then salmon, which came to define the
-        industry. Through both world wars, canned Alaska salmon fed soldiers, and
-        the fishery expanded to meet the demand.
+        Commercial fishing in Alaska is about 150 years old. It began in the
+        1870s, soon after the 1867 purchase: the first salmon canneries opened at
+        Klawock and Sitka in 1878 and spread north to Bristol Bay, and canned
+        salmon quickly became the territory's defining industry — at its height
+        it supplied more than 80 percent of Alaska's tax revenue. Cod schooners
+        out of San Francisco and, later, an industrial halibut fleet worked the
+        same waters. But under distant federal management the salmon runs were
+        fished down. The catch peaked above 900 million pounds in 1936, then fell
+        by roughly two-thirds, and by the late 1950s Alaska's salmon fishery had
+        been declared a federal disaster. Fish traps — gear efficient enough to
+        wall off whole streams, and seen as favoring outside canneries over local
+        fishermen — became the rallying grievance of the statehood movement. When
+        Alaska became a state in 1959, voters banned them by a ten-to-one margin.
       </p>
 
       <p className="sm-p">
-        Fisheries were central to the run-up to statehood in 1959. Salmon runs
-        were struggling under distant federal management, and the use of
-        fish traps — efficient, and seen as favoring outside canneries over local
-        fishermen — had become a defining grievance. One of the new state's first
-        acts was to ban them. Foreign fleets, meanwhile, fished heavily off the
-        coast through the middle of the century.
+        Statehood put salmon under state management and, in time, the
+        escapement-goal system that rebuilt the runs. The other turning point
+        came in 1976, when the Magnuson-Stevens Act extended U.S. jurisdiction to
+        200 miles and began pushing out the foreign fleets that had been working
+        the Bering Sea — foreign vessels fell from about 61 percent of the catch
+        in U.S. waters in 1981 to roughly 1 percent a decade later, first through
+        joint ventures with American boats and then a fully domestic fleet. The
+        modern offshore industry was built in the years that followed: the
+        American Fisheries Act (1998) reorganized the Bering Sea pollock fishery
+        into cooperatives, and limited-entry permits, halibut and sablefish quota
+        shares, and crab rationalization shaped who could fish and how much. The
+        result is the two-system structure the rest of this paper assumes — the
+        State of Alaska managing inside three miles and nearly all salmon, for
+        the benefit of Alaskans; the federal council system managing groundfish,
+        crab, and halibut from three to two hundred miles, for the benefit of the
+        nation. Today Alaska lands close to 5 billion pounds a year — about 60
+        percent of the U.S. seafood harvest, more than every other state
+        combined, though still only around 1.3 percent of the global total.
       </p>
 
-      <p className="sm-p">
-        The modern system was built in stages. The Magnuson-Stevens Act (1976)
-        extended U.S. fishery jurisdiction to 200 miles and began pushing the
-        foreign fleets out; joint ventures gave way to a fully domestic fleet;
-        the American Fisheries Act (1998) restructured the Bering Sea pollock
-        fishery; and a series of limited-entry and rationalization programs —
-        limited-entry permits, individual fishing quotas, crab rationalization —
-        shaped who could fish and how much. Crab and then groundfish fisheries
-        developed into the large-scale industries they are today.
-      </p>
-
-      <p className="sm-p">
-        The result is the two-system structure the rest of this paper assumes.
-        The State of Alaska manages the fisheries within three miles of shore and
-        nearly all of the salmon, for the benefit of Alaskans. The federal
-        government — through the North Pacific Fishery Management Council and NOAA
-        Fisheries — manages the groundfish, crab, and halibut of the zone from
-        three to two hundred miles offshore, for the benefit of the nation.
-      </p>
-
-      <p className="sm-p">
-        Through all of it, the resource has produced billions of pounds of
-        seafood a year — by volume among the largest fisheries on earth. Alaska
-        accounts for roughly 60 percent of the United States' wild-caught
-        seafood. Communities grew up around the fish, and many still depend on it
-        entirely.
-      </p>
-
-      <div className="sm-annot">
-        <strong>SEAMARK NOTE — confirm before publication.</strong> Several facts
-        here are drawn from an outline and need verification: the ~150-year
-        figure and first-fishery sequence (cod → halibut → salmon); the specific
-        statehood-era and fish-trap details; the dates and scope of MSA, the AFA,
-        and the rationalization programs; and the "60% of U.S. wild harvest" and
-        "if it were a country it would rank ___" claims, which need a cited
-        source before they go in.
+      <div className="sm-chart-foot">
+        Sources: Alaska Historical Society (salmon cannery chronology); Alaska
+        Dept. of Fish &amp; Game (<em>Sustaining Alaska's Fisheries: Fifty Years
+        of Statehood</em>); NOAA Fisheries (Magnuson-Stevens Act; American
+        Fisheries Act; <em>Where Do Alaska Fish Go</em>); Alaska Seafood
+        Marketing Institute / U.S. Dept. of Commerce (harvest-share figures).
       </div>
     </section>
   );
