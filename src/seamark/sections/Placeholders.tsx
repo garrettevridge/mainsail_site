@@ -69,55 +69,19 @@ export function Observers() {
     <section id="observers" className="sm-section">
       <div className="sm-marker">
         <span className="num">Observer coverage</span>
-        <span className="title">Observer coverage</span>
+        <span className="title">Coverage rates by fleet</span>
       </div>
 
-      <h2 className="sm-h2">
-        How we know <span className="accent">what's in the nets.</span>
-      </h2>
-
-      <p className="sm-p">
-        Every catch and bycatch figure in this paper's federal sections rests on
-        one thing: independent observation. The North Pacific observer program
-        began in 1973 and was restructured in 2013 to bring smaller vessels into
-        coverage through statistical sampling and, increasingly, cameras.
-        Observers do unglamorous, essential work — they sample the catch, record
-        the bycatch, document the gear, and feed it all to NOAA's catch
-        accounting. Coverage is tiered: the Bering Sea pollock and factory-trawl
-        fleets carry full coverage, with an observer or camera on essentially
-        every trip; the Gulf of Alaska and smaller vessels fall under partial
-        coverage, where trips are statistically sampled or monitored by
-        electronic camera systems that now cover a majority of some fleets.
-      </p>
-
       <PlaceholderChart
-        label="Fig 5.1 · primary · time series"
-        source="NOAA AKR Annual Observer Program Reports"
+        label="Fig · coverage by fleet · time series"
+        source="NOAA AKR / NPFMC Annual Observer Program Reports"
         title="Observer coverage rates over time, by fleet segment."
         height="tall"
-        caption="Stacked or grouped time series: BSAI pollock pelagic (100% / 1-2 observers per trip), GOA pollock (mix of cameras 66% and observer 34% in recent years), shoreside plants (2 observers per offload), longline EFP fleets, partial coverage fleets."
+        caption="Pending data: annual observer/EM coverage rates by fleet segment (BSAI pollock, GOA pollock, shoreside plants, longline, partial-coverage fleets) require the NPFMC/NOAA observer program reports, not yet ingested."
         note="Observer coverage dataset not yet gathered"
       >
         {null}
       </PlaceholderChart>
-
-      <p className="sm-p">
-        The contrast in numbers is stark. Federal trawl trips are observed at
-        rates approaching 100 percent — the Bering Sea pollock fleet carries an
-        observer or camera on every trip, and shoreside plants run two observers
-        per offload. State fisheries, by and large, carry close to none.
-      </p>
-
-      <p className="sm-p">
-        The honest closing point: federal fisheries are observed at among
-        the highest rates in any large-scale wild capture system globally.
-        State fisheries are not. The catch and bycatch data we present in
-        this whitepaper for federal fisheries comes from one of the most
-        scrutinized monitoring systems anywhere. The state-fishery data we
-        present comes from logbooks, management reports, and stock
-        assessments — useful, but not the same thing. Every comparison in
-        this paper should be read with that asymmetry in mind.
-      </p>
     </section>
   );
 }

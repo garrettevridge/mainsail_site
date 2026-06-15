@@ -34,26 +34,8 @@ export default function Discards() {
         <span className="title">What's thrown back, and what survives</span>
       </div>
 
-      <h2 className="sm-h2">
-        What goes back, <span className="accent">and what survives.</span>
-      </h2>
-
-      <p className="sm-p">
-        Discards are the part of the catch put back in the sea — sometimes
-        alive, often not. Whether a discarded fish counts against the stock
-        depends on whether it survives, and that is where Discard Mortality
-        Rates come in. A DMR is a species- and gear-specific estimate of the
-        fraction of discarded fish that die: it is the multiplier that turns
-        the raw discard tonnage in the chart above into the fishing mortality
-        the assessment actually books. Federal fisheries publish DMRs by
-        species and gear, and revise them as new survival studies come in. They
-        are also a legitimate subject of scientific disagreement — a halibut
-        flexed over a trawl rail and a halibut unhooked from a longline do not
-        die at the same rate, and pinning down those rates is genuinely hard.
-      </p>
-
       <ChartCard
-        label={`Fig 4.1 · ${discardData[0]?.year ?? ""}–${discardData.at(-1)?.year ?? ""}`}
+        label={`Fig · discards by gear · ${discardData[0]?.year ?? ""}–${discardData.at(-1)?.year ?? ""}`}
         source="NOAA AKR Catch Accounting (monitored_catch, Discarded, Total)"
         title="Federal Alaska discards by gear, by year."
         height="tall"
@@ -135,15 +117,6 @@ export default function Discards() {
         </div>
       </div>
 
-      <p className="sm-p">
-        One limitation is worth stating plainly. The table above is a federal
-        artifact. State-managed fisheries do not publish DMRs at this
-        resolution; many report total and target catch but not the
-        species-by-species discard accounting that the federal groundfish
-        fisheries produce. So the precision in this section — like the precision
-        throughout the federal half of this paper — is a feature of the federal
-        observer system, not of Alaska fisheries as a whole.
-      </p>
     </section>
   );
 }

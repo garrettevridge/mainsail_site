@@ -140,16 +140,6 @@ export default function Limits() {
     return out;
   }, [biomass, monitored]);
 
-  // 2026 pollock cap headroom, computed live for the prose.
-  const cap = useMemo(() => {
-    if (!tac) return null;
-    const rows = tac.filter((r) => r.fmp_area === "BSAI" && r.species_complex === "Pollock" && r.year === 2026);
-    const sum = (k: "ofl_mt" | "abc_mt" | "tac_mt") => rows.reduce((a, r) => a + (r[k] ?? 0), 0);
-    const ofl = sum("ofl_mt"), abc = sum("abc_mt"), t = sum("tac_mt");
-    if (!ofl || !abc || !t) return null;
-    return { belowAbc: Math.round((1 - t / abc) * 100), belowOfl: Math.round((1 - t / ofl) * 100) };
-  }, [tac]);
-
   const lastYear = chartData.at(-1)?.year;
 
   const fmtKt = (kt: number) =>
@@ -162,53 +152,8 @@ export default function Limits() {
         <span className="title">Caps, biomass, and what gets caught</span>
       </div>
 
-      <h2 className="sm-h2">
-        Biomass, limits, <span className="accent">and what gets caught.</span>
-      </h2>
-
-      <p className="sm-p">
-        Two governments manage Alaska's fish. The State of Alaska, through the
-        Department of Fish and Game, manages the fisheries in state waters and
-        nearly all of the salmon — managed, by constitutional mandate, for the
-        benefit of Alaskans. The federal government, through the North Pacific
-        Fishery Management Council and NOAA Fisheries, manages the groundfish,
-        crab, and halibut of the federal zone three to two hundred miles
-        offshore — managed, by statute, for the benefit of the nation. The two
-        regimes differ in mandate, in scale, and — as later sections show — in
-        how completely their catch is observed. This section is about the
-        federal groundfish system, because that is where the harvest numbers in
-        the headlines come from.
-      </p>
-
-      <p className="sm-p">
-        No regulatory process is simple, and none is beyond criticism. But the
-        federal groundfish regime is among the most deeply developed structures
-        for managing a wild fishery anywhere in the world, with a half-century
-        of institutional history behind it. The cycle is the same every year. A
-        fleet of survey vessels measures the stock. Assessment scientists turn
-        those surveys into a biomass estimate. The Council's Scientific and
-        Statistical Committee reviews the assessment and sets a science-based
-        ceiling. The Council sets the harvest limit at or below that ceiling.
-        And catch accounting tracks every ton landed against it. Survey,
-        science, limit, harvest, audit — repeated annually, in public, for
-        decades.
-      </p>
-
-      <p className="sm-p">
-        The limit itself is built in three layers. Each year the stock
-        assessment estimates the spawning biomass. From that estimate,
-        scientists calculate the Overfishing Level (OFL) — the harvest above
-        which overfishing occurs by statutory definition. Below OFL sits the
-        Acceptable Biological Catch (ABC), which discounts the OFL for
-        scientific uncertainty. Below ABC sits the Total Allowable Catch (TAC),
-        the limit the fleet actually fishes against, set by Council action. For
-        pollock, one more ceiling sits above all of it: a 2-million-metric-ton
-        aggregate cap on the combined Bering Sea groundfish harvest, regardless
-        of what the biology of any single stock would otherwise allow.
-      </p>
-
       <ChartCard
-        label={`Fig 2.1 · primary · ${chartData[0]?.year ?? ""}–${lastYear ?? ""}`}
+        label={`Fig · pollock biomass vs. harvest · ${chartData[0]?.year ?? ""}–${lastYear ?? ""}`}
         source="NOAA AFSC · NPFMC SAFE · AKR Catch Accounting"
         title="Bering Sea pollock — biomass, harvest limits, and actual harvest."
         height="tall"
@@ -243,18 +188,9 @@ export default function Limits() {
         )}
       </ChartCard>
 
-      <p className="sm-p">
-        The gap is not abstract. In the most recent year of catch accounting,
-        the Bering Sea pollock fleet removed about{" "}
-        {tableRows[0] ? `${tableRows[0].sharePct.toFixed(0)} percent` : "fourteen percent"}{" "}
-        of the assessed pollock biomass; Pacific cod ran a little higher, and
-        sablefish a small fraction of its Alaska-wide stock. The table below
-        sets each stock's harvest against the biomass it was drawn from.
-      </p>
-
       {tableRows.length > 0 && (
         <SmTable<BiomassTakeRow>
-          label="Fig 2.2 · biomass vs. take · latest assessment year"
+          label="Fig · biomass vs. take · latest assessment year"
           headNote="Bering Sea / Aleutian Islands"
           title="What is in the water, and what gets taken out."
           columns={[
@@ -303,21 +239,8 @@ export default function Limits() {
         />
       )}
 
-      <p className="sm-p">
-        Two things follow. First, the harvest numbers that reach the public have
-        already been discounted several times below what the science says the
-        stock could bear. The 2026 pollock TAC was set roughly{" "}
-        {cap ? `${cap.belowAbc} percent` : "a third"} below the Acceptable
-        Biological Catch and about {cap ? `${cap.belowOfl} percent` : "half"}{" "}
-        below the Overfishing Level — and the fleet, in turn, lands less than the
-        TAC. Second, the 2-million-ton aggregate cap is unusual globally: most
-        large fisheries do not cap total ecosystem harvest at all, let alone
-        below biological yield. Whether that conservatism is sufficient is a
-        legitimate debate. That the conservatism exists is not.
-      </p>
-
       <ChartCard
-        label="Fig 2.3 · secondary · time series"
+        label="Fig · precautionary buffer · time series"
         source="NPFMC SAFE · NOAA AFSC"
         title="The precautionary buffer — TAC as a share of ABC."
         height="short"

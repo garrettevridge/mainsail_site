@@ -34,21 +34,8 @@ export default function WesternAlaska() {
         <span className="title">The collapse, and the data on cause</span>
       </div>
 
-      <h2 className="sm-h2">
-        Western Alaska salmon, <span className="accent">in the data.</span>
-      </h2>
-
-      <p className="sm-p">
-        Across Western Alaska — the Yukon and Kuskokwim systems and the broader
-        Arctic-Yukon-Kuskokwim region — Chinook and chum returns have collapsed
-        over the past decade, and subsistence fisheries have been closed for
-        several consecutive years. The chart below shows counted in-river
-        escapement for the major Chinook drainages: historical runs measured in
-        the hundreds of thousands, recent counts a fraction of that.
-      </p>
-
       <ChartCard
-        label="Fig 3.4 · primary · the comparison that matters"
+        label="Fig · Chinook escapement by drainage"
         source="ADF&G drainage rollup (chinook_drainage_totals)"
         title="Western Alaska Chinook — counted in-river escapement, by drainage."
         height="tall"
@@ -81,18 +68,6 @@ export default function WesternAlaska() {
         )}
       </ChartCard>
 
-      <p className="sm-p">
-        Three data points bear on the relationship between bycatch and the
-        collapse. First, Chinook bycatch attributable to Coastal Western Alaska
-        averages roughly 5,000–7,000 fish per year in recent BSAI seasons,
-        against historical Yukon and Kuskokwim runs measured in the hundreds of
-        thousands. Second, Western Alaska accounts for roughly 8 percent of
-        identified-origin BSAI chum bycatch, with the majority Asian and Pacific
-        Northwest hatchery stock. Third, the decline has affected stocks across
-        the region that share little except their marine phase — including
-        populations with minimal interaction with the BSAI pollock fishery.
-      </p>
-
       <PlaceholderChart
         label="Fig 3.5 · marine survival"
         source="ADF&G research · AFSC ESR"
@@ -109,15 +84,6 @@ export default function WesternAlaska() {
         {null}
       </PlaceholderChart>
 
-      <p className="sm-p">
-        Over the same period — since roughly 2014 — the Bering Sea warmed to the
-        highest temperatures in the instrumental record, the cold pool retreated,
-        the snow crab stock collapsed, and Gulf of Alaska Pacific cod recruitment
-        failed. AFSC and ADF&amp;G research has centered on marine survival as a
-        leading factor in the salmon declines; the survival indices that would
-        quantify it are not yet wired (Fig 3.5 above). What Seamark makes of these
-        data is set out in the conclusion.
-      </p>
     </section>
   );
 }
