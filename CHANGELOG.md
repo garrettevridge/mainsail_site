@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-06-15 — Seamark: paginated brief deck (Chinook / Chum / Halibut / Observer)
+
+Replaced the single scrollable data page with a paginated "brief deck" —
+one comprehensive, mobile-friendly card per topic, arrow-navigated
+(`src/seamark/Deck.tsx`). `App` now renders `Deck`.
+
+- **Four built slides**, each on a shared template (long view → show the
+  work → context → cited notes → methodology):
+  - **Chinook** — bycatch long view; the removals denominator (every
+    Chinook taken in AK) with multi-year context; full GSI origin
+    breakdown; the Coastal-Western-Alaska-origin bycatch vs. river
+    escapement as area-proportional squares.
+  - **Chum** — bycatch long view; GSI origin (≈69% Asian hatchery, ≈11%
+    Western Alaska / Yukon); Alaska-share vs. subsistence squares; a
+    river-escapement squares block **wired to `salmon_escapement`
+    (species=chum), rendering a placeholder until those rows ship** (see
+    INGEST_SPECS P6); the Feb 2026 45,000 Western-Alaska-chum cap.
+  - **Halibut** — bycatch (non-directed discard) long view; every-halibut-
+    killed breakdown; bycatch by gear; bycatch vs. directed-fishery
+    squares; discard mortality rates.
+  - **Observer** — partial-fleet coverage by method over time against the
+    ~100% full-coverage tier; the full/partial/zero trip landscape; the
+    census-vs-sample note. Reads the new `observer_coverage` dataset.
+- **Visual:** white background, black ink, neutral rules (`tokens.css`);
+  large counts formatted compactly (`k`).
+- **Perspective notes** (Seamark voice, cited to primary sources, not the
+  comment that prompted them): the "reaching the river" reframing
+  (≈2% Chinook / ≈1% chum of the western-Alaska return) and the
+  pink-salmon / hatchery competition angle.
+- **`docs/INGEST_SPECS.md`** added — backend data handoff; P6 chum
+  escapement is the active blocker for the chum river graphic.
+
 ## 2026-06-11 — Whitepaper: hub-and-spoke (explorable) restructure
 
 Moved the whitepaper off a single linear scroll into a hub-and-spoke

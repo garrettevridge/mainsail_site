@@ -281,6 +281,35 @@ export interface DiscardMortalityRateRow {
   notes: string | null;
 }
 
+// observer_coverage — North Pacific Observer Program coverage by monitoring
+// stratum, 2016-present. One row per year × stratum. coverage_category is
+// full/partial/zero; monitoring_method is observer/em/none. realized_pct and
+// expected_pct are coverage rates; total/sampled vessels and trips are the
+// denominators. Source: NOAA FMA Annual Reports / Annual Deployment Plans.
+export interface ObserverCoverageRow {
+  id: number;
+  year: number;
+  stratum_key: string;
+  stratum_label: string;
+  coverage_category: "full" | "partial" | "zero";
+  monitoring_method: "observer" | "em" | "none";
+  gear: string;
+  fmp_area: string;
+  period: string;
+  expected_pct: number | null;
+  realized_pct: number | null;
+  ci_lower: number | null;
+  ci_upper: number | null;
+  ci_kind: string | null;
+  total_vessels: number | null;
+  sampled_vessels: number | null;
+  total_trips: number | null;
+  sampled_trips: number | null;
+  source_doc: string | null;
+  source_table: string | null;
+  source_url: string | null;
+}
+
 export interface HatcheryReleasesRow {
   country: string;
   region: string;

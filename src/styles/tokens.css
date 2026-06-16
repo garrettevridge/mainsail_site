@@ -4,15 +4,15 @@
 
 :root {
   /* Surfaces */
-  --bg:        #fafaf7;
-  --bg-2:      #f3f1ea;
-  --bg-3:      #ecead9;
+  --bg:        #ffffff;
+  --bg-2:      #ffffff;
+  --bg-3:      #f4f4f4;
 
-  /* Ink */
-  --ink:       #111110;
-  --ink-2:     #4a4845;
-  --ink-3:     #7a7770;
-  --ink-4:     #a8a59e;
+  /* Ink — black, with the faintest size/weight hierarchy only */
+  --ink:       #000000;
+  --ink-2:     #1a1a1a;
+  --ink-3:     #2e2e2e;
+  --ink-4:     #6b6b6b;
 
   /* Accent */
   --accent:      #b8421e;
@@ -20,9 +20,9 @@
   --accent-soft: #f4e2d8;
 
   /* Rules */
-  --rule:      #1c1c1a;
-  --rule-2:    #cfcdc4;
-  --rule-3:    #e5e2d8;
+  --rule:      #000000;
+  --rule-2:    #d9d9d9;
+  --rule-3:    #eaeaea;
 
   /* Confirm / annotation */
   --confirm:    #8a5a00;

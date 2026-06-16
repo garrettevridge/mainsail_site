@@ -40,13 +40,13 @@
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--ink-2);
-    background: linear-gradient(180deg, rgba(250,250,247,0.97) 0%, rgba(250,250,247,0.85) 70%, rgba(250,250,247,0) 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.85) 70%, rgba(255,255,255,0) 100%);
     border-bottom: 1px solid transparent;
     transition: border-color 0.3s, background 0.3s;
   }
   .sm-topnav.scrolled {
     border-bottom-color: var(--rule-2);
-    background: rgba(250,250,247,0.98);
+    background: rgba(255,255,255,0.98);
     backdrop-filter: blur(8px);
   }
   .sm-topnav .brand { color: var(--ink); font-weight: 700; }
@@ -221,6 +221,94 @@
   .sm-topic-card:hover .arr { color: var(--accent); }
 
   .sm-footer .footer-meta-line { margin-top: 8px; color: var(--ink-3); }
+
+  /* ===================== BRIEF DECK / SLIDES ===================== */
+  .sm-deck {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px 120px;
+  }
+  .sm-slide { background: var(--bg-2); border: 1px solid var(--rule-2); padding: 40px; }
+  .sm-slide-kicker {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+  }
+  .sm-slide-title {
+    font-family: var(--font-display); font-size: 34px; line-height: 1.05;
+    letter-spacing: -0.02em; margin: 6px 0 0; color: var(--ink);
+  }
+  .sm-block { margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--rule-3); }
+  .sm-block:first-of-type { border-top: none; padding-top: 0; }
+  .sm-block-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px;
+  }
+  .sm-block-h {
+    font-family: var(--font-sans); font-weight: 600; font-size: 18px;
+    color: var(--ink); margin: 0 0 14px;
+  }
+  /* magnitude proportion bar */
+  .sm-magbar { display: flex; height: 32px; border: 1px solid var(--rule-2); overflow: hidden; }
+  .sm-magbar > span { display: block; height: 100%; }
+  .sm-magbar-cap { font-family: var(--font-sans); font-size: 15px; color: var(--ink); margin-top: 10px; line-height: 1.5; }
+  .sm-magbar-cap b { color: var(--accent); font-weight: 600; }
+  .sm-magbar-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-family: var(--font-sans); font-size: 13px; color: var(--ink-2); }
+  .sm-magbar-legend span { display: flex; align-items: center; gap: 6px; }
+  .sm-magbar-legend .sw { width: 11px; height: 11px; border-radius: 2px; }
+  /* genetics arrow flow */
+  .sm-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; font-family: var(--font-sans); font-size: 14px; }
+  .sm-flow .tag { background: var(--bg-3, #f1ece2); color: var(--accent); padding: 4px 10px; font-weight: 500; }
+  .sm-flow .arr { color: var(--ink-3); font-size: 18px; line-height: 1; }
+  .sm-flow .res { color: var(--ink); }
+  /* river run bars */
+  .sm-run { margin-bottom: 12px; }
+  .sm-run-head { display: flex; justify-content: space-between; font-family: var(--font-sans); font-size: 13px; margin-bottom: 4px; }
+  .sm-run-head .lbl { color: var(--ink); }
+  .sm-run-head .val { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .sm-run-track { height: 14px; background: var(--rule-3); overflow: hidden; }
+  .sm-run-fill { height: 100%; background: var(--accent); }
+  /* two area-proportional squares */
+  .sm-squares { display: flex; align-items: flex-end; gap: 36px; flex-wrap: wrap; padding: 6px 0 4px; }
+  .sm-square { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .sm-square-box { flex: none; }
+  .sm-square figcaption { display: block; text-align: center; }
+  .sm-square { margin: 0; }
+  .sm-square .sm-square-val { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; color: var(--ink); line-height: 1; }
+  .sm-square .sm-square-lbl { display: block; margin-top: 5px; font-family: var(--font-sans); font-size: 12px; line-height: 1.4; color: var(--ink-2); max-width: 180px; }
+  .sm-square .sm-square-sub { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--ink-3); }
+  /* color note */
+  .sm-note { margin-top: 22px; padding: 16px 18px; background: var(--bg); border-left: 3px solid var(--rule-2); }
+  .sm-note-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+  .sm-note p { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .sm-note a { color: var(--accent); }
+  /* methodology block */
+  .sm-method { margin-top: 30px; padding: 20px; background: var(--bg); border: 1px solid var(--rule-3); }
+  .sm-method-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
+  .sm-method p { font-family: var(--font-sans); font-size: 12.5px; line-height: 1.65; color: var(--ink-2); margin: 0 0 10px; }
+  .sm-method p:last-child { margin-bottom: 0; }
+  .sm-method b { color: var(--ink); font-weight: 600; }
+  .sm-method a { color: var(--accent); }
+  /* small context pill under a stat */
+  .sm-context { font-family: var(--font-sans); font-size: 13px; color: var(--ink-3); margin-top: 10px; }
+  .sm-context b { color: var(--accent); font-weight: 600; }
+
+  /* deck nav */
+  .sm-deck-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
+  .sm-deck-nav button {
+    font-family: var(--font-sans); font-size: 14px; padding: 10px 18px;
+    background: var(--bg-2); border: 1px solid var(--rule-2); color: var(--ink); cursor: pointer;
+  }
+  .sm-deck-nav button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .sm-deck-nav button:disabled { opacity: 0.35; cursor: default; }
+  .sm-deck-dots { display: flex; gap: 8px; }
+  .sm-deck-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--rule-2); display: block; }
+  .sm-deck-dots i.on { background: var(--accent); }
+  @media (max-width: 700px) {
+    .sm-slide { padding: 28px 20px; }
+    .sm-slide-title { font-size: 27px; }
+    .sm-deck { padding: 24px 12px 100px; }
+  }
 
   /* Row of small side-trend charts */
   .sm-grid-3 {
