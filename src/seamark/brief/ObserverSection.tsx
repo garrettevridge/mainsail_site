@@ -1,32 +1,61 @@
 import { useMemo } from "react";
 import { useDataset } from "../../api/manifest";
-import type { ObserverCoverageRow } from "../../api/types";
-import { MultiLine } from "../SmChart";
-import { ACCENT, TEAL, CLAY, LANDSCAPE_PARTIAL, LANDSCAPE_ZERO } from "../colors";
-import { Section, Block, Magbar, Source, LegendLines, WideNote, Methodology, UpNext, k, type Seg } from "./parts";
+import type { ObserverCoverageRow, MonitoredCatchRow } from "../../api/types";
+import { TEAL, LANDSCAPE_PARTIAL, LANDSCAPE_ZERO } from "../colors";
+import { Section, Block, Magbar, CoverageBars, Source, WideNote, Methodology, UpNext, k, type Seg, type CoverageRow } from "./parts";
 
 type Cat = "full" | "partial" | "zero";
 
+// Editorial mapping from catch-accounting (sector × gear) to recognizable fleets.
+const fleetOf = (sector: string, gear: string): string => {
+  if (sector.startsWith("Catcher Vessel: AFA")) return "Pollock catcher vessels (AFA)";
+  if (sector === "Catcher/Processor" && gear === "Pelagic Trawl") return "Pollock catcher-processors";
+  if (sector === "Catcher/Processor" && gear === "Nonpelagic Trawl") return "Amendment 80 (flatfish)";
+  if (sector === "Catcher/Processor" && gear === "Hook and Line") return "Freezer longliners";
+  if (sector === "Mothership") return "Motherships";
+  if (sector === "Catcher Vessel" && /Trawl/.test(gear)) return "Trawl catcher vessels";
+  if (sector === "Catcher Vessel" && gear === "Pot") return "Pot catcher vessels";
+  if (sector === "Catcher Vessel" && gear === "Hook and Line") return "Hook-and-line catcher vessels";
+  return "Other programs";
+};
+
 export default function ObserverSection({ onTop }: { onTop: () => void }) {
   const { data: obs } = useDataset<ObserverCoverageRow>("observer_coverage");
+  const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
 
-  const series = useMemo(() => {
-    if (!obs) return [];
-    const years = [...new Set(obs.map((r) => r.year))].sort((a, b) => a - b);
-    return years.map((year) => {
-      const agg = (method: string) => {
-        let s = 0, t = 0;
-        for (const r of obs) {
-          if (r.year === year && r.coverage_category === "partial" && r.monitoring_method === method && r.total_trips) {
-            s += r.sampled_trips ?? 0;
-            t += r.total_trips;
-          }
-        }
-        return t > 0 ? (s / t) * 100 : null;
-      };
-      return { year, "Partial · observer": agg("observer"), "Partial · EM": agg("em") };
-    });
-  }, [obs]);
+  const fleetYear = useMemo(() => (mc && mc.length ? Math.max(...mc.map((r) => r.year)) : null), [mc]);
+  const fleets = useMemo<CoverageRow[]>(() => {
+    if (!mc || fleetYear == null) return [];
+    const m = new Map<string, { total: number; monitored: number }>();
+    for (const r of mc) {
+      if (r.year !== fleetYear) continue;
+      if (r.monitored_or_total !== "Total" && r.monitored_or_total !== "Monitored") continue;
+      const fleet = fleetOf(r.sector, r.gear);
+      const cur = m.get(fleet) ?? { total: 0, monitored: 0 };
+      if (r.monitored_or_total === "Total") cur.total += r.metric_tons;
+      else cur.monitored += r.metric_tons;
+      m.set(fleet, cur);
+    }
+    return [...m.entries()]
+      .filter(([, v]) => v.total > 0)
+      .map(([fleet, v]) => ({ fleet, total: v.total, pct: Math.min(100, Math.round((v.monitored / v.total) * 100)) }))
+      .sort((a, b) => b.total - a.total);
+  }, [mc, fleetYear]);
+  const fleetMax = Math.max(...fleets.map((f) => f.total), 1);
+  // The state-managed salmon fleet — the fishery the bycatch debate centers on —
+  // sits entirely outside the federal observer program, so it has no catch in
+  // this accounting and zero observer coverage. Shown for contrast.
+  const fleetRows: CoverageRow[] = fleets.length ? [...fleets, { fleet: "Salmon fishing vessels (state waters)", total: 0, pct: 0 }] : [];
+  const fleetOverall = useMemo(() => {
+    if (!mc || fleetYear == null) return null;
+    let tot = 0, mon = 0;
+    for (const r of mc) {
+      if (r.year !== fleetYear) continue;
+      if (r.monitored_or_total === "Total") tot += r.metric_tons;
+      else if (r.monitored_or_total === "Monitored") mon += r.metric_tons;
+    }
+    return tot > 0 ? Math.round((mon / tot) * 100) : null;
+  }, [mc, fleetYear]);
 
   const landscape = useMemo(() => {
     if (!obs) return null;
@@ -67,31 +96,13 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
       dek="Every number in this brief rests on this one. The fleets that take most of the bycatch are watched at essentially 100% — so those counts are a census, not a guess. The smaller boats are a different story."
     >
       <Block
-        label="The long view"
-        title="How much of the fleet is monitored, by method."
-        caption="The largest vessels carry full coverage at essentially 100% every year (top line). The smaller, partial-coverage fleet is sampled far more lightly — human observers ride 15–22% of trips, while electronic monitoring is closing the gap. The space between the lines is the gap between a census and a sample."
+        label={`Coverage by fleet${fleetYear ? ` · ${fleetYear}` : ""}`}
+        title="The fleets that take the most are watched the most."
+        caption={fleets.length ? <>Each bar is a fleet's federally managed groundfish catch; the shaded part is the share under monitoring. The pollock catcher-processors, AFA catcher vessels, Amendment&nbsp;80 fleet, and freezer longliners — which land most of the catch and take most of the salmon and halibut bycatch — run at essentially <b>100%</b>. Coverage thins only on the smaller catcher-vessel fleets.{fleetOverall != null ? <> Across all sectors, about <b>{fleetOverall}%</b> of {fleetYear} groundfish tonnage was monitored.</> : null} The state-managed salmon fleet at the center of the debate sits outside this program entirely — no federal observer coverage at all.</> : undefined}
       >
         <div className="br-chart">
-          {series.length > 0 ? (
-            <MultiLine
-              data={series}
-              xKey="year"
-              keys={["Partial · observer", "Partial · EM"]}
-              colors={[TEAL, CLAY]}
-              height={240}
-              yFormatter={(v) => `${Math.round(v)}%`}
-              yDomain={[0, 100]}
-              refLines={[{ y: 100, label: "Full-coverage fleet", color: ACCENT, dash: "6 5" }]}
-            />
-          ) : null}
-          <LegendLines
-            items={[
-              { color: ACCENT, name: "Full-coverage fleet (≈100%)" },
-              { color: TEAL, name: "Partial — human observer" },
-              { color: CLAY, name: "Partial — electronic monitoring" },
-            ]}
-          />
-          <Source>Source · NOAA FMA / North Pacific Observer Program</Source>
+          {fleetRows.length > 0 && <CoverageBars rows={fleetRows} max={fleetMax} fmt={k} />}
+          <Source>Source · NMFS catch accounting · monitored vs. total catch (MT){fleetYear ? ` · ${fleetYear}` : ""}</Source>
         </div>
       </Block>
 
@@ -111,9 +122,8 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
 
       <Methodology
         items={[
-          { strong: "Coverage.", body: "North Pacific Observer Program coverage by monitoring stratum, 2016–present, from NOAA Fisheries Monitoring & Analysis annual reports. Each stratum is classified full, partial, or zero, and monitored by observer, electronic monitoring, or none." },
-          { strong: "The long view.", body: "Realized coverage of the partial-coverage fleet, trip-weighted across that year's partial strata, by method. The full-coverage fleet sits at ≈100% throughout and is drawn as a reference line." },
-          { strong: "The landscape bar.", body: "Each year's strata summed by coverage category, weighted by total trips, most recent year. Trip counts describe fleet structure, not catch volume — one catcher-processor trip lands far more than a small fixed-gear trip." },
+          { strong: "Coverage by fleet.", body: "NMFS catch accounting (BSAI + GOA), most recent year. Each bar sums total groundfish catch (all species, retained and discarded) for a sector × gear grouping; the shaded share is the catch under monitoring. Sector × gear combinations are mapped to recognizable fleets — e.g. AFA catcher vessels, pollock and Amendment 80 catcher-processors, freezer longliners — with minor programs grouped as “Other.”" },
+          { strong: "The landscape bar.", body: "North Pacific Observer Program strata (NOAA Fisheries Monitoring & Analysis annual reports), most recent year, summed by coverage category and weighted by total trips. Trip counts describe fleet structure, not catch volume — one catcher-processor trip lands far more than a small fixed-gear trip." },
         ]}
       />
 

@@ -122,6 +122,37 @@ export function GearBars({ rows, max }: { rows: { gear: string; val: string; w: 
   );
 }
 
+export type CoverageRow = { fleet: string; total: number; pct: number };
+
+// One row per fleet: bar width encodes catch tonnage (fleet size), the shaded
+// portion encodes the share of that catch under monitoring. Big fleets at 100%
+// read as long solid bars; small partial fleets as short, mostly-open bars.
+export function CoverageBars({ rows, max, fmt }: { rows: CoverageRow[]; max: number; fmt: (n: number) => string }) {
+  return (
+    <div className="br-cov">
+      <div className="br-cov-key">
+        <span className="item"><span className="sw mon" /> Monitored</span>
+        <span className="item"><span className="sw un" /> Not monitored</span>
+      </div>
+      {rows.map((r) => (
+        <div className="row" key={r.fleet}>
+          <div className="head">
+            <span className="fleet">{r.fleet}</span>
+            <span className="val">{r.total > 0 ? `${r.pct}% · ${fmt(r.total)} MT` : "No observer coverage"}</span>
+          </div>
+          {r.total > 0 ? (
+            <div className="track" style={{ width: `${Math.max(4, (r.total / max) * 100)}%` }}>
+              <div className="mon" style={{ width: `${r.pct}%` }} />
+            </div>
+          ) : (
+            <div className="track out" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Source({ children }: { children: ReactNode }) {
   return <div className="br-source">{children}</div>;
 }
