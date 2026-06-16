@@ -1,0 +1,205 @@
+/* Mainsail Data Brief — editorial design system (from design handoff).
+   Single scrolling page: sticky scroll-spy nav, hero + TOC, four stacked
+   sections (section header → data blocks → 3-col notes → 3-col methodology →
+   up-next band), footer. Newsreader serif + Archivo sans + Space Mono. */
+
+.br {
+  font-family: "Newsreader", Georgia, serif;
+  color: #1a1916;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.br *,
+.br *::before,
+.br *::after { box-sizing: border-box; }
+.br-wrap { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+
+/* ============================== NAV ============================== */
+.br-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid #ece8dd;
+}
+.br-nav-inner { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.br-wordmark { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
+.br-wordmark b { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #1a1916; }
+.br-wordmark span { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #a39e92; }
+.br-navlinks { display: flex; align-items: center; gap: 26px; }
+.br-navlink {
+  font-family: "Archivo", sans-serif; font-size: 13px; font-weight: 500;
+  color: #56524b; cursor: pointer; letter-spacing: 0.01em; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0;
+  transition: color 0.18s ease;
+}
+.br-navlink:hover { color: #1a1916; }
+.br-navlink.active { color: #b8421e; font-weight: 700; }
+.br-navlink .tag { font-family: "Space Mono", monospace; font-size: 9px; color: #c4bfb2; }
+.br-progress { height: 2px; background: transparent; }
+.br-progress > div { height: 100%; background: #b8421e; transition: width 0.1s linear; }
+
+@media (max-width: 720px) {
+  .br-navlinks { display: none; }
+}
+
+/* ============================== HERO ============================== */
+.br-hero { padding-top: 96px; padding-bottom: 72px; }
+.br-hero-col { max-width: 760px; }
+.br-kicker {
+  font-family: "Space Mono", monospace; font-size: 12px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: #b8421e; margin-bottom: 28px;
+}
+.br-hero h1 {
+  font-family: "Newsreader", serif; font-weight: 500; font-size: 64px; line-height: 1.04;
+  letter-spacing: -0.02em; margin: 0 0 28px; color: #15140f; text-wrap: balance;
+}
+.br-hero-dek {
+  font-family: "Newsreader", serif; font-weight: 400; font-size: 21px; line-height: 1.55;
+  color: #4a463e; margin: 0 0 36px; max-width: 640px; text-wrap: pretty;
+}
+.br-hero-meta {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #8a8579;
+}
+.br-hero-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: #cfcabd; }
+
+.br-toc { margin-top: 64px; border-top: 1px solid #e7e3d9; padding-top: 18px; }
+.br-toc-label {
+  font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #a39e92; margin-bottom: 8px;
+}
+.br-toc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.br-toc-card {
+  display: flex; flex-direction: column; padding: 26px 24px 28px; border-left: 1px solid #e7e3d9;
+  cursor: pointer; background: none; text-align: left; transition: background 0.18s ease; min-height: 184px;
+}
+.br-toc-card:hover { background: #faf8f2; }
+.br-toc-card .row { display: flex; align-items: baseline; justify-content: space-between; }
+.br-toc-card .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.04em; color: #b8421e; }
+.br-toc-card .status { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #a39e92; }
+.br-toc-card h3 { font-family: "Newsreader", serif; font-weight: 500; font-size: 23px; line-height: 1.1; margin: 34px 0 8px; color: #1a1916; letter-spacing: -0.01em; }
+.br-toc-card .blurb { font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.5; color: #7a7770; margin: 0; }
+
+@media (max-width: 880px) {
+  .br-toc-grid { grid-template-columns: repeat(2, 1fr); }
+  .br-toc-card:nth-child(odd) { border-left: 1px solid #e7e3d9; }
+}
+@media (max-width: 560px) {
+  .br-toc-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================== SECTION ============================== */
+.br-section { border-top: 1px solid #e7e3d9; }
+.br-section-head { padding-top: 88px; padding-bottom: 8px; }
+.br-section-head .col { max-width: 760px; }
+.br-eyebrow { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.br-eyebrow .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 14px; color: #b8421e; letter-spacing: 0.02em; }
+.br-eyebrow .tick { width: 28px; height: 1px; background: #d8d3c6; }
+.br-eyebrow .cat { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #8a8579; }
+.br-section-head h2 {
+  font-family: "Newsreader", serif; font-weight: 500; font-size: 52px; line-height: 1.05;
+  letter-spacing: -0.02em; margin: 0 0 24px; color: #15140f;
+}
+.br-dek { font-family: "Newsreader", serif; font-size: 21px; line-height: 1.55; color: #4a463e; margin: 0; max-width: 640px; text-wrap: pretty; }
+
+/* ============================== DATA BLOCK ============================== */
+.br-block { padding-top: 56px; padding-bottom: 56px; }
+.br-block.div { border-top: 1px solid #f0ece2; }
+.br-block.alt { border-top: 1px solid #f0ece2; background: #fcfbf7; }
+.br-block-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.br-block-head .sq { width: 6px; height: 6px; background: #b8421e; flex: none; }
+.br-block-head .label { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1916; }
+.br-block h3 { font-family: "Newsreader", serif; font-weight: 500; font-size: 28px; line-height: 1.2; margin: 6px 0 4px; color: #1a1916; max-width: 680px; }
+.br-block-cap { font-family: "Newsreader", serif; font-size: 17px; line-height: 1.55; color: #56524b; margin: 0 0 32px; max-width: 620px; }
+.br-block-cap b { color: #1a1916; }
+.br-block-note { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #56524b; margin: 28px 0 0; max-width: 640px; }
+.br-block-note b { color: #1a1916; }
+
+.br-chart { max-width: 920px; }
+.br-source { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #a39e92; margin-top: 14px; }
+
+/* chart text → Space Mono (axis ticks, ref labels) */
+.br-chart .recharts-text,
+.br-chart .recharts-cartesian-axis-tick-value tspan { font-family: "Space Mono", monospace; }
+
+/* proportion (magnitude) bar */
+.br-magbar { display: flex; height: 64px; border-radius: 4px; overflow: hidden; }
+.br-magbar > span { display: flex; align-items: center; padding-left: 12px; min-width: 0; }
+.br-magbar > span b { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 14px; }
+.br-legend { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-top: 20px; }
+.br-legend .item { display: flex; align-items: center; gap: 9px; }
+.br-legend .sw { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+.br-legend .line { width: 16px; height: 3px; border-radius: 2px; flex: none; }
+.br-legend .name { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; font-weight: 600; }
+.br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #8a8579; }
+
+/* area-proportional squares */
+.br-squares { display: flex; gap: 64px; align-items: flex-end; flex-wrap: wrap; }
+.br-square { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.br-square .box { border-radius: 3px; flex: none; }
+.br-square figcaption { max-width: 280px; }
+.br-square .val { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 26px; color: #1a1916; line-height: 1; }
+.br-square .lbl { font-family: "Archivo", sans-serif; font-size: 14px; font-weight: 600; color: #3a3833; margin-top: 6px; }
+.br-square .sub { font-family: "Archivo", sans-serif; font-size: 13px; color: #8a8579; margin-top: 3px; }
+
+/* horizontal gear bars */
+.br-gear { max-width: 720px; display: flex; flex-direction: column; gap: 22px; }
+.br-gear .row .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.br-gear .row .gear { font-family: "Archivo", sans-serif; font-size: 15px; font-weight: 600; color: #1a1916; }
+.br-gear .row .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #8a8579; }
+.br-gear .row .track { height: 14px; background: #efece3; border-radius: 3px; overflow: hidden; }
+.br-gear .row .fill { height: 100%; background: #2f6b73; border-radius: 3px; }
+
+/* line-chart y-axis manual % labels overlay */
+.br-line { position: relative; }
+.br-line .ylab { position: absolute; left: 0; transform: translateY(-50%); font-family: "Space Mono", monospace; font-size: 10px; color: #a39e92; background: #fff; padding: 0 4px; }
+
+/* ============================== NOTES ============================== */
+.br-notes { padding-top: 64px; padding-bottom: 64px; }
+.br-notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.br-note { border-top: 2px solid #1a1916; padding-top: 16px; max-width: 680px; }
+.br-note .label { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #b8421e; margin-bottom: 12px; }
+.br-note p { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #3a3833; margin: 0; }
+.br-note p a, .br-method p a, .br-block-cap a, .br-block-note a { color: #b8421e; }
+
+@media (max-width: 760px) {
+  .br-notes-grid { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* ============================== METHODOLOGY ============================== */
+.br-method { border-top: 1px solid #e7e3d9; background: #faf8f2; }
+.br-method-inner { padding-top: 48px; padding-bottom: 48px; }
+.br-method .mlabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8579; margin-bottom: 18px; }
+.br-method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; max-width: 980px; }
+.br-method p { font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.6; color: #6a665e; margin: 0; }
+.br-method p b { color: #1a1916; }
+
+@media (max-width: 760px) {
+  .br-method-grid { grid-template-columns: 1fr; gap: 24px; }
+}
+
+/* ============================== UP NEXT ============================== */
+.br-upnext { border-top: 1px solid #e7e3d9; cursor: pointer; background: #fff; transition: background 0.18s ease; display: block; width: 100%; text-align: left; }
+.br-upnext:hover { background: #fcfbf7; }
+.br-upnext-inner { padding-top: 40px; padding-bottom: 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.br-upnext .ulabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #a39e92; margin-bottom: 6px; }
+.br-upnext .utitle { font-family: "Newsreader", serif; font-weight: 500; font-size: 30px; color: #1a1916; letter-spacing: -0.01em; }
+.br-upnext .arrow { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 30px; color: #b8421e; }
+
+/* ============================== FOOTER ============================== */
+.br-footer { border-top: 1px solid #e7e3d9; background: #15140f; }
+.br-footer-inner { padding-top: 40px; padding-bottom: 40px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.br-footer .mark { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 15px; letter-spacing: -0.01em; color: #f5f2ea; }
+.br-footer .meta { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.1em; color: #807b70; }
+
+/* ============================== RESPONSIVE TYPE ============================== */
+@media (max-width: 720px) {
+  .br-hero h1 { font-size: 44px; }
+  .br-section-head h2 { font-size: 38px; }
+  .br-section-head { padding-top: 64px; }
+  .br-block h3 { font-size: 24px; }
+  .br-wrap { padding: 0 20px; }
+}

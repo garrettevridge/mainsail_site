@@ -41,8 +41,8 @@
   --s-8: #8a5a85; /* dusk purple */
 
   /* Typography */
-  --font-serif:   "Source Serif Pro", Georgia, serif;
+  --font-serif:   "Newsreader", Georgia, serif;
   --font-sans:    "Archivo", system-ui, -apple-system, sans-serif;
-  --font-display: "Archivo Black", "Archivo", sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
   --font-mono:    "Space Mono", ui-monospace, monospace;
 }

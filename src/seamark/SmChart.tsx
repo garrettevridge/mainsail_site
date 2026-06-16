@@ -12,9 +12,11 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import { SERIES, RULE_3, AXIS, INK, BAND_STROKE } from "./colors";
+import { SERIES, RULE_GRID, AXIS, INK_BODY, CHART_TICK, BAND_STROKE } from "./colors";
 
-const TICK = { fill: INK, fontSize: 12 };
+const TICK = { fill: CHART_TICK, fontSize: 11, fontFamily: "'Space Mono', monospace" };
+const RULE_3 = RULE_GRID;
+const INK = INK_BODY;
 
 type Datum = Record<string, number | string | null>;
 
@@ -28,6 +30,8 @@ interface StackedAreaProps {
   yLabel?: string;
   /** Fixed y-axis domain, e.g. [0, 100] for a share chart. */
   yDomain?: [number, number];
+  /** Horizontal reference lines, e.g. the Chinook 60k hard cap. */
+  refLines?: RefLine[];
 }
 
 const defaultFmt = (v: number) => {
@@ -97,6 +101,7 @@ export function StackedBar({
   colors = SERIES,
   height = 320,
   yFormatter = defaultFmt,
+  refLines = [],
 }: StackedAreaProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -109,6 +114,15 @@ export function StackedBar({
             typeof v === "number" ? yFormatter(v) : String(v ?? "")
           }
         />
+        {refLines.map((r) => (
+          <ReferenceLine
+            key={r.label}
+            y={r.y}
+            stroke={r.color ?? INK_BODY}
+            strokeDasharray={r.dash ?? "5 4"}
+            label={{ value: r.label, fill: r.color ?? INK_BODY, fontSize: 10, position: "insideTopRight", fontFamily: "'Space Mono', monospace" }}
+          />
+        ))}
         {keys.map((k, i) => (
           <Bar
             key={k}
@@ -141,6 +155,8 @@ interface MultiLineProps {
   yFormatter?: (v: number) => string;
   refLines?: RefLine[];
   yLabel?: string;
+  /** Fixed y-axis domain, e.g. [0, 100] so a 100% reference line stays on-chart. */
+  yDomain?: [number, number];
 }
 
 export function MultiLine({
@@ -152,6 +168,7 @@ export function MultiLine({
   yFormatter = defaultFmt,
   refLines = [],
   yLabel,
+  yDomain,
 }: MultiLineProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -163,6 +180,8 @@ export function MultiLine({
           tickLine={false}
           tick={TICK}
           tickFormatter={yFormatter}
+          domain={yDomain}
+          allowDataOverflow={!!yDomain}
           label={
             yLabel
               ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK, fontSize: 11 }
@@ -180,7 +199,7 @@ export function MultiLine({
             y={r.y}
             stroke={r.color ?? INK}
             strokeDasharray={r.dash ?? "4 4"}
-            label={{ value: r.label, fill: r.color ?? INK, fontSize: 10, position: "right" }}
+            label={{ value: r.label, fill: r.color ?? INK, fontSize: 10, position: "insideTopRight", fontFamily: "'Space Mono', monospace" }}
           />
         ))}
         {keys.map((k, i) => (

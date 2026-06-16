@@ -1,0 +1,153 @@
+import { useMemo } from "react";
+import { useDataset } from "../../api/manifest";
+import type { IphcSourceMortalityRow, MonitoredCatchRow, DiscardMortalityRateRow } from "../../api/types";
+import { StackedBar } from "../SmChart";
+import { ACCENT, TEAL, NEUTRAL } from "../colors";
+import { Section, Block, Magbar, Squares, GearBars, Source, WideNote, Methodology, UpNext, k, type Seg } from "./parts";
+
+const SOURCE_LABEL: Record<string, string> = {
+  commercial_landings: "Directed commercial",
+  recreational: "Sport",
+  nondirected_discard: "Bycatch (other fisheries)",
+  directed_discard: "Directed discard",
+  subsistence: "Subsistence",
+};
+
+export default function HalibutSection({ onNext }: { onNext: () => void }) {
+  const { data: iphc } = useDataset<IphcSourceMortalityRow>("iphc_mortality_by_source");
+  const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
+  const { data: dmr } = useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
+
+  const series = useMemo(() => {
+    if (!iphc) return [];
+    return iphc
+      .filter((r) => r.source === "nondirected_discard" && r.mortality_tonnes != null && r.mortality_tonnes > 0)
+      .sort((a, b) => a.year - b.year)
+      .map((r) => ({ year: r.year, Bycatch: r.mortality_tonnes! }));
+  }, [iphc]);
+
+  const removals = useMemo(() => {
+    if (!iphc) return null;
+    const complete = iphc.filter((r) => r.source !== "total" && r.mortality_tonnes != null && r.is_preliminary === 0);
+    if (complete.length === 0) return null;
+    const year = Math.max(...complete.map((r) => r.year));
+    const parts = Object.keys(SOURCE_LABEL)
+      .map((src) => ({ src, label: SOURCE_LABEL[src], t: iphc.find((r) => r.year === year && r.source === src)?.mortality_tonnes ?? 0 }))
+      .filter((p) => p.t > 0);
+    const total = parts.reduce((a, p) => a + p.t, 0);
+    const bycatch = parts.find((p) => p.src === "nondirected_discard")?.t ?? 0;
+    const commercial = parts.find((p) => p.src === "commercial_landings")?.t ?? 0;
+    return { year, parts, total, bycatch, commercial, pct: (bycatch / total) * 100 };
+  }, [iphc]);
+
+  const byGear = useMemo(() => {
+    if (!mc) return [];
+    const hal = mc.filter((r) => r.species_group === "Pacific Halibut" && r.disposition === "Discarded" && r.monitored_or_total === "Total");
+    if (hal.length === 0) return [];
+    const year = Math.max(...hal.map((r) => r.year));
+    const m = new Map<string, number>();
+    for (const r of hal) {
+      if (r.year !== year) continue;
+      const key = /Trawl/.test(r.gear) ? (/Nonpelagic/.test(r.gear) ? "Bottom trawl" : "Pelagic trawl") : r.gear === "Pot" ? "Pot" : "Hook-and-line";
+      m.set(key, (m.get(key) ?? 0) + r.metric_tons);
+    }
+    const total = [...m.values()].reduce((a, b) => a + b, 0);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([gear, t]) => ({ gear, t, pct: (t / total) * 100 }));
+  }, [mc]);
+  const gearMax = Math.max(...byGear.map((g) => g.t), 1);
+
+  const dmrLabel = (g: string) =>
+    /Sport/.test(g) ? "sport (surface release)" : /Longline|hook/.test(g) ? "longline" : /Trawl/.test(g) ? "trawl" : /Pot/.test(g) ? "pot" : g.toLowerCase();
+  const dmrRows = useMemo(() => {
+    if (!dmr) return [];
+    const hal = dmr.filter((r) => r.species === "Pacific halibut" && (r.effective_year_end == null || r.effective_year_end >= 2025));
+    const best = new Map<string, number>();
+    for (const r of hal) {
+      const g = dmrLabel(r.gear_type);
+      best.set(g, Math.max(best.get(g) ?? 0, r.dmr_value));
+    }
+    return [...best.entries()].sort((a, b) => b[1] - a[1]).map(([gear, v]) => ({ gear, pct: v * 100 }));
+  }, [dmr]);
+
+  const escTotal = removals?.commercial ?? 0;
+  const sqPx = (v: number) => (escTotal > 0 ? Math.max(46, Math.round(200 * Math.sqrt(v / escTotal))) : 200);
+
+  const removalSegs: Seg[] = removals
+    ? removals.parts.map((p, i) => ({
+        name: p.label,
+        w: (p.t / removals.total) * 100,
+        color: p.src === "nondirected_discard" ? ACCENT : NEUTRAL[i % NEUTRAL.length],
+        val: `${k(p.t)} t · ${Math.round((p.t / removals.total) * 100)}%`,
+      }))
+    : [];
+
+  return (
+    <Section
+      id="halibut"
+      num="03"
+      cat="Groundfish Bycatch"
+      title="Pacific halibut"
+      dek="Unlike salmon, halibut bycatch is measured in tonnes of dead fish — and every tonne is one the directed longline fleet and coastal communities don't land. It has fallen by half since the 1990s, but remains the second-largest source of halibut mortality."
+    >
+      <Block
+        label="The long view"
+        title="Halibut killed as bycatch in other fisheries, by year."
+        caption="Net mortality in tonnes. It has fallen by more than half since the 1990s as bycatch limits tightened — though it remains the second-largest source of halibut mortality after the directed fishery."
+      >
+        <div className="br-chart">
+          {series.length > 0 ? (
+            <StackedBar data={series} xKey="year" keys={["Bycatch"]} colors={[ACCENT]} height={240} yFormatter={(v) => `${Math.round(v / 1000)}k`} />
+          ) : null}
+          <Source>Source · IPHC mortality by source (non-directed discard) · tonnes</Source>
+        </div>
+      </Block>
+
+      <Block
+        variant="alt"
+        label={`Where the ${removals ? `${removals.pct.toFixed(0)}%` : "13%"} comes from`}
+        title={`Every halibut killed coastwide, ${removals ? removals.year : "2024"}.`}
+        caption={removals ? <>Of <b>{k(removals.total)} tonnes</b> of halibut killed in {removals.year}, bycatch in other fisheries accounted for about a tenth — the directed commercial and sport fisheries take most of the rest.</> : undefined}
+      >
+        {removalSegs.length > 0 && <Magbar segs={removalSegs} />}
+      </Block>
+
+      <Block
+        variant="div"
+        label="Who takes the bycatch · by gear"
+        title="Bottom trawl and hook-and-line, not pollock."
+        note={<>Halibut bycatch is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom.</>}
+      >
+        {byGear.length > 0 && <GearBars rows={byGear.map((g) => ({ gear: g.gear, val: `${k(g.t)} t · ${g.pct.toFixed(0)}%`, w: g.t }))} max={gearMax} />}
+      </Block>
+
+      {removals && (
+        <Block
+          variant="alt"
+          label={`Bycatch against the directed fishery · ${removals.year}`}
+          title="A fifth the size of the directed catch."
+          note={<>Every tonne killed as bycatch is a tonne the directed longline fleet and coastal communities do not land. The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
+        >
+          <Squares
+            a={{ px: sqPx(removals.bycatch), color: ACCENT, val: `${k(removals.bycatch)} t`, lbl: "Killed as bycatch", sub: "non-directed discard mortality" }}
+            b={{ px: 200, color: TEAL, val: `${k(removals.commercial)} t`, lbl: "Landed by the directed commercial fishery", sub: `IPHC · ${removals.year}` }}
+          />
+        </Block>
+      )}
+
+      <WideNote
+        label="How bycatch becomes mortality — discard rates"
+        body={<>Not every halibut caught and thrown back dies. Managers apply gear-specific discard mortality rates to estimate how many do: {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}. A halibut crushed in a trawl net rarely survives; one released at the surface usually does.</>}
+      />
+
+      <Methodology
+        items={[
+          { strong: "Mortality by source.", body: "IPHC coastwide total mortality in metric tonnes (net weight), by source: directed commercial, sport, subsistence, directed-fishery discard, and non-directed discard — the groundfish bycatch. Breakdown is the most recent non-preliminary year." },
+          { strong: "Bycatch by gear.", body: "Halibut discard mortality by sector and gear, from NMFS catch accounting, most recent year. Grouped as bottom (non-pelagic) trawl, pelagic trawl, hook-and-line, and pot." },
+          { strong: "Discard mortality rates.", body: "Gear-specific rates set by the Council and IPHC and applied to discarded halibut to estimate deaths. Rates shown are the current effective values." },
+        ]}
+      />
+
+      <UpNext label="Up next · 04" title="Observer coverage" onClick={onNext} />
+    </Section>
+  );
+}

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-06-16 — Redesign: single scrolling Data Brief (design handoff)
+
+Adopted the "Claude design" handoff — moved from the paginated deck to a
+single scrolling editorial page, preserving every `useDataset` / `useMemo`
+hook (the data layer is unchanged; only presentation moved).
+
+- **`App` → `Brief`** (`src/seamark/Brief.tsx`): sticky scroll-spy nav with a
+  scroll-progress bar, hero + four-topic table of contents, four stacked
+  sections, "Up next" bands, and a dark footer. Minimal client state
+  (progress + active section) on a passive scroll listener.
+- **New editorial system** (`src/styles/brief.css`, `src/seamark/brief/*`):
+  repeatable section header (number · tick · kicker → Newsreader title → dek),
+  data-block header (accent square + label → title → caption), alternating
+  warm-paper backgrounds, 3-column notes and methodology.
+- **Type:** body serif Source Serif Pro → **Newsreader**; Archivo (UI) and
+  Space Mono (labels, axis ticks) retained. `colors.ts` extended with the
+  warm editorial token set.
+- **Charts** via the existing Recharts wrappers: `StackedBar` gains reference
+  lines (Chinook 60k cap); `MultiLine` gains a fixed y-domain so the Observer
+  100% full-coverage reference line stays on-chart; axis ticks now mono grey.
+- Sections map 1:1 to the old slides (`brief/{Chinook,Chum,Halibut,Observer}Section`),
+  reusing their data logic verbatim. Old `Deck` / `slides/*` remain in-tree
+  but unrendered (cleanup to follow).
+
 ## 2026-06-15 — Seamark: paginated brief deck (Chinook / Chum / Halibut / Observer)
 
 Replaced the single scrollable data page with a paginated "brief deck" —

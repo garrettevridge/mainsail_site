@@ -1,5 +1,5 @@
-import Deck from "./seamark/Deck";
+import Brief from "./seamark/Brief";
 
 export default function App() {
-  return <Deck />;
+  return <Brief />;
 }
