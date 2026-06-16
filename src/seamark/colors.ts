@@ -14,11 +14,14 @@ export const SERIES = [
   "#8a8780", // warm grey
 ];
 
-// Thin separator drawn between stacked bands/bars — the paper background color,
+// Thin separator drawn between stacked bands/bars — the (white) page color,
 // so stacked segments read as cleanly divided rather than blended.
-export const BAND_STROKE = "#f7f4ec";
+export const BAND_STROKE = "#ffffff";
 
-export const INK_2 = "#4a4845";
-export const INK_3 = "#7a7770";
-export const RULE_3 = "#e5e2d8";
+// Chart text (axis ticks, axis labels) is black — never grey. Axis and grid
+// LINES are a light neutral rule (they are rules, not text).
+export const INK = "#111111";
+export const AXIS = "#d8d8d8";
+export const INK_2 = "#111111";
+export const RULE_3 = "#e6e6e6";
 export const ACCENT = "#b8421e";

@@ -251,7 +251,7 @@
   /* magnitude proportion bar */
   .sm-magbar { display: flex; height: 32px; border: 1px solid var(--rule-2); overflow: hidden; }
   .sm-magbar > span { display: block; height: 100%; }
-  .sm-magbar-cap { font-family: var(--font-sans); font-size: 15px; color: var(--ink); margin-top: 10px; line-height: 1.5; }
+  .sm-magbar-cap { font-family: var(--font-sans); font-size: 14px; color: var(--ink); margin-top: 10px; line-height: 1.55; }
   .sm-magbar-cap b { color: var(--accent); font-weight: 600; }
   .sm-magbar-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-family: var(--font-sans); font-size: 13px; color: var(--ink-2); }
   .sm-magbar-legend span { display: flex; align-items: center; gap: 6px; }
@@ -268,15 +268,15 @@
   .sm-run-head .val { color: var(--ink-3); font-variant-numeric: tabular-nums; }
   .sm-run-track { height: 14px; background: var(--rule-3); overflow: hidden; }
   .sm-run-fill { height: 100%; background: var(--accent); }
-  /* two area-proportional squares */
-  .sm-squares { display: flex; align-items: flex-end; gap: 36px; flex-wrap: wrap; padding: 6px 0 4px; }
-  .sm-square { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  /* two area-proportional squares — fixed-width captions keep them aligned and
+     centered no matter how long the sub-label runs. */
+  .sm-squares { display: flex; align-items: flex-end; justify-content: center; gap: 48px; flex-wrap: wrap; padding: 8px 0 4px; }
+  .sm-square { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 0; }
   .sm-square-box { flex: none; }
-  .sm-square figcaption { display: block; text-align: center; }
-  .sm-square { margin: 0; }
-  .sm-square .sm-square-val { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; color: var(--ink); line-height: 1; }
-  .sm-square .sm-square-lbl { display: block; margin-top: 5px; font-family: var(--font-sans); font-size: 12px; line-height: 1.4; color: var(--ink-2); max-width: 180px; }
-  .sm-square .sm-square-sub { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--ink-3); }
+  .sm-square figcaption { display: block; width: 200px; text-align: center; }
+  .sm-square .sm-square-val { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 22px; color: var(--ink); line-height: 1; }
+  .sm-square .sm-square-lbl { display: block; margin-top: 6px; font-family: var(--font-sans); font-size: 12px; line-height: 1.4; color: var(--ink); }
+  .sm-square .sm-square-sub { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.03em; line-height: 1.45; color: var(--ink); }
   /* color note */
   .sm-note { margin-top: 22px; padding: 16px 18px; background: var(--bg); border-left: 3px solid var(--rule-2); }
   .sm-note-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
@@ -285,7 +285,7 @@
   /* methodology block */
   .sm-method { margin-top: 30px; padding: 20px; background: var(--bg); border: 1px solid var(--rule-3); }
   .sm-method-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
-  .sm-method p { font-family: var(--font-sans); font-size: 12.5px; line-height: 1.65; color: var(--ink-2); margin: 0 0 10px; }
+  .sm-method p { font-family: var(--font-sans); font-size: 12px; line-height: 1.65; color: var(--ink); margin: 0 0 10px; }
   .sm-method p:last-child { margin-bottom: 0; }
   .sm-method b { color: var(--ink); font-weight: 600; }
   .sm-method a { color: var(--accent); }
@@ -626,11 +626,11 @@
   }
   .sm-chart-body .recharts-cartesian-axis-tick-value { font-size: 12px; }
   .sm-chart-foot {
-    margin-top: 18px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--ink-3);
-    line-height: 1.6;
+    margin-top: 16px;
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.55;
   }
 
   /* Inline chart legend (for Recharts custom legend) */
@@ -639,8 +639,8 @@
     flex-wrap: wrap;
     gap: 6px 18px;
     font-family: var(--font-sans);
-    font-size: 12px;
-    color: var(--ink-2);
+    font-size: 13px;
+    color: var(--ink);
     margin-top: 14px;
     padding: 0 8px;
   }

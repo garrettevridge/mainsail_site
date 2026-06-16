@@ -12,7 +12,9 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import { SERIES, RULE_3, INK_3, BAND_STROKE } from "./colors";
+import { SERIES, RULE_3, AXIS, INK, BAND_STROKE } from "./colors";
+
+const TICK = { fill: INK, fontSize: 12 };
 
 type Datum = Record<string, number | string | null>;
 
@@ -51,16 +53,17 @@ export function StackedArea({
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
         <CartesianGrid stroke={RULE_3} strokeDasharray="2 4" />
-        <XAxis dataKey={xKey} stroke={INK_3} tickLine={false} />
+        <XAxis dataKey={xKey} stroke={AXIS} tickLine={false} tick={TICK} />
         <YAxis
-          stroke={INK_3}
+          stroke={AXIS}
           tickLine={false}
+          tick={TICK}
           tickFormatter={yFormatter}
           domain={yDomain}
           allowDataOverflow={!!yDomain}
           label={
             yLabel
-              ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK_3, fontSize: 11 }
+              ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK, fontSize: 11 }
               : undefined
           }
         />
@@ -99,8 +102,8 @@ export function StackedBar({
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
         <CartesianGrid stroke={RULE_3} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey={xKey} stroke={INK_3} tickLine={false} />
-        <YAxis stroke={INK_3} tickLine={false} tickFormatter={yFormatter} />
+        <XAxis dataKey={xKey} stroke={AXIS} tickLine={false} tick={TICK} />
+        <YAxis stroke={AXIS} tickLine={false} tick={TICK} tickFormatter={yFormatter} />
         <Tooltip
           formatter={(v) =>
             typeof v === "number" ? yFormatter(v) : String(v ?? "")
@@ -154,14 +157,15 @@ export function MultiLine({
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
         <CartesianGrid stroke={RULE_3} strokeDasharray="2 4" />
-        <XAxis dataKey={xKey} stroke={INK_3} tickLine={false} />
+        <XAxis dataKey={xKey} stroke={AXIS} tickLine={false} tick={TICK} />
         <YAxis
-          stroke={INK_3}
+          stroke={AXIS}
           tickLine={false}
+          tick={TICK}
           tickFormatter={yFormatter}
           label={
             yLabel
-              ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK_3, fontSize: 11 }
+              ? { value: yLabel, angle: -90, position: "insideLeft", fill: INK, fontSize: 11 }
               : undefined
           }
         />
@@ -174,9 +178,9 @@ export function MultiLine({
           <ReferenceLine
             key={r.label}
             y={r.y}
-            stroke={r.color ?? INK_3}
+            stroke={r.color ?? INK}
             strokeDasharray={r.dash ?? "4 4"}
-            label={{ value: r.label, fill: r.color ?? INK_3, fontSize: 10, position: "right" }}
+            label={{ value: r.label, fill: r.color ?? INK, fontSize: 10, position: "right" }}
           />
         ))}
         {keys.map((k, i) => (

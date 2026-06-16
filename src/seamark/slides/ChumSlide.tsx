@@ -10,7 +10,9 @@ import { StackedBar, MultiLine, Legend } from "../SmChart";
 import { ACCENT } from "../colors";
 
 const TEAL = "#2f6b73";
-const HATCHERY = "#7b6a4f"; // warm taupe — the Asian-hatchery majority
+// Asian hatchery is the neutral "other" category — grey, matching how the
+// genetics breakdown bar colours the non-Alaska groups.
+const HATCHERY = "#8a8a8a";
 // Compact: 1,018,000 → "1.0M", 48,767 → "49k", 4,048 → "4.0k", 880 → "880".
 const k = (v: number) =>
   v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 10000 ? `${Math.round(v / 1000)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString();
