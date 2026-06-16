@@ -8,7 +8,7 @@ import type {
   SubsistenceHarvestStatewideRow,
   ChinookGsiRow,
 } from "../../api/types";
-import { StackedBar } from "../SmChart";
+import { StackedBar, BarColumns } from "../SmChart";
 import { ACCENT, TEAL, NEUTRAL } from "../colors";
 import { Section, Block, Magbar, Squares, Source, Notes, Methodology, UpNext, k, type Seg } from "./parts";
 
@@ -63,11 +63,6 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
   }, [psc, com, sport, subs]);
 
   const removals = removalYears[0] ?? null;
-  const shareRange = useMemo(() => {
-    if (removalYears.length === 0) return null;
-    const pcts = removalYears.map((r) => r.pct);
-    return { lo: Math.round(Math.min(...pcts)), hi: Math.round(Math.max(...pcts)), mean: Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length), from: removalYears.at(-1)!.year, to: removalYears[0].year };
-  }, [removalYears]);
 
   const bsaiGsi = useMemo(() => (gsi ? gsi.filter((r) => r.fmp_area === GSI_FMP) : []), [gsi]);
   const gsiYear = useMemo(() => (bsaiGsi.length ? Math.max(...bsaiGsi.map((r) => r.year)) : null), [bsaiGsi]);
@@ -116,12 +111,12 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
   const ctxCwakBycatch = ctxCatch != null && ctxWesternPct != null ? Math.round(ctxCatch * (ctxWesternPct / 100)) : null;
 
   // ---- presentational shaping ----
-  const removalSegs: Seg[] = removals
+  const mortalityCols = removals
     ? [
-        { name: "Commercial", w: (removals.commercial / removals.total) * 100, color: NEUTRAL[0], pct: `${Math.round((removals.commercial / removals.total) * 100)}%`, textColor: "#1a1916", val: k(removals.commercial) },
-        { name: "Sport", w: (removals.sport / removals.total) * 100, color: NEUTRAL[1], pct: `${Math.round((removals.sport / removals.total) * 100)}%`, textColor: "#1a1916", val: k(removals.sport) },
-        { name: "Subsistence", w: (removals.subsistence / removals.total) * 100, color: NEUTRAL[2], pct: `${Math.round((removals.subsistence / removals.total) * 100)}%`, textColor: "#1a1916", val: k(removals.subsistence) },
-        { name: "Bycatch", w: removals.pct, color: ACCENT, pct: `${removals.pct.toFixed(1)}%`, textColor: "#fff", val: k(removals.bycatch) },
+        { name: "Commercial", value: removals.commercial, color: NEUTRAL[0] },
+        { name: "Sport", value: removals.sport, color: NEUTRAL[1] },
+        { name: "Subsistence", value: removals.subsistence, color: NEUTRAL[2] },
+        { name: "Bycatch", value: removals.bycatch, color: ACCENT },
       ]
     : [];
 
@@ -173,12 +168,15 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
       {/* BLOCK 2 — removals */}
       <Block
         variant="alt"
-        label={`Where the ${removals ? `${removals.pct.toFixed(0)}%` : "8%"} comes from`}
-        title={`Every Chinook taken in Alaska, ${removals ? removals.year : "2023"}.`}
-        caption={removals ? <>Of <b>{k(removals.total)}</b> Chinook taken by people in {removals.year}, trawl bycatch accounted for under a tenth.</> : undefined}
-        note={shareRange ? <>Across {shareRange.from}–{shareRange.to} the bycatch share ranged <b>{shareRange.lo}–{shareRange.hi}%</b>, averaging about {shareRange.mean}%. {removals!.year} is the most recent year with all four categories reported.</> : undefined}
+        label={`Chinook mortality by source${removals ? ` · ${removals.year}` : ""}`}
+        title="A comparison of Chinook mortality."
+        caption={removals ? <>Each column counts the Chinook removed by one fishery in {removals.year}: the directed commercial, sport, and subsistence harvests, and the groundfish-fleet bycatch. Statewide, kept fish plus bycatch mortality — the most recent year all four are reported.</> : undefined}
+        note={<>These are independent counts of different things, not slices of one total — they are not summed here. Escapement, the Chinook that reach the spawning grounds, is a separate category, set against the Western-Alaska bycatch further down.</>}
       >
-        {removalSegs.length > 0 && <Magbar segs={removalSegs} inlinePct />}
+        <div className="br-chart">
+          {mortalityCols.length > 0 && <BarColumns data={mortalityCols} height={240} yFormatter={(v) => `${Math.round(v / 1000)}k`} />}
+          <Source>Source · ADF&amp;G harvest (commercial, sport, subsistence) + NMFS PSC bycatch · fish</Source>
+        </div>
       </Block>
 
       {/* BLOCK 3 — origin */}

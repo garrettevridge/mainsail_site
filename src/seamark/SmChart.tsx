@@ -6,6 +6,7 @@ import {
   Bar,
   LineChart,
   Line,
+  Cell,
   ComposedChart,
   CartesianGrid,
   XAxis,
@@ -215,6 +216,35 @@ export function MultiLine({
           />
         ))}
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+interface BarColumnsProps {
+  data: { name: string; value: number; color?: string }[];
+  height?: number;
+  yFormatter?: (v: number) => string;
+}
+
+/**
+ * Discrete columns, one per category, each independently colored. Unlike
+ * StackedBar these are NOT parts of a whole — used to set magnitudes side by
+ * side (e.g. mortality by source) without implying they sum to one total.
+ */
+export function BarColumns({ data, height = 320, yFormatter = defaultFmt }: BarColumnsProps) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
+        <CartesianGrid stroke={RULE_3} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey="name" stroke={AXIS} tickLine={false} tick={TICK} interval={0} />
+        <YAxis stroke={AXIS} tickLine={false} tick={TICK} tickFormatter={yFormatter} />
+        <Tooltip cursor={{ fill: "rgba(0,0,0,0.03)" }} formatter={(v) => (typeof v === "number" ? yFormatter(v) : String(v ?? ""))} />
+        <Bar dataKey="value" stroke={BAND_STROKE} strokeWidth={0.5} isAnimationActive={false}>
+          {data.map((d, i) => (
+            <Cell key={i} fill={d.color ?? SERIES[0]} />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }
