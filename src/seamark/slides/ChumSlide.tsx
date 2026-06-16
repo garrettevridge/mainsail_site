@@ -7,10 +7,11 @@ import type {
   SalmonEscapementRow,
 } from "../../api/types";
 import ChartCard from "../ChartCard";
-import { StackedBar } from "../SmChart";
+import { StackedBar, MultiLine, Legend } from "../SmChart";
 import { ACCENT } from "../colors";
 
 const TEAL = "#2f6b73";
+const HATCHERY = "#7b6a4f"; // warm taupe — the Asian-hatchery majority
 // Compact thousands: 48,767 → "49k", 4,048 → "4.0k", 880 → "880".
 const k = (v: number) =>
   v >= 10000 ? `${Math.round(v / 1000)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString();
@@ -54,6 +55,25 @@ export default function ChumSlide() {
   const asianPct = breakdown.filter((r) => /Asia/.test(r.region)).reduce((a, r) => a + r.mean_pct, 0);
   const alaskaPct = breakdown.filter((r) => ALASKA_GROUPS.has(r.region)).reduce((a, r) => a + r.mean_pct, 0);
   const alaskaBycatch = bycatchLatest ? Math.round(bycatchLatest.Bycatch * (alaskaPct / 100)) : null;
+
+  // Origin over time — the multi-year genetics (2011→) so one year isn't read as
+  // the whole story. Two aggregates: at-risk Western Alaska/Yukon vs Asian hatchery.
+  const originSeries = useMemo(() => {
+    if (!gsi) return [];
+    const years = [...new Set(gsi.map((r) => r.year))].sort((a, b) => a - b);
+    const share = (year: number, pred: (region: string) => boolean) =>
+      gsi.filter((r) => r.year === year && pred(r.region)).reduce((a, r) => a + r.mean_pct, 0);
+    return years.map((year) => ({
+      year,
+      "Western Alaska & Yukon": +share(year, (r) => ALASKA_GROUPS.has(r)).toFixed(1),
+      "Asian hatchery": +share(year, (r) => /Asia/.test(r)).toFixed(1),
+    }));
+  }, [gsi]);
+  const westernRange = useMemo(() => {
+    if (originSeries.length === 0) return null;
+    const v = originSeries.map((r) => r["Western Alaska & Yukon"]);
+    return { lo: Math.round(Math.min(...v)), hi: Math.round(Math.max(...v)), mean: Math.round(v.reduce((a, b) => a + b, 0) / v.length), from: originSeries[0].year, to: originSeries.at(-1)!.year };
+  }, [originSeries]);
 
   // Statewide chum subsistence harvest — the real-world scale of the runs at home.
   const subsChum = useMemo(() => {
@@ -124,7 +144,30 @@ export default function ChumSlide() {
               ))}
             </div>
             <div className="sm-magbar-cap">
-              Most Bering Sea chum bycatch is hatchery fish from across the Pacific: about <b>{asianPct.toFixed(0)}%</b> is Asian-hatchery origin and another fifth is from the Eastern Gulf and Pacific Northwest. The Western Alaska and Yukon runs — shown in <b style={{ color: ACCENT }}>terracotta</b> — make up roughly <b>{alaskaPct.toFixed(0)}%</b>.
+              Most Bering Sea chum bycatch is hatchery fish from across the Pacific: about <b>{asianPct.toFixed(0)}%</b> is Asian-hatchery origin and another fifth is from the Eastern Gulf and Pacific Northwest. The Western Alaska and Yukon runs — shown in <b style={{ color: ACCENT }}>terracotta</b> — make up <b>{alaskaPct.toFixed(0)}%</b> in {gsiYear}{westernRange ? `, and have ranged ${westernRange.lo}–${westernRange.hi}% since ${westernRange.from}` : ""}.
+            </div>
+          </>
+        ) : (
+          <div className="sm-chart-body placeholder short">Loading…</div>
+        )}
+      </div>
+
+      {/* ORIGIN OVER TIME — multi-year genetics so one year isn't the whole story */}
+      <div className="sm-block">
+        <div className="sm-block-label">Origin over time{westernRange ? ` · ${westernRange.from}–${westernRange.to}` : ""}</div>
+        {originSeries.length > 1 ? (
+          <>
+            <MultiLine
+              data={originSeries}
+              xKey="year"
+              keys={["Asian hatchery", "Western Alaska & Yukon"]}
+              colors={[HATCHERY, ACCENT]}
+              height={220}
+              yFormatter={(v) => `${Math.round(v)}%`}
+            />
+            <Legend items={[{ label: "Asian hatchery (NE + SE Asia)", color: HATCHERY }, { label: "Western Alaska & Yukon", color: ACCENT }]} />
+            <div className="sm-magbar-cap">
+              The single-year snapshot isn't a fluke: Asian-hatchery fish have dominated the chum bycatch every year since {westernRange?.from}, and the Western Alaska / Yukon share has stayed a minor fraction — ranging <b>{westernRange?.lo}–{westernRange?.hi}%</b>, averaging about <b>{westernRange?.mean}%</b>. {gsiYear} ({alaskaPct.toFixed(0)}%) sits near the low end of that range.
             </div>
           </>
         ) : (
@@ -239,7 +282,7 @@ export default function ChumSlide() {
           <b>Bycatch.</b> Chum taken incidentally in the federal groundfish fisheries (Bering Sea / Aleutian Islands and Gulf of Alaska), from NMFS Prohibited Species Catch (PSC) annual counts, 1991–2024. For most of this record chum bycatch was managed through area closures and incentive agreements with no numeric limit; in February 2026 the Council adopted a 45,000-fish cap on Western-Alaska-origin chum.
         </p>
         <p>
-          <b>Origin.</b> Genetic stock identification (GSI) of the Bering Sea chum bycatch by reporting group, from the NOAA AFSC / NPFMC annual genetics report — a single-year ({gsiYear ?? "recent"}) sample. The highlighted estimate sums the Western Alaska and Up/Mid Yukon groups — the at-risk runs in the bycatch debate; Southwest Alaska (Alaska Peninsula / Kodiak) is Alaska-origin too but reported as a separate group. The Asian-hatchery estimate sums the NE Asia and SE Asia groups. GSI resolves the region but cannot be split among individual rivers.
+          <b>Origin.</b> Genetic stock identification (GSI) of the Bering Sea chum bycatch by reporting group, from the NOAA AFSC / NPFMC annual genetics reports, {westernRange ? `${westernRange.from}–${westernRange.to}` : "recent years"}. The breakdown bar is the most recent year ({gsiYear ?? "recent"}); the origin-over-time chart is the full series so a single year isn't read as the whole picture. The highlighted estimate sums the Western Alaska and Up/Mid Yukon groups — the at-risk runs in the bycatch debate; Southwest Alaska (Alaska Peninsula / Kodiak) is Alaska-origin too but reported as a separate group. The Asian-hatchery estimate sums the NE Asia and SE Asia groups. GSI resolves the region but cannot be split among individual rivers.
         </p>
         <p>
           <b>Subsistence.</b> Statewide chum subsistence harvest (numbers of fish), ADF&amp;G / NPAFC, most recent reported year. It is a statewide figure; the great majority of subsistence chum is taken in Western Alaska and the Yukon–Kuskokwim region, which is why it is shown beside the Alaska-origin bycatch as a measure of local scale. The two are not a strict ratio.

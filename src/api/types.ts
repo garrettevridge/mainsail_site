@@ -27,13 +27,26 @@ export interface Manifest {
 // to s3://mainsail-public-data/v1/<dataset>.json. Confirmed against
 // backend/_publish/*.json staging artifacts on 2026-04-25.
 
+// chinook_gsi — BSAI (and, from 2024, GOA) Chinook bycatch genetic stock
+// identification. Reporting groups changed scheme over time
+// (reporting_group_scheme: templin_2011 through 2023 → barclay_2024 from 2024,
+// which splits "Coastal Western Alaska" into Kuskokwim/Bristol Bay, Yukon
+// Alaska, Seward Peninsula/Norton Sound, with Yukon Canada separate).
 export interface ChinookGsiRow {
   id: number;
   year: number;
+  fmp_area: string; // "BSAI" / "GOA"
   region: string; // stock reporting group
   mean_pct: number;
   total_catch: number;
   n_samples: number;
+  point_count?: number | null;
+  lower_ci?: number | null;
+  upper_ci?: number | null;
+  ci_level_pct?: number | null;
+  reporting_group_scheme?: string | null;
+  source_report_year?: number | null;
+  source_url?: string | null;
 }
 
 // chum_gsi — BSAI pollock chum bycatch genetic stock identification.
