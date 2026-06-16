@@ -304,6 +304,22 @@
   .sm-deck-dots { display: flex; gap: 8px; }
   .sm-deck-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--rule-2); display: block; }
   .sm-deck-dots i.on { background: var(--accent); }
+
+  /* Denser deck: trim the generous whitespace without changing the structure. */
+  .sm-deck { max-width: 960px; padding: 36px 24px 72px; }
+  .sm-slide { padding: 30px 34px; }
+  .sm-slide .sm-block { margin-top: 22px; padding-top: 20px; }
+  .sm-slide .sm-block-label { margin-bottom: 8px; }
+  .sm-slide .sm-chart { margin: 0; padding: 22px 24px; }
+  .sm-slide .sm-chart-head { margin-bottom: 14px; padding-bottom: 11px; }
+  .sm-slide .sm-chart-title { font-size: 19px; margin-bottom: 14px; }
+  .sm-slide .sm-chart-foot { margin-top: 12px; }
+  .sm-slide .sm-note { margin-top: 15px; padding: 13px 16px; }
+  .sm-slide .sm-method { margin-top: 18px; padding: 16px 18px; }
+  .sm-slide .sm-magbar-cap { margin-top: 8px; }
+  .sm-slide .sm-context { margin-top: 7px; }
+  .sm-deck-nav { margin-top: 20px; }
+
   @media (max-width: 700px) {
     .sm-slide { padding: 28px 20px; }
     .sm-slide-title { font-size: 27px; }
