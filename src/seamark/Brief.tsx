@@ -76,12 +76,12 @@ export default function Brief() {
           <div className="br-kicker">Alaska Fisheries · 2026 Edition</div>
           <h1>The numbers behind Alaska's bycatch debate.</h1>
           <p className="br-hero-dek">
-            A running series of self-contained data briefs on what Alaska's fisheries catch, keep, and leave behind. Each topic stands on its own — read one, or scroll the whole thing.
+            A series of self-contained data briefs relevant to the current conversation about the impact of bycatch in Alaska. Each topic stands on its own: read one, or scroll the whole thing.
           </p>
           <div className="br-hero-meta">
             <span>Sources · NMFS · ADF&amp;G · NOAA AFSC</span>
             <span className="dot" />
-            <span>Updated through 2024</span>
+            <span>Updated through 2026</span>
           </div>
         </div>
 

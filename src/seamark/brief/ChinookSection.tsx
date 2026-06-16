@@ -18,6 +18,8 @@ const WESTERN_AK = new Set([
   "Kuskokwim/Bristol Bay", "Yukon Alaska", "Seward Peninsula/Norton Sound",
 ]);
 const UPPER_YUKON = new Set(["Up/Mid Yukon", "Yukon Canada"]);
+const CANADA = new Set(["British Columbia", "Yukon Canada", "Up/Mid Yukon"]);
+const NORTH_PEN = "North Alaska Peninsula";
 const CWAK_RIVERS = [
   ["Yukon basin", "Yukon"],
   ["Kuskokwim basin", "Kuskokwim"],
@@ -79,11 +81,15 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
         return aw !== bw ? bw - aw : b.mean_pct - a.mean_pct;
       });
   }, [bsaiGsi, gsiYear]);
-  const sumGroups = (set: Set<string>) => breakdown.filter((r) => set.has(r.region)).reduce((a, r) => a + r.mean_pct, 0);
-  const westernPct = breakdown.length ? sumGroups(WESTERN_AK) : null;
-  const upperYukonPct = breakdown.length ? sumGroups(UPPER_YUKON) : null;
-  const gsiCatch = breakdown[0]?.total_catch ?? null;
-  const cwakBycatch = gsiCatch != null && westernPct != null ? Math.round(gsiCatch * (westernPct / 100)) : null;
+  const pctOf = (rows: ChinookGsiRow[], pred: (r: ChinookGsiRow) => boolean) =>
+    rows.filter(pred).reduce((a, r) => a + r.mean_pct, 0);
+  const westernPct = breakdown.length ? pctOf(breakdown, (r) => WESTERN_AK.has(r.region)) : null;
+
+  // Western-Alaska share of the bycatch in each sampled year, for the trend note.
+  const westernByYear = useMemo(() => {
+    const years = [...new Set(bsaiGsi.map((r) => r.year))].sort((a, b) => a - b);
+    return years.map((year) => ({ year, pct: pctOf(bsaiGsi.filter((r) => r.year === year), (r) => WESTERN_AK.has(r.region)) }));
+  }, [bsaiGsi]);
 
   const rivers = useMemo(() => {
     if (!cdt) return [];
@@ -98,6 +104,17 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
   const escYear = rivers.length ? Math.max(...rivers.map((r) => r.year)) : null;
   const sqPx = (v: number) => (escTotal > 0 ? Math.max(46, Math.round(200 * Math.sqrt(v / escTotal))) : 200);
 
+  // River context is anchored on the most recent year with BOTH a genetic
+  // sample and published escapement (escapement lags the genetics by a year),
+  // so the numerator and denominator come from the same season.
+  const gsiYearSet = useMemo(() => new Set(bsaiGsi.map((r) => r.year)), [bsaiGsi]);
+  const ctxYear = escYear != null && gsiYearSet.has(escYear) ? escYear : gsiYear;
+  const ctxRows = useMemo(() => (ctxYear == null ? [] : bsaiGsi.filter((r) => r.year === ctxYear)), [bsaiGsi, ctxYear]);
+  const ctxWesternPct = ctxRows.length ? pctOf(ctxRows, (r) => WESTERN_AK.has(r.region)) : null;
+  const ctxUpperYukonPct = ctxRows.length ? pctOf(ctxRows, (r) => UPPER_YUKON.has(r.region)) : null;
+  const ctxCatch = ctxRows[0]?.total_catch ?? null;
+  const ctxCwakBycatch = ctxCatch != null && ctxWesternPct != null ? Math.round(ctxCatch * (ctxWesternPct / 100)) : null;
+
   // ---- presentational shaping ----
   const removalSegs: Seg[] = removals
     ? [
@@ -108,12 +125,20 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
       ]
     : [];
 
-  const originSegs: Seg[] = breakdown.map((r, i) => ({
-    name: r.region,
-    w: r.mean_pct,
-    color: WESTERN_AK.has(r.region) ? ACCENT : NEUTRAL[i % NEUTRAL.length],
-    val: `${r.mean_pct.toFixed(0)}%`,
-  }));
+  // Collapse the 13 reporting groups into four readable buckets.
+  const originSegs: Seg[] = useMemo(() => {
+    if (breakdown.length === 0) return [];
+    const west = pctOf(breakdown, (r) => WESTERN_AK.has(r.region));
+    const napen = pctOf(breakdown, (r) => r.region === NORTH_PEN);
+    const canada = pctOf(breakdown, (r) => CANADA.has(r.region));
+    const other = Math.max(0, 100 - west - napen - canada);
+    return [
+      { name: "Western Alaska", w: west, color: ACCENT, val: `${west.toFixed(0)}%` },
+      { name: NORTH_PEN, w: napen, color: NEUTRAL[0], val: `${napen.toFixed(0)}%` },
+      { name: "Canada", w: canada, color: NEUTRAL[1], val: `${canada.toFixed(0)}%` },
+      { name: "Other Pacific", w: other, color: NEUTRAL[2], val: `${other.toFixed(0)}%` },
+    ];
+  }, [breakdown]);
 
   return (
     <Section
@@ -121,13 +146,13 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
       num="01"
       cat="Salmon Bycatch"
       title="Chinook salmon"
-      dek="Western Alaska's king salmon runs have collapsed, and the trawl fleet is the loudest target. The data tells a more specific story about how much bycatch costs those rivers — and what else is at work."
+      dek="Western Alaska's king salmon runs are struggling, and pollock trawl has been blamed. The data tells a more complicated story."
     >
       {/* BLOCK 1 — long view */}
       <Block
         label="The long view"
         title="Chinook taken as groundfish bycatch, by year."
-        caption="Pollock trawl is the largest source. Bycatch peaked near 170,000 in 2007, then fell sharply after the 60,000-fish hard cap took effect in 2011."
+        caption="Pollock trawl is the largest source of Chinook bycatch. It peaked near 170,000 in 2007, then fell sharply after the 60,000-fish hard cap took effect in 2011."
       >
         <div className="br-chart">
           {series.length > 0 ? (
@@ -161,21 +186,22 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
         variant="div"
         label={`Where the bycatch comes from${gsiYear ? ` · ${gsiYear} genetics` : ""}`}
         title="The genetic origin of the Bering Sea bycatch."
-        caption={westernPct != null ? <>About <b>{westernPct.toFixed(0)}%</b> is Western Alaska origin — the Kuskokwim, Bristol Bay, Yukon and Norton Sound systems, in <b style={{ color: ACCENT }}>terracotta</b>. The rest belongs to runs far from the rivers in the news.</> : undefined}
+        caption={westernPct != null && gsiYear != null ? <>In {gsiYear}, about <b>{westernPct.toFixed(0)}%</b> of the bycatch traced to Western Alaska — the Kuskokwim, Bristol Bay, Yukon and Norton Sound systems. Most of the rest came from the North Alaska Peninsula and Canada.</> : undefined}
+        note={westernByYear.length > 1 ? <>That {westernPct?.toFixed(0)}% is the highest Western-Alaska share in the {westernByYear.length} years of genetic sampling — up from {westernByYear.slice(0, -1).map((d) => `${d.pct.toFixed(0)}% in ${d.year}`).join(" and ")}.</> : undefined}
       >
         {originSegs.length > 0 && <Magbar segs={originSegs} />}
       </Block>
 
       {/* BLOCK 4 — squares */}
-      {cwakBycatch != null && rivers.length > 0 && (
+      {ctxCwakBycatch != null && rivers.length > 0 && (
         <Block
           variant="alt"
-          label={`The Western Alaska share, against those rivers${gsiYear ? ` · ${gsiYear}` : ""}`}
+          label={`Bycatch in context${ctxYear ? ` · ${ctxYear}` : ""}`}
           title="Set against the rivers, the Western-origin bycatch is small."
-          note={<>Against counted escapement for the Yukon, Kuskokwim, and Nushagak, the Western-Alaska-origin bycatch is about <b>{escTotal > 0 ? Math.round((cwakBycatch / escTotal) * 100) : 0}%</b> of those three runs combined. The Canadian-origin upper Yukon — the most depleted, treaty-bound stocks — resolves to about {upperYukonPct != null && upperYukonPct < 1 ? "under 1" : upperYukonPct?.toFixed(0)}% of the bycatch.</>}
+          note={<>Anchoring on {ctxYear} — the most recent year with both a genetic sample and counted escapement — the Western-Alaska-origin bycatch was about <b>{escTotal > 0 ? Math.round((ctxCwakBycatch / escTotal) * 100) : 0}%</b> of the Yukon, Kuskokwim and Nushagak runs combined. The Canadian-origin upper Yukon — the most depleted, treaty-bound stocks — was {ctxUpperYukonPct != null && ctxUpperYukonPct < 1 ? "under 1%" : `about ${ctxUpperYukonPct?.toFixed(0)}%`} of the bycatch.</>}
         >
           <Squares
-            a={{ px: sqPx(cwakBycatch), color: ACCENT, val: k(cwakBycatch), lbl: "Bycatch of Western Alaska origin", sub: `${westernPct?.toFixed(0)}% of the ${gsiYear} bycatch (${gsiCatch != null ? k(gsiCatch) : "—"})` }}
+            a={{ px: sqPx(ctxCwakBycatch), color: ACCENT, val: k(ctxCwakBycatch), lbl: "Bycatch of Western Alaska origin", sub: `${ctxWesternPct?.toFixed(0)}% of the ${ctxYear} bycatch (${ctxCatch != null ? k(ctxCatch) : "—"})` }}
             b={{ px: 200, color: TEAL, val: k(escTotal), lbl: "Escapement into the region's three major rivers", sub: `${rivers.map((r) => `${r.label} ${k(r.value)}`).join(" · ")}${escYear ? ` · ${escYear}` : ""}` }}
           />
         </Block>
