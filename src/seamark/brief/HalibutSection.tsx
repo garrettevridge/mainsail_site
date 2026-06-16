@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import { useDataset } from "../../api/manifest";
-import type { IphcSourceMortalityRow, MonitoredCatchRow, DiscardMortalityRateRow } from "../../api/types";
-import { StackedBar } from "../SmChart";
+import type { IphcSourceMortalityRow, MonitoredCatchRow, DiscardMortalityRateRow, IphcSpawningBiomassRow } from "../../api/types";
+import { BarLine } from "../SmChart";
 import { ACCENT, TEAL, NEUTRAL } from "../colors";
-import { Section, Block, Magbar, Squares, GearBars, Source, WideNote, Methodology, UpNext, k, type Seg } from "./parts";
+import { Section, Block, Magbar, Squares, GearBars, Source, LegendLines, WideNote, Methodology, UpNext, k, type Seg } from "./parts";
+
+const BIOMASS_MODEL = "coastwide_long";
 
 const SOURCE_LABEL: Record<string, string> = {
   commercial_landings: "Directed commercial",
@@ -17,14 +19,19 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
   const { data: iphc } = useDataset<IphcSourceMortalityRow>("iphc_mortality_by_source");
   const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
   const { data: dmr } = useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
+  const { data: sb } = useDataset<IphcSpawningBiomassRow>("iphc_spawning_biomass");
 
   const series = useMemo(() => {
     if (!iphc) return [];
+    const biomass = new Map<number, number>();
+    for (const r of sb ?? []) {
+      if (r.model === BIOMASS_MODEL && r.sb_tonnes != null) biomass.set(r.year, r.sb_tonnes);
+    }
     return iphc
       .filter((r) => r.source === "nondirected_discard" && r.mortality_tonnes != null && r.mortality_tonnes > 0)
       .sort((a, b) => a.year - b.year)
-      .map((r) => ({ year: r.year, Bycatch: r.mortality_tonnes! }));
-  }, [iphc]);
+      .map((r) => ({ year: r.year, Bycatch: r.mortality_tonnes!, "Spawning biomass": biomass.get(r.year) ?? null }));
+  }, [iphc, sb]);
 
   const removals = useMemo(() => {
     if (!iphc) return null;
@@ -77,7 +84,7 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
         name: p.label,
         w: (p.t / removals.total) * 100,
         color: p.src === "nondirected_discard" ? ACCENT : NEUTRAL[i % NEUTRAL.length],
-        val: `${k(p.t)} t · ${Math.round((p.t / removals.total) * 100)}%`,
+        val: `${k(p.t)} MT · ${Math.round((p.t / removals.total) * 100)}%`,
       }))
     : [];
 
@@ -87,37 +94,48 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
       num="03"
       cat="Groundfish Bycatch"
       title="Pacific halibut"
-      dek="Unlike salmon, halibut bycatch is measured in tonnes of dead fish — and every tonne is one the directed longline fleet and coastal communities don't land. It has fallen by half since the 1990s, but remains the second-largest source of halibut mortality."
+      dek="Halibut bycatch comes mostly from the Amendment 80 bottom-trawl fleet and the longline groundfish vessels. It has fallen by more than half since the 1990s, but remains the second-largest source of halibut mortality after the directed fishery."
     >
       <Block
         label="The long view"
-        title="Halibut killed as bycatch in other fisheries, by year."
-        caption="Net mortality in tonnes. It has fallen by more than half since the 1990s as bycatch limits tightened — though it remains the second-largest source of halibut mortality after the directed fishery."
+        title="Halibut bycatch, by year."
+        caption="Net bycatch mortality (bars, left axis) against coastwide spawning biomass (line, right axis). Bycatch has fallen by more than half since the 1990s as limits tightened; the spawning stock has trended down over the same period."
       >
         <div className="br-chart">
           {series.length > 0 ? (
-            <StackedBar data={series} xKey="year" keys={["Bycatch"]} colors={[ACCENT]} height={240} yFormatter={(v) => `${Math.round(v / 1000)}k`} />
+            <BarLine
+              data={series}
+              xKey="year"
+              barKey="Bycatch"
+              lineKey="Spawning biomass"
+              barColor={ACCENT}
+              lineColor={TEAL}
+              height={240}
+              yFormatter={(v) => `${Math.round(v / 1000)}k`}
+              y2Formatter={(v) => `${Math.round(v / 1000)}k`}
+            />
           ) : null}
-          <Source>Source · IPHC mortality by source (non-directed discard) · tonnes</Source>
+          <LegendLines items={[{ color: ACCENT, name: "Bycatch mortality — MT (left)" }, { color: TEAL, name: "Coastwide spawning biomass — MT (right)" }]} />
+          <Source>Source · IPHC · non-directed discard mortality + coastwide spawning biomass (MT)</Source>
         </div>
       </Block>
 
       <Block
         variant="alt"
         label={`Where the ${removals ? `${removals.pct.toFixed(0)}%` : "13%"} comes from`}
-        title={`Every halibut killed coastwide, ${removals ? removals.year : "2024"}.`}
-        caption={removals ? <>Of <b>{k(removals.total)} tonnes</b> of halibut killed in {removals.year}, bycatch in other fisheries accounted for about a tenth — the directed commercial and sport fisheries take most of the rest.</> : undefined}
+        title={`Halibut mortality coastwide, ${removals ? removals.year : "2024"}.`}
+        caption={removals ? <>Of <b>{k(removals.total)} MT</b> of halibut killed in {removals.year}, bycatch in other fisheries accounted for about a tenth — the directed commercial and sport fisheries take most of the rest.</> : undefined}
       >
         {removalSegs.length > 0 && <Magbar segs={removalSegs} />}
       </Block>
 
       <Block
         variant="div"
-        label="Who takes the bycatch · by gear"
+        label="Mortality by gear type"
         title="Bottom trawl and hook-and-line, not pollock."
-        note={<>Halibut bycatch is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom.</>}
+        note={<>The majority of halibut bycatch is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom.</>}
       >
-        {byGear.length > 0 && <GearBars rows={byGear.map((g) => ({ gear: g.gear, val: `${k(g.t)} t · ${g.pct.toFixed(0)}%`, w: g.t }))} max={gearMax} />}
+        {byGear.length > 0 && <GearBars rows={byGear.map((g) => ({ gear: g.gear, val: `${k(g.t)} MT · ${g.pct.toFixed(0)}%`, w: g.t }))} max={gearMax} />}
       </Block>
 
       {removals && (
@@ -125,11 +143,11 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
           variant="alt"
           label={`Bycatch against the directed fishery · ${removals.year}`}
           title="A fifth the size of the directed catch."
-          note={<>Every tonne killed as bycatch is a tonne the directed longline fleet and coastal communities do not land. The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
+          note={<>Every MT killed as bycatch is one the directed longline fleet and coastal communities do not land. The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
         >
           <Squares
-            a={{ px: sqPx(removals.bycatch), color: ACCENT, val: `${k(removals.bycatch)} t`, lbl: "Killed as bycatch", sub: "non-directed discard mortality" }}
-            b={{ px: 200, color: TEAL, val: `${k(removals.commercial)} t`, lbl: "Landed by the directed commercial fishery", sub: `IPHC · ${removals.year}` }}
+            a={{ px: sqPx(removals.bycatch), color: ACCENT, val: `${k(removals.bycatch)} MT`, lbl: "Killed as bycatch", sub: "non-directed discard mortality" }}
+            b={{ px: 200, color: TEAL, val: `${k(removals.commercial)} MT`, lbl: "Landed by the directed commercial fishery", sub: `IPHC · ${removals.year}` }}
           />
         </Block>
       )}
@@ -141,7 +159,8 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
 
       <Methodology
         items={[
-          { strong: "Mortality by source.", body: "IPHC coastwide total mortality in metric tonnes (net weight), by source: directed commercial, sport, subsistence, directed-fishery discard, and non-directed discard — the groundfish bycatch. Breakdown is the most recent non-preliminary year." },
+          { strong: "Mortality by source.", body: "IPHC coastwide total mortality in metric tons (MT, net weight), by source: directed commercial, sport, subsistence, directed-fishery discard, and non-directed discard — the groundfish bycatch. Breakdown is the most recent non-preliminary year." },
+          { strong: "Spawning biomass.", body: "IPHC coastwide female spawning biomass (MT) from the stock assessment, shown as the context line on the bycatch chart. The bycatch and biomass axes are separate scales; both start at zero." },
           { strong: "Bycatch by gear.", body: "Halibut discard mortality by sector and gear, from NMFS catch accounting, most recent year. Grouped as bottom (non-pelagic) trawl, pelagic trawl, hook-and-line, and pot." },
           { strong: "Discard mortality rates.", body: "Gear-specific rates set by the Council and IPHC and applied to discarded halibut to estimate deaths. Rates shown are the current effective values." },
         ]}

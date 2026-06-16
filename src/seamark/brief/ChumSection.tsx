@@ -27,7 +27,6 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
     }
     return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([year, Bycatch]) => ({ year, Bycatch }));
   }, [psc]);
-  const bycatchLatest = series.at(-1) ?? null;
 
   const gsiYear = useMemo(() => (gsi && gsi.length ? Math.max(...gsi.map((r) => r.year)) : null), [gsi]);
   const breakdown = useMemo(() => {
@@ -36,7 +35,11 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
   }, [gsi, gsiYear]);
   const asianPct = breakdown.filter((r) => /Asia/.test(r.region)).reduce((a, r) => a + r.mean_pct, 0);
   const alaskaPct = breakdown.filter((r) => ALASKA_GROUPS.has(r.region)).reduce((a, r) => a + r.mean_pct, 0);
-  const alaskaBycatch = bycatchLatest ? Math.round(bycatchLatest.Bycatch * (alaskaPct / 100)) : null;
+  const usPacificPct = breakdown.filter((r) => /GOA|PNW/.test(r.region)).reduce((a, r) => a + r.mean_pct, 0);
+  // Anchor the river comparison on the genetics year so the origin share and
+  // the bycatch count it scales come from the same season.
+  const bycatchInGsiYear = useMemo(() => (gsiYear == null ? null : series.find((s) => s.year === gsiYear)?.Bycatch ?? null), [series, gsiYear]);
+  const alaskaBycatch = bycatchInGsiYear != null ? Math.round(bycatchInGsiYear * (alaskaPct / 100)) : null;
 
   const originSeries = useMemo(() => {
     if (!gsi) return [];
@@ -82,7 +85,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
       num="02"
       cat="Salmon Bycatch"
       title="Chum salmon"
-      dek="Bering Sea chum bycatch is large and volatile — but the genetics tell a surprising story: most of it is hatchery fish from across the Pacific, not Western Alaska's struggling runs."
+      dek="Bering Sea chum bycatch swings sharply from year to year, even as Western Alaska residents face closures on their own rivers. The genetics point to an unexpected source: most of these chum originate in hatcheries in Russia and Japan, not Western Alaska's runs."
     >
       <Block
         label="The long view"
@@ -101,7 +104,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
         variant="alt"
         label={`Where the bycatch comes from${gsiYear ? ` · ${gsiYear} genetics` : ""}`}
         title="Most of it is hatchery fish from across the Pacific."
-        caption={breakdown.length ? <>About <b>{asianPct.toFixed(0)}%</b> is Asian-hatchery origin. The at-risk Western Alaska &amp; Yukon runs — the stocks the debate is about, in <b style={{ color: ACCENT }}>terracotta</b> — make up <b>{alaskaPct.toFixed(0)}%</b>{westernRange ? <>, and have ranged {westernRange.lo}–{westernRange.hi}% since {westernRange.from}</> : null}.</> : undefined}
+        caption={breakdown.length ? <>About <b>{asianPct.toFixed(0)}%</b> is Asian-hatchery origin. The at-risk Western Alaska &amp; Yukon runs — the stocks the debate is about — make up <b>{alaskaPct.toFixed(0)}%</b>{westernRange ? <>, and have ranged {westernRange.lo}–{westernRange.hi}% since {westernRange.from}</> : null}.{usPacificPct > 0 ? <> Another <b>{usPacificPct.toFixed(0)}%</b> traces to the Eastern Gulf of Alaska and Pacific Northwest — like the Asian groups, largely hatchery production.</> : null}</> : undefined}
       >
         {genSegs.length > 0 && <Magbar segs={genSegs} />}
       </Block>
@@ -109,7 +112,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
       <Block
         variant="div"
         label={`Origin over time${westernRange ? ` · ${westernRange.from}–${westernRange.to}` : ""}`}
-        title="One year isn't a fluke."
+        title="In historical perspective."
         caption={westernRange ? <>Asian-hatchery fish have dominated the chum bycatch every year since {westernRange.from}, and the Western Alaska / Yukon share has stayed a minor fraction — ranging <b>{westernRange.lo}–{westernRange.hi}%</b>, averaging about {westernRange.mean}%.</> : undefined}
       >
         <div className="br-chart">
@@ -123,12 +126,12 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
       {alaskaBycatch != null && rivers.length > 0 && (
         <Block
           variant="alt"
-          label={`The Western Alaska share, against those rivers${bycatchLatest ? ` · ${bycatchLatest.year}` : ""}`}
-          title="A small slice of what reaches the rivers."
+          label={`Bycatch in context${gsiYear ? ` · ${gsiYear}` : ""}`}
+          title="Set against the rivers, the Western-origin bycatch is small."
           note={<>The Western Alaska / Yukon-origin chum bycatch is under <b>{riverTotal > 0 ? Math.max(1, Math.round((alaskaBycatch / riverTotal) * 100)) : 0}%</b> of the counted escapement at these index projects — the Yukon basin sonar plus the Kuskokwim and Norton Sound indicator weirs.{belowGoal.length ? <> The smaller counts tell the harder story: {belowGoal.map((r) => `${r.label} ran ${k(r.value)} against a ${k(r.goalLow!)}–${k(r.goalHigh!)} goal`).join("; ")} — below escapement goals.</> : null}</>}
         >
           <Squares
-            a={{ px: sqPx(alaskaBycatch), color: ACCENT, val: k(alaskaBycatch), lbl: "Bycatch of Western Alaska / Yukon origin", sub: `${alaskaPct.toFixed(0)}% of the ${k(bycatchLatest!.Bycatch)} chum bycatch` }}
+            a={{ px: sqPx(alaskaBycatch), color: ACCENT, val: k(alaskaBycatch), lbl: "Bycatch of Western Alaska / Yukon origin", sub: `${alaskaPct.toFixed(0)}% of the ${gsiYear} bycatch (${bycatchInGsiYear != null ? k(bycatchInGsiYear) : "—"})` }}
             b={{ px: 200, color: TEAL, val: k(riverTotal), lbl: "Escapement into those rivers", sub: rivers.map((r) => `${r.label} ${k(r.value)}`).join(" · ") }}
           />
         </Block>
@@ -145,7 +148,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
       <Methodology
         items={[
           { strong: "Bycatch.", body: "Chum taken incidentally in the federal groundfish fisheries (BSAI + GOA), from NMFS PSC annual counts, 1991–2024. Managed through closures and incentive agreements with no numeric limit until the February 2026 cap." },
-          { strong: "Origin.", body: "Genetic stock identification of the Bering Sea chum bycatch by reporting group (NOAA AFSC / NPFMC). The highlighted estimate sums the Western Alaska and Up/Mid Yukon groups; the Asian-hatchery estimate sums NE and SE Asia." },
+          { strong: "Origin.", body: "Genetic stock identification of the Bering Sea chum bycatch by reporting group (NOAA AFSC / NPFMC). The highlighted estimate sums the Western Alaska and Up/Mid Yukon groups; the Asian-hatchery estimate sums NE and SE Asia. Reporting groups are geographic, not split hatchery-versus-wild; the Eastern Gulf of Alaska / Pacific Northwest group is dominated by Southeast Alaska and PNW hatchery production, but the dataset does not isolate hatchery origin within it." },
           { strong: "Rivers.", body: "Counted chum escapement (ADF&G) at each region's index project — Yukon basin sonar (summer and fall), Kuskokwim and Norton Sound indicator weirs. The total is Yukon-dominated; below-goal flags use each project's published goal." },
         ]}
       />

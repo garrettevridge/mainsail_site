@@ -6,6 +6,7 @@ import {
   Bar,
   LineChart,
   Line,
+  ComposedChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -214,6 +215,57 @@ export function MultiLine({
           />
         ))}
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+interface BarLineProps {
+  data: Datum[];
+  xKey: string;
+  /** Left-axis bars. */
+  barKey: string;
+  /** Right-axis line — a context series on a different scale (e.g. stock biomass). */
+  lineKey: string;
+  barColor?: string;
+  lineColor?: string;
+  height?: number;
+  /** Left-axis (bar) tick formatter. */
+  yFormatter?: (v: number) => string;
+  /** Right-axis (line) tick formatter. */
+  y2Formatter?: (v: number) => string;
+}
+
+/**
+ * Bars on a left axis with a context line on a separate right axis. Both axes
+ * are zero-based; the second axis carries its own label and the legend names
+ * each series, so the differing scales are explicit rather than implied.
+ */
+export function BarLine({
+  data,
+  xKey,
+  barKey,
+  lineKey,
+  barColor = SERIES[0],
+  lineColor = SERIES[1],
+  height = 320,
+  yFormatter = defaultFmt,
+  y2Formatter = defaultFmt,
+}: BarLineProps) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <ComposedChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
+        <CartesianGrid stroke={RULE_3} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey={xKey} stroke={AXIS} tickLine={false} tick={TICK} />
+        <YAxis yAxisId="left" stroke={AXIS} tickLine={false} tick={TICK} tickFormatter={yFormatter} />
+        <YAxis yAxisId="right" orientation="right" stroke={AXIS} tickLine={false} tick={TICK} tickFormatter={y2Formatter} />
+        <Tooltip
+          formatter={(v, name) =>
+            typeof v === "number" ? (name === lineKey ? y2Formatter : yFormatter)(v) : String(v ?? "")
+          }
+        />
+        <Bar yAxisId="left" dataKey={barKey} fill={barColor} stroke={BAND_STROKE} strokeWidth={0.5} isAnimationActive={false} />
+        <Line yAxisId="right" type="monotone" dataKey={lineKey} stroke={lineColor} strokeWidth={2} dot={false} isAnimationActive={false} />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
