@@ -166,7 +166,7 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
         ]}
       />
 
-      <UpNext label="Up next · 04" title="Observer coverage" onClick={onNext} />
+      <UpNext label="Up next · 04" title="Discards" onClick={onNext} />
     </Section>
   );
 }

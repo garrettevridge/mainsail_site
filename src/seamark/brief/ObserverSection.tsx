@@ -90,7 +90,7 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
   return (
     <Section
       id="observer"
-      num="04"
+      num="05"
       cat="Monitoring"
       title="Observer coverage"
       dek="Every number in this brief rests on this one. The fleets that take most of the bycatch are watched at essentially 100% — so those counts are a census, not a guess. The smaller boats are a different story."

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ChinookSection from "./brief/ChinookSection";
 import ChumSection from "./brief/ChumSection";
 import HalibutSection from "./brief/HalibutSection";
+import DiscardSection from "./brief/DiscardSection";
 import ObserverSection from "./brief/ObserverSection";
 
 const NAV = [
@@ -9,14 +10,16 @@ const NAV = [
   { id: "chinook", label: "Chinook", tag: "01" },
   { id: "chum", label: "Chum", tag: "02" },
   { id: "halibut", label: "Halibut", tag: "03" },
-  { id: "observer", label: "Observer", tag: "04" },
+  { id: "discards", label: "Discards", tag: "04" },
+  { id: "observer", label: "Observer", tag: "05" },
 ];
 
 const TOPICS = [
   { id: "chinook", num: "01", title: "Chinook salmon", blurb: "Where the bycatch comes from, and what it costs the rivers." },
   { id: "chum", num: "02", title: "Chum salmon", blurb: "Mostly hatchery fish from across the Pacific — not Alaska's runs." },
   { id: "halibut", num: "03", title: "Pacific halibut", blurb: "Tonnes of dead fish, and which gear actually takes them." },
-  { id: "observer", num: "04", title: "Observer coverage", blurb: "How we know any of these numbers at all." },
+  { id: "discards", num: "04", title: "Discards", blurb: "What gets thrown back, why, and which fleets do it." },
+  { id: "observer", num: "05", title: "Observer coverage", blurb: "How we know any of these numbers at all." },
 ];
 
 export default function Brief() {
@@ -86,7 +89,7 @@ export default function Brief() {
         </div>
 
         <div className="br-toc">
-          <div className="br-toc-label">In this brief — four topics</div>
+          <div className="br-toc-label">In this brief — five topics</div>
           <div className="br-toc-grid">
             {TOPICS.map((t) => (
               <button key={t.id} className="br-toc-card" onClick={() => goTo(t.id)}>
@@ -104,7 +107,8 @@ export default function Brief() {
 
       <ChinookSection onNext={() => goTo("chum")} />
       <ChumSection onNext={() => goTo("halibut")} />
-      <HalibutSection onNext={() => goTo("observer")} />
+      <HalibutSection onNext={() => goTo("discards")} />
+      <DiscardSection onNext={() => goTo("observer")} />
       <ObserverSection onTop={() => goTo("overview")} />
 
       <footer className="br-footer">
