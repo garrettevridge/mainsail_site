@@ -26,17 +26,17 @@
 .br-nav-inner { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .br-wordmark { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
 .br-wordmark b { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #1a1916; }
-.br-wordmark span { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #a39e92; }
+.br-wordmark span { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #1a1916; }
 .br-navlinks { display: flex; align-items: center; gap: 26px; }
 .br-navlink {
   font-family: "Archivo", sans-serif; font-size: 13px; font-weight: 500;
-  color: #56524b; cursor: pointer; letter-spacing: 0.01em; white-space: nowrap;
+  color: #1a1916; cursor: pointer; letter-spacing: 0.01em; white-space: nowrap;
   display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0;
   transition: color 0.18s ease;
 }
 .br-navlink:hover { color: #1a1916; }
 .br-navlink.active { color: #b8421e; font-weight: 700; }
-.br-navlink .tag { font-family: "Space Mono", monospace; font-size: 9px; color: #c4bfb2; }
+.br-navlink .tag { font-family: "Space Mono", monospace; font-size: 9px; color: #1a1916; }
 .br-progress { height: 2px; background: transparent; }
 .br-progress > div { height: 100%; background: #b8421e; transition: width 0.1s linear; }
 
@@ -98,12 +98,12 @@
 .br-eyebrow { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
 .br-eyebrow .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 14px; color: #b8421e; letter-spacing: 0.02em; }
 .br-eyebrow .tick { width: 28px; height: 1px; background: #d8d3c6; }
-.br-eyebrow .cat { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #8a8579; }
+.br-eyebrow .cat { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #1a1916; }
 .br-section-head h2 {
   font-family: "Newsreader", serif; font-weight: 500; font-size: 52px; line-height: 1.05;
   letter-spacing: -0.02em; margin: 0 0 24px; color: #15140f;
 }
-.br-dek { font-family: "Newsreader", serif; font-size: 21px; line-height: 1.55; color: #4a463e; margin: 0; max-width: 640px; text-wrap: pretty; }
+.br-dek { font-family: "Newsreader", serif; font-size: 21px; line-height: 1.55; color: #1a1916; margin: 0; max-width: 640px; text-wrap: pretty; }
 
 /* ============================== DATA BLOCK ============================== */
 .br-block { padding-top: 56px; padding-bottom: 56px; }
@@ -113,13 +113,13 @@
 .br-block-head .sq { width: 6px; height: 6px; background: #b8421e; flex: none; }
 .br-block-head .label { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1916; }
 .br-block h3 { font-family: "Newsreader", serif; font-weight: 500; font-size: 28px; line-height: 1.2; margin: 6px 0 4px; color: #1a1916; max-width: 680px; }
-.br-block-cap { font-family: "Newsreader", serif; font-size: 17px; line-height: 1.55; color: #56524b; margin: 0 0 32px; max-width: 620px; }
+.br-block-cap { font-family: "Newsreader", serif; font-size: 17px; line-height: 1.55; color: #1a1916; margin: 0 0 32px; max-width: 620px; }
 .br-block-cap b { color: #1a1916; }
-.br-block-note { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #56524b; margin: 28px 0 0; max-width: 640px; }
+.br-block-note { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #1a1916; margin: 28px 0 0; max-width: 640px; }
 .br-block-note b { color: #1a1916; }
 
 .br-chart { max-width: 920px; }
-.br-source { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #a39e92; margin-top: 14px; }
+.br-source { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #1a1916; margin-top: 14px; }
 
 /* chart text → Space Mono (axis ticks, ref labels) */
 .br-chart .recharts-text,
@@ -134,7 +134,7 @@
 .br-legend .sw { width: 11px; height: 11px; border-radius: 2px; flex: none; }
 .br-legend .line { width: 16px; height: 3px; border-radius: 2px; flex: none; }
 .br-legend .name { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; font-weight: 600; }
-.br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #8a8579; }
+.br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 
 /* area-proportional squares */
 .br-squares { display: flex; gap: 80px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 32px 0; }
@@ -142,41 +142,41 @@
 .br-square .box { border-radius: 3px; flex: none; }
 .br-square figcaption { max-width: 280px; }
 .br-square .val { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 26px; color: #1a1916; line-height: 1; }
-.br-square .lbl { font-family: "Archivo", sans-serif; font-size: 14px; font-weight: 600; color: #3a3833; margin-top: 6px; }
-.br-square .sub { font-family: "Archivo", sans-serif; font-size: 13px; color: #8a8579; margin-top: 3px; }
+.br-square .lbl { font-family: "Archivo", sans-serif; font-size: 14px; font-weight: 600; color: #1a1916; margin-top: 6px; }
+.br-square .sub { font-family: "Archivo", sans-serif; font-size: 13px; color: #1a1916; margin-top: 3px; }
 
 /* horizontal gear bars */
 .br-gear { max-width: 720px; display: flex; flex-direction: column; gap: 22px; }
 .br-gear .row .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .br-gear .row .gear { font-family: "Archivo", sans-serif; font-size: 15px; font-weight: 600; color: #1a1916; }
-.br-gear .row .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #8a8579; }
+.br-gear .row .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 .br-gear .row .track { height: 14px; background: #efece3; border-radius: 3px; overflow: hidden; }
 .br-gear .row .fill { height: 100%; background: #2f6b73; border-radius: 3px; }
 
 /* coverage-by-fleet bars (observer section) */
 .br-cov { max-width: 820px; display: flex; flex-direction: column; gap: 16px; }
 .br-cov-key { display: flex; gap: 22px; margin-bottom: 6px; }
-.br-cov-key .item { display: flex; align-items: center; gap: 7px; font-family: "Archivo", sans-serif; font-size: 12px; color: #6a665e; }
+.br-cov-key .item { display: flex; align-items: center; gap: 7px; font-family: "Archivo", sans-serif; font-size: 12px; color: #1a1916; }
 .br-cov-key .sw { width: 12px; height: 12px; border-radius: 2px; }
 .br-cov-key .sw.mon { background: #2f6b73; }
 .br-cov-key .sw.un { background: #e1ded3; }
 .br-cov .row .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 6px; }
 .br-cov .row .fleet { font-family: "Archivo", sans-serif; font-size: 15px; font-weight: 600; color: #1a1916; }
-.br-cov .row .val { font-family: "Space Mono", monospace; font-size: 12px; color: #8a8579; white-space: nowrap; }
+.br-cov .row .val { font-family: "Space Mono", monospace; font-size: 12px; color: #1a1916; white-space: nowrap; }
 .br-cov .row .track { height: 16px; min-width: 8px; background: #e1ded3; border-radius: 3px; overflow: hidden; }
 .br-cov .row .mon { height: 100%; background: #2f6b73; }
 .br-cov .row .track.out { width: 100%; background: transparent; border: 1px dashed #cdc7bb; }
 
 /* line-chart y-axis manual % labels overlay */
 .br-line { position: relative; }
-.br-line .ylab { position: absolute; left: 0; transform: translateY(-50%); font-family: "Space Mono", monospace; font-size: 10px; color: #a39e92; background: #fff; padding: 0 4px; }
+.br-line .ylab { position: absolute; left: 0; transform: translateY(-50%); font-family: "Space Mono", monospace; font-size: 10px; color: #1a1916; background: #fff; padding: 0 4px; }
 
 /* ============================== NOTES ============================== */
 .br-notes { padding-top: 64px; padding-bottom: 64px; }
 .br-notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
 .br-note { border-top: 2px solid #1a1916; padding-top: 16px; max-width: 680px; }
 .br-note .label { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #b8421e; margin-bottom: 12px; }
-.br-note p { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #3a3833; margin: 0; }
+.br-note p { font-family: "Newsreader", serif; font-size: 16px; line-height: 1.6; color: #1a1916; margin: 0; }
 .br-note p a, .br-method p a, .br-block-cap a, .br-block-note a { color: #b8421e; }
 
 @media (max-width: 760px) {
@@ -186,9 +186,9 @@
 /* ============================== METHODOLOGY ============================== */
 .br-method { border-top: 1px solid #e7e3d9; background: #faf8f2; }
 .br-method-inner { padding-top: 48px; padding-bottom: 48px; }
-.br-method .mlabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8579; margin-bottom: 18px; }
+.br-method .mlabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #1a1916; margin-bottom: 18px; }
 .br-method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; max-width: 980px; }
-.br-method p { font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.6; color: #6a665e; margin: 0; }
+.br-method p { font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.6; color: #1a1916; margin: 0; }
 .br-method p b { color: #1a1916; }
 
 @media (max-width: 760px) {
@@ -199,7 +199,7 @@
 .br-upnext { border-top: 1px solid #e7e3d9; cursor: pointer; background: #fff; transition: background 0.18s ease; display: block; width: 100%; text-align: left; }
 .br-upnext:hover { background: #fcfbf7; }
 .br-upnext-inner { padding-top: 40px; padding-bottom: 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.br-upnext .ulabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #a39e92; margin-bottom: 6px; }
+.br-upnext .ulabel { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #1a1916; margin-bottom: 6px; }
 .br-upnext .utitle { font-family: "Newsreader", serif; font-weight: 500; font-size: 30px; color: #1a1916; letter-spacing: -0.01em; }
 .br-upnext .arrow { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 30px; color: #b8421e; }
 
