@@ -143,7 +143,7 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
           variant="alt"
           label={`Bycatch against the directed fishery · ${removals.year}`}
           title="A fifth the size of the directed catch."
-          note={<>Every MT killed as bycatch is one the directed longline fleet and coastal communities do not land. The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
+          note={<>The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
         >
           <Squares
             a={{ px: sqPx(removals.bycatch), color: ACCENT, val: `${k(removals.bycatch)} MT`, lbl: "Killed as bycatch", sub: "non-directed discard mortality" }}
@@ -154,7 +154,7 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
 
       <WideNote
         label="How bycatch becomes mortality — discard rates"
-        body={<>Not every halibut caught and thrown back dies. Managers apply gear-specific discard mortality rates to estimate how many do: {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}. A halibut crushed in a trawl net rarely survives; one released at the surface usually does.</>}
+        body={<>Not every halibut caught and thrown back dies. Managers apply gear-specific discard mortality rates to estimate how many do: {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}. A halibut taken in a trawl net rarely survives; one released at the surface usually does.</>}
       />
 
       <Methodology

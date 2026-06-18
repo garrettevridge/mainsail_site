@@ -98,12 +98,12 @@ export default function DiscardSection({ onNext }: { onNext: () => void }) {
       num="04"
       cat="Groundfish"
       title="Discards"
-      dek="Not everything a net or a longline brings up is kept. Some of the catch goes back over the side — because regulation forbids landing it, or because it has no buyer. In Alaska's federal groundfish fisheries that share is small and shrinking, but it is far from evenly spread across the fleet."
+      dek="Not everything a net or a longline brings up is kept. Some of the catch goes back over the side — because regulation forbids landing it, or because it has no buyer. In Alaska's federal groundfish fisheries that share has declined over the past decade, and it is far from evenly spread across the fleet."
     >
       {/* BLOCK 1 — what it is, and the scale */}
       <Block
         label={`The long view${firstRate && year ? ` · ${firstRate.year}–${year}` : ""}`}
-        title="A small, shrinking share of the catch."
+        title="Discards as a share of the catch, by year."
         caption={latest && firstRate ? <>A discard is catch returned to the sea, dead or alive. In {year}, about <b>{k(latest.discard)} MT</b> went back — roughly <b>{latest.rate.toFixed(1)}%</b> of the {k(latest.total)} MT of groundfish caught, down from about {firstRate["Discard rate"].toFixed(1)}% in {firstRate.year}. Full-retention rules on the largest fisheries hold the rate down.</> : undefined}
       >
         <div className="br-chart">

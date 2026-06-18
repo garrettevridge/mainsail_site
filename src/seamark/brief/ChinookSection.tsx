@@ -141,7 +141,7 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
       num="01"
       cat="Salmon Bycatch"
       title="Chinook salmon"
-      dek="Western Alaska's king salmon runs are struggling, and pollock trawl has been blamed. The data tells a more complicated story."
+      dek="Western Alaska's king salmon runs are far below their goals. This section traces how much of the bycatch originates in those runs, and how it compares to other sources of mortality."
     >
       {/* BLOCK 1 — long view */}
       <Block
@@ -195,7 +195,7 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
         <Block
           variant="alt"
           label={`Bycatch in context${ctxYear ? ` · ${ctxYear}` : ""}`}
-          title="Set against the rivers, the Western-origin bycatch is small."
+          title="The Western-origin bycatch, set against river escapement."
           note={<>Anchoring on {ctxYear} — the most recent year with both a genetic sample and counted escapement — the Western-Alaska-origin bycatch was about <b>{escTotal > 0 ? Math.round((ctxCwakBycatch / escTotal) * 100) : 0}%</b> of the Yukon, Kuskokwim and Nushagak runs combined. The Canadian-origin upper Yukon — the most depleted, treaty-bound stocks — was {ctxUpperYukonPct != null && ctxUpperYukonPct < 1 ? "under 1%" : `about ${ctxUpperYukonPct?.toFixed(0)}%`} of the bycatch.</>}
         >
           <Squares
@@ -207,9 +207,9 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
 
       <Notes
         items={[
-          { label: "Reaching the river", body: <>Most bycatch is immature fish, years from spawning, that face heavy natural mortality at sea before they would ever return. Accounting for that, the federal impact analysis estimates the pollock fishery removes on the order of <b>2%</b> of the Chinook that would have reached western Alaska rivers — a real loss to runs already below their goals, but a small share of the shortfall.</> },
-          { label: "What's being done", body: <>The pollock fleet fishes under mandatory Incentive Plan Agreements: vessels share near-real-time data to trigger rolling-hotspot closures and must use salmon-excluder gear that lets salmon escape the net underwater. Hard caps — 60,000 Chinook, with a 47,591 performance standard — have applied since 2011.</> },
-          { label: "Other pressures", body: <>Western Alaska's Chinook face stressors unrelated to trawl. Yukon water hit 22°C in 2019 — above the 18°C heat-stress threshold — and an Ichthyophonus parasite outbreak surged after 2021. At sea, record pink-salmon abundance competes for the same food, linked to smaller body size and weaker survival across the Bering Sea.</> },
+          { label: "Reaching the river", body: <>Most bycatch is immature fish, years from spawning, that face heavy natural mortality at sea before they would ever return. Accounting for that, the federal impact analysis estimates the pollock fishery removes on the order of <b>2%</b> of the Chinook that would have reached western Alaska rivers — a real loss to runs already below their goals.</> },
+          { label: "Regulation", body: <>The pollock fleet fishes under mandatory Incentive Plan Agreements: vessels share near-real-time data to trigger rolling-hotspot closures and must use salmon-excluder gear that lets salmon escape the net underwater. Hard caps — 60,000 Chinook, with a 47,591 performance standard — have applied since 2011.</> },
+          { label: "Other pressures", body: <>Western Alaska's Chinook face several other documented stressors. Yukon water hit 22°C in 2019 — above the 18°C heat-stress threshold — and an Ichthyophonus parasite outbreak surged after 2021. At sea, record pink-salmon abundance competes for the same food, linked to smaller body size and weaker survival across the Bering Sea.</> },
         ]}
       />
 
