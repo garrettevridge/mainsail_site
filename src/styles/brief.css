@@ -119,11 +119,17 @@
 .br-block-note b { color: #1a1916; }
 
 .br-chart { max-width: 920px; }
-.br-source { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #1a1916; margin-top: 14px; }
+.br-source-row { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+.br-source { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #1a1916; }
+.br-download-tab { font-family: "Inter", sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: #b8421e; border: none; border-radius: 3px; padding: 4px 10px; cursor: not-allowed; opacity: 0.85; flex-shrink: 0; }
 
 /* chart text → Space Mono (axis ticks, ref labels) */
 .br-chart .recharts-text,
 .br-chart .recharts-cartesian-axis-tick-value tspan { font-family: "Space Mono", monospace; }
+
+/* per-FMP-area chart wrapper (BSAI / GOA breakdown) */
+.br-fmp-label { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #1a1916; margin-bottom: 14px; }
+.br-fmp-chart + .br-fmp-chart { margin-top: 40px; }
 
 /* proportion (magnitude) bar */
 .br-magbar { display: flex; height: 64px; border-radius: 4px; overflow: hidden; }
@@ -137,7 +143,7 @@
 .br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 
 /* area-proportional squares */
-.br-squares { display: flex; gap: 80px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 32px 0; }
+.br-squares { display: flex; gap: 40px; align-items: flex-end; flex-wrap: nowrap; justify-content: center; padding: 32px 0; }
 .br-square { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
 .br-square .box { border-radius: 3px; flex: none; }
 .br-square figcaption { max-width: 280px; }
@@ -152,6 +158,12 @@
 .br-gear .row .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 .br-gear .row .track { height: 14px; background: #efece3; border-radius: 3px; overflow: hidden; }
 .br-gear .row .fill { height: 100%; background: #2f6b73; border-radius: 3px; }
+
+/* fleet coverage grid (observer section) */
+.br-fleet-grid { display: flex; flex-wrap: wrap; gap: 40px 64px; padding: 32px 0; }
+.br-fleet-item { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
+.br-fleet-item .rate { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 24px; color: #1a1916; line-height: 1; }
+.br-fleet-item .name { font-family: "Inter", sans-serif; font-size: 12px; color: #56524b; max-width: 150px; line-height: 1.4; }
 
 /* coverage-by-fleet bars (observer section) */
 .br-cov { max-width: 820px; display: flex; flex-direction: column; gap: 16px; }

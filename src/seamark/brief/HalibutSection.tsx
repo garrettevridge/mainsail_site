@@ -130,7 +130,7 @@ export default function HalibutSection() {
         variant="div"
         label="Mortality by gear type"
         title="Halibut bycatch by gear type."
-        caption={<>The majority is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom. Not every discarded halibut dies: managers apply gear-specific discard mortality rates to convert catch to mortality tonnes — {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}.</>}
+        caption={<>The majority is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets. Not every discarded halibut dies: managers apply gear-specific discard mortality rates to convert catch to mortality tonnes — {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}.</>}
       >
         {byGear.length > 0 && <GearBars rows={byGear.map((g) => ({ gear: g.gear, val: `${k(g.t)} MT · ${g.pct.toFixed(0)}%`, w: g.t }))} max={gearMax} />}
       </Block>

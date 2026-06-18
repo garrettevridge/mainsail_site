@@ -119,8 +119,8 @@ export default function DiscardSection() {
         variant="alt"
         label={`Why fish go back · by species${year ? ` · ${year}` : ""}`}
         title="The rate depends entirely on what's caught."
-        caption={bySpecies.length ? <>Each bar is a species group's discard rate; the label adds the tonnage. Prohibited species the fleet may not keep — Pacific halibut above all — and low-value fish with no market, like sharks and skates, are discarded at high rates. The valuable target species are kept almost whole: pollock and Pacific cod must be fully retained by law.</> : undefined}
-        note={<>Rate and volume tell different stories. Pollock is discarded at about 1% yet is one of the larger tonnages by sheer scale; sharks are discarded at nearly 100% but amount to little. A single headline rate hides both.</>}
+        caption={bySpecies.length ? <>Each bar is a species group's discard rate; the label adds the tonnage. Prohibited species the fleet may not keep and low-value fish with no market, like sharks and skates, are discarded at high rates.</> : undefined}
+        note={<>Pollock is discarded at about 1% yet is one of the larger tonnages by sheer scale; sharks are discarded at nearly 100% but amount to little.</>}
       >
         {bySpecies.length > 0 && (
           <GearBars rows={bySpecies.map((s) => ({ gear: s.name, val: `${k(s.dis)} MT · ${s.rate.toFixed(0)}%`, w: s.rate }))} max={100} />

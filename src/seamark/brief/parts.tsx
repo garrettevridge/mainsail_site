@@ -40,8 +40,8 @@ export function Block({
         </div>
         <h3>{title}</h3>
         {caption != null && <p className="br-block-cap">{caption}</p>}
-        {children}
         {note != null && <p className="br-block-note">{note}</p>}
+        {children}
       </div>
     </div>
   );
@@ -87,10 +87,10 @@ export function LegendLines({ items }: { items: { color: string; name: string }[
 
 export type SquareData = { px: number; color: string; val: string; lbl: string; sub: string };
 
-export function Squares({ a, b }: { a: SquareData; b: SquareData }) {
+export function Squares({ items }: { items: SquareData[] }) {
   return (
     <div className="br-squares">
-      {[a, b].map((s, i) => (
+      {items.map((s, i) => (
         <figure className="br-square" key={i}>
           <div className="box" style={{ width: s.px, height: s.px, background: s.color }} />
           <figcaption>
@@ -154,7 +154,12 @@ export function CoverageBars({ rows, max, fmt }: { rows: CoverageRow[]; max: num
 }
 
 export function Source({ children }: { children: ReactNode }) {
-  return <div className="br-source">{children}</div>;
+  return (
+    <div className="br-source-row">
+      <div className="br-source">{children}</div>
+      <button className="br-download-tab" disabled>Download data</button>
+    </div>
+  );
 }
 
 export function Notes({ items }: { items: { label: string; body: ReactNode }[] }) {
