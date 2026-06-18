@@ -42,8 +42,8 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
       .sort((a, b) => b.total - a.total);
   }, [mc, fleetYear]);
   const fleetMax = Math.max(...fleets.map((f) => f.total), 1);
-  // The state-managed salmon fleet — the fishery the bycatch debate centers on —
-  // sits entirely outside the federal observer program, so it has no catch in
+  // The state-managed salmon fleet sits entirely outside the federal observer
+  // program, so it has no catch in
   // this accounting and zero observer coverage. Shown for contrast.
   const fleetRows: CoverageRow[] = fleets.length ? [...fleets, { fleet: "Salmon fishing vessels (state waters)", total: 0, pct: 0 }] : [];
   const fleetOverall = useMemo(() => {
@@ -98,7 +98,7 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
       <Block
         label={`Coverage by fleet${fleetYear ? ` · ${fleetYear}` : ""}`}
         title="The fleets that take the most are watched the most."
-        caption={fleets.length ? <>Each bar is a fleet's federally managed groundfish catch; the shaded part is the share under monitoring. The pollock catcher-processors, AFA catcher vessels, Amendment&nbsp;80 fleet, and freezer longliners — which land most of the catch and take most of the salmon and halibut bycatch — run at essentially <b>100%</b>. Coverage thins only on the smaller catcher-vessel fleets.{fleetOverall != null ? <> Across all sectors, about <b>{fleetOverall}%</b> of {fleetYear} groundfish tonnage was monitored.</> : null} The state-managed salmon fleet at the center of the debate sits outside this program entirely — no federal observer coverage at all.</> : undefined}
+        caption={fleets.length ? <>Each bar is a fleet's federally managed groundfish catch; the shaded part is the share under monitoring. The pollock catcher-processors, AFA catcher vessels, Amendment&nbsp;80 fleet, and freezer longliners — which land most of the catch and take most of the salmon and halibut bycatch — run at essentially <b>100%</b>. Coverage thins only on the smaller catcher-vessel fleets.{fleetOverall != null ? <> Across all sectors, about <b>{fleetOverall}%</b> of {fleetYear} groundfish tonnage was monitored.</> : null} The state-managed salmon fleet sits outside the federal observer program entirely — no federal coverage at all.</> : undefined}
       >
         <div className="br-chart">
           {fleetRows.length > 0 && <CoverageBars rows={fleetRows} max={fleetMax} fmt={k} />}

@@ -127,7 +127,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
         <Block
           variant="alt"
           label={`Bycatch in context${gsiYear ? ` · ${gsiYear}` : ""}`}
-          title="Set against the rivers, the Western-origin bycatch is small."
+          title="The Western-origin bycatch, set against river escapement."
           note={<>The Western Alaska / Yukon-origin chum bycatch is under <b>{riverTotal > 0 ? Math.max(1, Math.round((alaskaBycatch / riverTotal) * 100)) : 0}%</b> of the counted escapement at these index projects — the Yukon basin sonar plus the Kuskokwim and Norton Sound indicator weirs.{belowGoal.length ? <> The smaller counts tell the harder story: {belowGoal.map((r) => `${r.label} ran ${k(r.value)} against a ${k(r.goalLow!)}–${k(r.goalHigh!)} goal`).join("; ")} — below escapement goals.</> : null}</>}
         >
           <Squares
@@ -139,8 +139,8 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
 
       <Notes
         items={[
-          { label: "Reaching the river", body: <>Most chum bycatch is immature fish that face heavy natural mortality at sea before they would return. Accounting for that, the federal impact analysis puts the pollock fishery's effect at roughly <b>1%</b> of the chum returning to western Alaska rivers — a small share of a collapse driven mostly at sea and in the rivers.</> },
-          { label: "What's being done", body: <>In February 2026 the Council adopted the first limit aimed at Western Alaska chum: a <b>45,000-fish cap</b> on Western-Alaska-origin chum, apportioned by genetics, in the Bering Sea pollock fishery. Exceed it and half the chum “corridor” closes for the rest of the season.</> },
+          { label: "Reaching the river", body: <>Most chum bycatch is immature fish that face heavy natural mortality at sea before they would return. Accounting for that, the federal impact analysis puts the pollock fishery's effect at roughly <b>1%</b> of the chum returning to western Alaska rivers.</> },
+          { label: "Regulation", body: <>In February 2026 the Council adopted the first limit aimed at Western Alaska chum: a <b>45,000-fish cap</b> on Western-Alaska-origin chum, apportioned by genetics, in the Bering Sea pollock fishery. Exceed it and half the chum “corridor” closes for the rest of the season.</> },
           { label: "A crowded ocean", body: <>Western Alaska chum fell to record lows after 2020. The same waters now hold roughly five billion hatchery chum a year — most from Asia, which is why the bycatch genetics are hatchery-dominated — plus record pink salmon, linked to smaller size and weaker survival across the Bering Sea.</> },
         ]}
       />
