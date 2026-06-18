@@ -91,7 +91,7 @@ export default function ChumSection() {
       <Block
         label="The long view"
         title="Chum taken as groundfish bycatch, by year."
-        caption="Chum bycatch swings widely with ocean conditions — spiking above 700,000 in 2005 and again after 2017. For most of this record it carried no numeric limit; in 2026 the Council adopted the first cap aimed at Western Alaska chum."
+        caption={<>Chum bycatch swings widely with ocean conditions — spiking above 700,000 in 2005 and again after 2017. The bars show total bycatch across all origins; the Western-Alaska-origin share, identified through annual genetics, has run roughly <b>{westernRange ? `${westernRange.lo}–${westernRange.hi}%` : "10–25%"}</b> of the total in recent years. For most of this record it carried no numeric limit; in 2026 the Council adopted a <b>45,000-fish cap</b> on the Western-Alaska-origin portion.</>}
       >
         <div className="br-chart">
           {series.length > 0 ? (
@@ -141,7 +141,7 @@ export default function ChumSection() {
       <Notes
         items={[
           { label: "Reaching the river", body: <>Most chum bycatch is immature fish that face heavy natural mortality at sea before they would return. Accounting for that, the federal impact analysis puts the pollock fishery's effect at roughly <b>1%</b> of the chum returning to western Alaska rivers.</> },
-          { label: "Regulation", body: <>In February 2026 the Council adopted the first limit aimed at Western Alaska chum: a <b>45,000-fish cap</b> on Western-Alaska-origin chum, apportioned by genetics, in the Bering Sea pollock fishery. Exceed it and half the chum “corridor” closes for the rest of the season.</> },
+          { label: "Regulation", body: <>In February 2026 the Council adopted the first cap aimed at Western Alaska chum: <b>45,000</b> Western-Alaska-origin fish per year, apportioned by genetics among sectors. The cap applies only within a defined Bering Sea corridor — 20 statistical areas — during the B season (June 10–August 31); chum taken outside that corridor or that window carry no limit. When a sector hits its allocation, specific closure areas trigger; repeated non-compliance results in mandatory closure the following B season. Weekly genetic sampling during the fishery provides near-real-time stock composition estimates used to administer the cap.</> },
           { label: "A crowded ocean", body: <>Western Alaska chum fell to record lows after 2020. The same waters now hold roughly five billion hatchery chum a year — most from Asia, which is why the bycatch genetics are hatchery-dominated — plus record pink salmon, linked to smaller size and weaker survival across the Bering Sea.</> },
         ]}
       />

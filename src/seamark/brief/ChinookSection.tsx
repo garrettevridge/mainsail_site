@@ -210,14 +210,14 @@ export default function ChinookSection() {
       <Notes
         items={[
           { label: "Reaching the river", body: <>Most bycatch is immature fish, years from spawning, that face heavy natural mortality at sea before they would ever return. Accounting for that, the federal impact analysis estimates the pollock fishery removes on the order of <b>2%</b> of the Chinook that would have reached western Alaska rivers — a real loss to runs already below their goals.</> },
-          { label: "Regulation", body: <>The pollock fleet fishes under mandatory Incentive Plan Agreements: vessels share near-real-time data to trigger rolling-hotspot closures and must use salmon-excluder gear that lets salmon escape the net underwater. Hard caps — 60,000 Chinook, with a 47,591 performance standard — have applied since 2011.</> },
+          { label: "Regulation", body: <>The pollock fleet fishes under mandatory Incentive Plan Agreements: vessels share near-real-time data to trigger rolling-hotspot closures and must use salmon-excluder gear. The cap operates on a two-tier structure keyed to a three-river abundance index — the combined in-river run sizes on the Unalakleet, Upper Yukon, and Kuskokwim. In normal years (index above 250,000 fish): <b>60,000</b> hard cap, <b>47,591</b> performance standard. In low-abundance years (index at or below 250,000): <b>45,000</b> hard cap, <b>33,318</b> performance standard. Both tiers have applied since 2011.</> },
           { label: "Other pressures", body: <>Western Alaska's Chinook face several other documented stressors. Yukon water hit 22°C in 2019 — above the 18°C heat-stress threshold — and an Ichthyophonus parasite outbreak surged after 2021. At sea, record pink-salmon abundance competes for the same food, linked to smaller body size and weaker survival across the Bering Sea.</> },
         ]}
       />
 
       <Methodology
         items={[
-          { strong: "Bycatch.", body: "Chinook taken incidentally in the federal groundfish fisheries (BSAI + GOA), from NMFS Prohibited Species Catch annual mortality estimates, 1991–2024. Pollock trawl is the dominant source." },
+          { strong: "Bycatch.", body: "Chinook taken incidentally in the federal groundfish fisheries (BSAI + GOA), from NMFS Prohibited Species Catch annual mortality estimates, 1991–2024. Pollock trawl is the dominant source. GOA pollock and non-pollock trawl fisheries operate under separate Chinook PSC limits — 18,316 and 6,684 for Central and Western GOA pollock respectively; 7,500 total for non-pollock GOA trawl." },
           { strong: "Every Chinook taken.", body: "Sums the published human-removal categories for the most recent year all reported: commercial and sport harvest plus subsistence (ADF&G), and bycatch (NMFS PSC). Excludes escapement and natural mortality; sport counts kept fish only." },
           { strong: "Origin.", body: "Genetic stock identification of the BSAI bycatch by reporting group (NOAA AFSC / NPFMC), most recent year. “Western Alaska origin” sums the Kuskokwim, Bristol Bay, Yukon and Norton Sound groups; the Canadian upper Yukon is kept separate." },
         ]}
