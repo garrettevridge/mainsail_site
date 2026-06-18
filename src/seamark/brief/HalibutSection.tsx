@@ -3,7 +3,7 @@ import { useDataset } from "../../api/manifest";
 import type { IphcSourceMortalityRow, MonitoredCatchRow, DiscardMortalityRateRow, IphcSpawningBiomassRow } from "../../api/types";
 import { BarLine } from "../SmChart";
 import { ACCENT, TEAL, NEUTRAL } from "../colors";
-import { Section, Block, Magbar, Squares, GearBars, Source, LegendLines, WideNote, Methodology, UpNext, k, type Seg } from "./parts";
+import { Section, Block, Magbar, GearBars, Source, LegendLines, Notes, Methodology, k, type Seg } from "./parts";
 
 const BIOMASS_MODEL = "coastwide_long";
 
@@ -15,7 +15,7 @@ const SOURCE_LABEL: Record<string, string> = {
   subsistence: "Subsistence",
 };
 
-export default function HalibutSection({ onNext }: { onNext: () => void }) {
+export default function HalibutSection() {
   const { data: iphc } = useDataset<IphcSourceMortalityRow>("iphc_mortality_by_source");
   const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
   const { data: dmr } = useDataset<DiscardMortalityRateRow>("discard_mortality_rates");
@@ -76,9 +76,6 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
     return [...best.entries()].sort((a, b) => b[1] - a[1]).map(([gear, v]) => ({ gear, pct: v * 100 }));
   }, [dmr]);
 
-  const escTotal = removals?.commercial ?? 0;
-  const sqPx = (v: number) => (escTotal > 0 ? Math.max(46, Math.round(200 * Math.sqrt(v / escTotal))) : 200);
-
   const removalSegs: Seg[] = removals
     ? removals.parts.map((p, i) => ({
         name: p.label,
@@ -132,29 +129,18 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
       <Block
         variant="div"
         label="Mortality by gear type"
-        title="Bottom trawl and hook-and-line, not pollock."
-        note={<>The majority of halibut bycatch is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom.</>}
+        title="Halibut bycatch by gear type."
+        caption={<>The majority is split between the bottom-trawl flatfish fleet (Amendment 80) and the hook-and-line groundfish fleets — both fish where halibut live. Pelagic pollock trawl takes very little, because it fishes off the bottom. Not every discarded halibut dies: managers apply gear-specific discard mortality rates to convert catch to mortality tonnes — {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}.</>}
       >
         {byGear.length > 0 && <GearBars rows={byGear.map((g) => ({ gear: g.gear, val: `${k(g.t)} MT · ${g.pct.toFixed(0)}%`, w: g.t }))} max={gearMax} />}
       </Block>
 
-      {removals && (
-        <Block
-          variant="alt"
-          label={`Bycatch against the directed fishery · ${removals.year}`}
-          title="A fifth the size of the directed catch."
-          note={<>The bycatch is about <b>{escTotal > 0 ? Math.round((removals.bycatch / escTotal) * 100) : 0}%</b> the size of the directed commercial catch.</>}
-        >
-          <Squares
-            a={{ px: sqPx(removals.bycatch), color: ACCENT, val: `${k(removals.bycatch)} MT`, lbl: "Killed as bycatch", sub: "non-directed discard mortality" }}
-            b={{ px: 200, color: TEAL, val: `${k(removals.commercial)} MT`, lbl: "Landed by the directed commercial fishery", sub: `IPHC · ${removals.year}` }}
-          />
-        </Block>
-      )}
-
-      <WideNote
-        label="How bycatch becomes mortality — discard rates"
-        body={<>Not every halibut caught and thrown back dies. Managers apply gear-specific discard mortality rates to estimate how many do: {dmrRows.length ? dmrRows.map((d, i) => <span key={d.gear}>{i > 0 ? ", " : ""}<b>{Math.round(d.pct)}%</b> for {d.gear}</span>) : "—"}. A halibut taken in a trawl net rarely survives; one released at the surface usually does.</>}
+      <Notes
+        items={[
+          { label: "Deck handling", body: <>When halibut come up as bycatch they must be returned to the water — landing them in a groundfish fishery is prohibited. Survival depends on how quickly they are returned and how they were caught. Fish from deep trawl hauls suffer barotrauma and physical injury during the haul; fish taken near the surface on hooks often survive release. The discard mortality rates reflect these differences.</> },
+          { label: "Avoidance measures", body: <>Each groundfish sector operates under a hard halibut PSC limit. When a sector reaches its limit that portion of the fishery closes for the remainder of the season, independent of remaining target-species quota. Vessels also use hook-spacing restrictions, modified trawl designs, and real-time data sharing to reduce encounters in high-density areas.</> },
+          { label: "IPHC coordination", body: <>Pacific halibut is managed coast-wide by the International Pacific Halibut Commission under a U.S.–Canada convention. The IPHC's annual stock assessment sets the total allowable mortality; the groundfish PSC is carved out of that total alongside directed commercial and sport harvests. The bycatch figures here feed directly into IPHC catch accounting.</> },
+        ]}
       />
 
       <Methodology
@@ -166,7 +152,6 @@ export default function HalibutSection({ onNext }: { onNext: () => void }) {
         ]}
       />
 
-      <UpNext label="Up next · 04" title="Discards" onClick={onNext} />
     </Section>
   );
 }

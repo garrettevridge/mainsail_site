@@ -10,7 +10,7 @@ import type {
 } from "../../api/types";
 import { StackedBar, BarColumns } from "../SmChart";
 import { ACCENT, TEAL, NEUTRAL } from "../colors";
-import { Section, Block, Magbar, Squares, Source, Notes, Methodology, UpNext, k, type Seg } from "./parts";
+import { Section, Block, Magbar, Squares, Source, Notes, Methodology, k, type Seg } from "./parts";
 
 const GSI_FMP = "BSAI";
 const WESTERN_AK = new Set([
@@ -26,7 +26,7 @@ const CWAK_RIVERS = [
   ["Nushagak River", "Nushagak"],
 ] as const;
 
-export default function ChinookSection({ onNext }: { onNext: () => void }) {
+export default function ChinookSection() {
   const { data: psc } = useDataset<PscAnnualHistoricalRow>("psc_annual_historical");
   const { data: cdt } = useDataset<ChinookDrainageTotalsRow>("chinook_drainage_totals");
   const { data: com } = useDataset<SalmonCommercialHarvestDataRow>("salmon_commercial_harvest");
@@ -79,6 +79,8 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
   const pctOf = (rows: ChinookGsiRow[], pred: (r: ChinookGsiRow) => boolean) =>
     rows.filter(pred).reduce((a, r) => a + r.mean_pct, 0);
   const westernPct = breakdown.length ? pctOf(breakdown, (r) => WESTERN_AK.has(r.region)) : null;
+  const naPenPct = breakdown.length ? pctOf(breakdown, (r) => r.region === NORTH_PEN) : null;
+  const alaskaTotalPct = westernPct != null && naPenPct != null ? Math.round(westernPct + naPenPct) : null;
 
   // Western-Alaska share of the bycatch in each sampled year, for the trend note.
   const westernByYear = useMemo(() => {
@@ -184,7 +186,7 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
         variant="div"
         label={`Where the bycatch comes from${gsiYear ? ` · ${gsiYear} genetics` : ""}`}
         title="The genetic origin of the Bering Sea bycatch."
-        caption={westernPct != null && gsiYear != null ? <>In {gsiYear}, about <b>{westernPct.toFixed(0)}%</b> of the bycatch traced to Western Alaska — the Kuskokwim, Bristol Bay, Yukon and Norton Sound systems. Most of the rest came from the North Alaska Peninsula and Canada.</> : undefined}
+        caption={westernPct != null && gsiYear != null ? <>In {gsiYear}, about <b>{westernPct.toFixed(0)}%</b> of the bycatch traced to Western Alaska — the Kuskokwim, Bristol Bay, Yukon and Norton Sound systems. Another <b>{naPenPct != null ? naPenPct.toFixed(0) : "—"}%</b> came from the North Alaska Peninsula. Combined, about <b>{alaskaTotalPct ?? "—"}%</b> of the bycatch traced to Alaska stocks.</> : undefined}
         note={westernByYear.length > 1 ? <>That {westernPct?.toFixed(0)}% is the highest Western-Alaska share in the {westernByYear.length} years of genetic sampling — up from {westernByYear.slice(0, -1).map((d) => `${d.pct.toFixed(0)}% in ${d.year}`).join(" and ")}.</> : undefined}
       >
         {originSegs.length > 0 && <Magbar segs={originSegs} />}
@@ -221,7 +223,6 @@ export default function ChinookSection({ onNext }: { onNext: () => void }) {
         ]}
       />
 
-      <UpNext label="Up next · 02" title="Chum salmon" onClick={onNext} />
     </Section>
   );
 }

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useDataset } from "../../api/manifest";
 import type { ObserverCoverageRow, MonitoredCatchRow } from "../../api/types";
 import { TEAL, LANDSCAPE_PARTIAL, LANDSCAPE_ZERO } from "../colors";
-import { Section, Block, Magbar, CoverageBars, Source, WideNote, Methodology, UpNext, k, type Seg, type CoverageRow } from "./parts";
+import { Section, Block, Magbar, CoverageBars, Source, WideNote, Methodology, k, type Seg, type CoverageRow } from "./parts";
 
 type Cat = "full" | "partial" | "zero";
 
@@ -19,7 +19,7 @@ const fleetOf = (sector: string, gear: string): string => {
   return "Other programs";
 };
 
-export default function ObserverSection({ onTop }: { onTop: () => void }) {
+export default function ObserverSection() {
   const { data: obs } = useDataset<ObserverCoverageRow>("observer_coverage");
   const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
 
@@ -127,7 +127,6 @@ export default function ObserverSection({ onTop }: { onTop: () => void }) {
         ]}
       />
 
-      <UpNext label="End of brief" title="Back to the overview" arrow="↑" onClick={onTop} />
     </Section>
   );
 }

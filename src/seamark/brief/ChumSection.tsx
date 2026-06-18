@@ -3,7 +3,7 @@ import { useDataset } from "../../api/manifest";
 import type { PscAnnualHistoricalRow, ChumGsiRow, SalmonEscapementRow } from "../../api/types";
 import { StackedBar, MultiLine } from "../SmChart";
 import { ACCENT, TEAL, HATCHERY, NEUTRAL } from "../colors";
-import { Section, Block, Magbar, Squares, Source, LegendLines, Notes, Methodology, UpNext, k, type Seg } from "./parts";
+import { Section, Block, Magbar, Squares, Source, LegendLines, Notes, Methodology, k, type Seg } from "./parts";
 
 const ALASKA_GROUPS = new Set(["W Alaska", "Up/Mid Yukon"]);
 const CHUM_SYSTEMS: [RegExp, string][] = [
@@ -13,7 +13,7 @@ const CHUM_SYSTEMS: [RegExp, string][] = [
   [/norton|kwiniuk|unalakleet/i, "Norton Sound"],
 ];
 
-export default function ChumSection({ onNext }: { onNext: () => void }) {
+export default function ChumSection() {
   const { data: psc } = useDataset<PscAnnualHistoricalRow>("psc_annual_historical");
   const { data: gsi } = useDataset<ChumGsiRow>("chum_gsi");
   const { data: esc } = useDataset<SalmonEscapementRow>("salmon_escapement");
@@ -75,8 +75,9 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
   const belowGoal = rivers.filter((r) => r.belowGoal);
   const sqPx = (v: number) => (riverTotal > 0 ? Math.max(46, Math.round(200 * Math.sqrt(v / riverTotal))) : 200);
 
+  const AK_REGIONS = new Set([...ALASKA_GROUPS, "SW Alaska", "Kotzebue Sound"]);
   const genColor = (region: string) =>
-    ALASKA_GROUPS.has(region) ? ACCENT : /Asia/.test(region) ? HATCHERY : NEUTRAL[2];
+    AK_REGIONS.has(region) ? ACCENT : /Asia/.test(region) ? HATCHERY : NEUTRAL[2];
   const genSegs: Seg[] = breakdown.map((r) => ({ name: r.region, w: r.mean_pct, color: genColor(r.region), val: `${r.mean_pct.toFixed(0)}%` }));
 
   return (
@@ -113,7 +114,7 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
         variant="div"
         label={`Origin over time${westernRange ? ` · ${westernRange.from}–${westernRange.to}` : ""}`}
         title="In historical perspective."
-        caption={westernRange ? <>Asian-hatchery fish have dominated the chum bycatch every year since {westernRange.from}, and the Western Alaska / Yukon share has stayed a minor fraction — ranging <b>{westernRange.lo}–{westernRange.hi}%</b>, averaging about {westernRange.mean}%.</> : undefined}
+        caption={westernRange ? <>Asian-hatchery fish have dominated the chum bycatch every year since {westernRange.from}. The Western Alaska / Yukon share has ranged <b>{westernRange.lo}–{westernRange.hi}%</b>, averaging about {westernRange.mean}%.</> : undefined}
       >
         <div className="br-chart">
           {originSeries.length > 1 ? (
@@ -153,7 +154,6 @@ export default function ChumSection({ onNext }: { onNext: () => void }) {
         ]}
       />
 
-      <UpNext label="Up next · 03" title="Pacific halibut" onClick={onNext} />
     </Section>
   );
 }
