@@ -3,7 +3,7 @@ import { useDataset } from "../../api/manifest";
 import type { MonitoredCatchRow } from "../../api/types";
 import { StackedBar } from "../SmChart";
 import { ACCENT } from "../colors";
-import { Section, Block, GearBars, Source, Notes, Methodology, UpNext, k } from "./parts";
+import { Section, Block, GearBars, Source, Notes, Methodology, k } from "./parts";
 
 // Same sector × gear → fleet mapping the observer section uses.
 const fleetOf = (sector: string, gear: string): string => {
@@ -18,7 +18,7 @@ const fleetOf = (sector: string, gear: string): string => {
   return "Other programs";
 };
 
-export default function DiscardSection({ onNext }: { onNext: () => void }) {
+export default function DiscardSection() {
   const { data: mc } = useDataset<MonitoredCatchRow>("monitored_catch");
 
   // Use only the "Total" catch-accounting rows (estimated total catch, not the
@@ -155,7 +155,6 @@ export default function DiscardSection({ onNext }: { onNext: () => void }) {
         ]}
       />
 
-      <UpNext label="Up next · 05" title="Observer coverage" onClick={onNext} />
     </Section>
   );
 }

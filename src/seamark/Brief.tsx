@@ -14,13 +14,6 @@ const NAV = [
   { id: "observer", label: "Observer", tag: "05" },
 ];
 
-const TOPICS = [
-  { id: "chinook", num: "01", title: "Chinook salmon", blurb: "Where the bycatch comes from, and what it costs the rivers." },
-  { id: "chum", num: "02", title: "Chum salmon", blurb: "Mostly hatchery fish from across the Pacific — not Alaska's runs." },
-  { id: "halibut", num: "03", title: "Pacific halibut", blurb: "Tonnes of dead fish, and which gear actually takes them." },
-  { id: "discards", num: "04", title: "Discards", blurb: "What gets thrown back, why, and which fleets do it." },
-  { id: "observer", num: "05", title: "Observer coverage", blurb: "How we know any of these numbers at all." },
-];
 
 export default function Brief() {
   const [progress, setProgress] = useState("0%");
@@ -76,40 +69,19 @@ export default function Brief() {
       {/* HERO */}
       <section id="overview" className="br-hero br-wrap">
         <div className="br-hero-col">
-          <div className="br-kicker">Alaska Fisheries · 2026 Edition</div>
-          <h1>The numbers behind Alaska's catch and bycatch debate.</h1>
+          <h1>The numbers behind Alaska's fisheries debates.</h1>
           <p className="br-hero-dek">
             A series of self-contained data briefs relevant to the current conversation about catch and bycatch in Alaska's federal fisheries. Each topic stands on its own: read one, or scroll the whole thing.
           </p>
-          <div className="br-hero-meta">
-            <span>Sources · NMFS · ADF&amp;G · NOAA AFSC</span>
-            <span className="dot" />
-            <span>Updated through 2026</span>
-          </div>
         </div>
 
-        <div className="br-toc">
-          <div className="br-toc-label">In this brief — five topics</div>
-          <div className="br-toc-grid">
-            {TOPICS.map((t) => (
-              <button key={t.id} className="br-toc-card" onClick={() => goTo(t.id)}>
-                <div className="row">
-                  <span className="num">{t.num}</span>
-                  <span className="status">Built</span>
-                </div>
-                <h3>{t.title}</h3>
-                <p className="blurb">{t.blurb}</p>
-              </button>
-            ))}
-          </div>
-        </div>
       </section>
 
-      <ChinookSection onNext={() => goTo("chum")} />
-      <ChumSection onNext={() => goTo("halibut")} />
-      <HalibutSection onNext={() => goTo("discards")} />
-      <DiscardSection onNext={() => goTo("observer")} />
-      <ObserverSection onTop={() => goTo("overview")} />
+      <ChinookSection />
+      <ChumSection />
+      <HalibutSection />
+      <DiscardSection />
+      <ObserverSection />
 
       <footer className="br-footer">
         <div className="br-footer-inner br-wrap">

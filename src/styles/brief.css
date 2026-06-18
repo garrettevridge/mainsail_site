@@ -57,14 +57,14 @@
 }
 .br-hero-dek {
   font-family: "Newsreader", serif; font-weight: 400; font-size: 21px; line-height: 1.55;
-  color: #4a463e; margin: 0 0 36px; max-width: 640px; text-wrap: pretty;
+  color: #15140f; margin: 0 0 36px; max-width: 640px; text-wrap: pretty;
 }
 .br-hero-meta {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #8a8579;
+  text-transform: uppercase; color: #15140f;
 }
-.br-hero-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: #cfcabd; }
+.br-hero-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: #15140f; }
 
 .br-toc { margin-top: 64px; border-top: 1px solid #e7e3d9; padding-top: 18px; }
 .br-toc-label {
@@ -137,8 +137,8 @@
 .br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #8a8579; }
 
 /* area-proportional squares */
-.br-squares { display: flex; gap: 64px; align-items: flex-end; flex-wrap: wrap; }
-.br-square { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.br-squares { display: flex; gap: 80px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 32px 0; }
+.br-square { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
 .br-square .box { border-radius: 3px; flex: none; }
 .br-square figcaption { max-width: 280px; }
 .br-square .val { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 26px; color: #1a1916; line-height: 1; }
