@@ -142,6 +142,29 @@
 .br-legend .name { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; font-weight: 600; }
 .br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 
+/* genetic origin × context table (chinook) */
+.br-origin-tbl { max-width: 840px; }
+.br-origin-tbl-hd {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-bottom: 10px; border-bottom: 2px solid #1a1916;
+  font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.13em;
+  text-transform: uppercase; color: #7a7770;
+}
+.br-origin-tbl .row { border-top: 1px solid #efece3; padding: 16px 0 18px; }
+.br-origin-tbl .row .top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 16px; margin-bottom: 8px;
+}
+.br-origin-tbl .row .rname {
+  font-family: "Archivo", sans-serif; font-weight: 600; font-size: 15px; color: #1a1916;
+}
+.br-origin-tbl .row .rcount {
+  font-family: "Space Mono", monospace; font-size: 12px; color: #b8421e; white-space: nowrap;
+}
+.br-origin-tbl .row .rnote {
+  font-family: "Newsreader", serif; font-size: 15px; line-height: 1.55; color: #56524b; margin: 0;
+}
+
 /* area-proportional squares */
 .br-squares { display: flex; gap: 40px; align-items: flex-end; flex-wrap: nowrap; justify-content: center; padding: 32px 0; }
 .br-square { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
