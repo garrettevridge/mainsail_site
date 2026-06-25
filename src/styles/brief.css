@@ -142,17 +142,25 @@
 .br-legend .name { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; font-weight: 600; }
 .br-legend .val { font-family: "Archivo", sans-serif; font-size: 14px; color: #1a1916; }
 
-/* genetic-origin map (north pacific rim) */
-.br-originmap { max-width: 920px; }
-.br-originmap svg { display: block; height: auto; }
-.br-originmap-minor {
-  font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.6; color: #56524b;
-  margin: 18px 0 0; max-width: 880px;
-}
-.br-originmap-minor b { color: #1a1916; font-weight: 700; }
-.br-originmap-foot {
+/* genetic origin × escapement bars (chinook) */
+.br-origin { max-width: 820px; }
+.br-origin-key { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-bottom: 24px; }
+.br-origin-key .item { display: flex; align-items: center; gap: 8px; font-family: "Archivo", sans-serif; font-size: 12px; color: #1a1916; }
+.br-origin-key .dot { width: 11px; height: 11px; border-radius: 50%; background: #b8421e; flex: none; }
+.br-origin-key .sw { width: 22px; height: 10px; border-radius: 2px; background: #2f6b73; flex: none; }
+.br-origin .row { margin-bottom: 20px; }
+.br-origin .row .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 7px; }
+.br-origin .row .name { font-family: "Archivo", sans-serif; font-size: 15px; font-weight: 600; color: #1a1916; }
+.br-origin .row .vals { display: flex; align-items: baseline; gap: 16px; white-space: nowrap; }
+.br-origin .row .by { font-family: "Archivo", sans-serif; font-size: 14px; font-weight: 700; color: #b8421e; }
+.br-origin .row .esc { font-family: "Space Mono", monospace; font-size: 12px; color: #2f6b73; }
+.br-origin .row .none { font-family: "Archivo", sans-serif; font-size: 12px; font-style: italic; color: #8a8579; }
+.br-origin .row .track { height: 16px; background: #efece3; border-radius: 3px; overflow: hidden; }
+.br-origin .row .track .fill { height: 100%; background: #2f6b73; border-radius: 3px; }
+.br-origin .row .track.out { background: transparent; border: 1px dashed #cdc7bb; }
+.br-origin-foot {
   font-family: "Space Mono", monospace; font-size: 10px; line-height: 1.7;
-  letter-spacing: 0.02em; color: #7a7770; margin: 16px 0 0; max-width: 760px;
+  letter-spacing: 0.02em; color: #7a7770; margin: 18px 0 0; max-width: 760px;
 }
 
 /* area-proportional squares */
