@@ -10,19 +10,34 @@ import type {
 } from "../../api/types";
 import { StackedBar, BarColumns } from "../SmChart";
 import { ACCENT, TEAL, NEUTRAL } from "../colors";
-import { Section, Block, Magbar, Squares, Source, Notes, Methodology, k, type Seg } from "./parts";
+import { Section, Block, Magbar, Source, Notes, Methodology, k, type Seg } from "./parts";
+import OriginMap, { type OriginNode } from "./OriginMap";
 
 const WESTERN_AK = new Set([
   "Coastal Western Alaska",
   "Kuskokwim/Bristol Bay", "Yukon Alaska", "Seward Peninsula/Norton Sound",
 ]);
-const UPPER_YUKON = new Set(["Up/Mid Yukon", "Yukon Canada"]);
 const CANADA = new Set(["British Columbia", "Yukon Canada", "Up/Mid Yukon"]);
-const CWAK_RIVERS = [
-  ["Yukon basin", "Yukon"],
-  ["Kuskokwim basin", "Kuskokwim"],
-  ["Nushagak River", "Nushagak"],
-] as const;
+
+// Genetic reporting group → ADF&G escapement index projects
+// (chinook_drainage_totals). Editorial crosswalk: the genetic groups are
+// coarse regional aggregates while escapement is per-drainage, so we sum the
+// matched-year counted escapement across each group's index projects. This is
+// counted escapement at those projects — NOT a reconstructed run total.
+const ESC_CROSSWALK: Record<string, { drainages: string[]; note?: string }> = {
+  "Kuskokwim/Bristol Bay": { drainages: ["Kuskokwim basin", "Nushagak River"] },
+  "Yukon Alaska": { drainages: ["Yukon basin"], note: "Yukon basin, U.S. + Canada combined" },
+  "Cook Inlet": {
+    drainages: [
+      "Kenai River", "Kasilof River (Crooked Creek)", "Susitna basin",
+      "Anchor River", "Ninilchik River", "Little Susitna River", "Deep Creek",
+    ],
+  },
+  Copper: { drainages: ["Copper River"] },
+  "Southeast Alaska": { drainages: ["Stikine River", "Taku River", "Unuk River", "Chilkat River"] },
+  "Alsek/Situk": { drainages: ["Alsek River", "Situk River"] },
+  "Chignik/Kodiak": { drainages: ["Karluk River", "Ayakulik River"] },
+};
 
 const pctOf = (rows: ChinookGsiRow[], pred: (r: ChinookGsiRow) => boolean) =>
   rows.filter(pred).reduce((a, r) => a + r.mean_pct, 0);
@@ -103,45 +118,65 @@ export default function ChinookSection() {
   const bsaiAlaskaPct = bsaiRows.length ? Math.round(pctOf(bsaiRows, isAlaska)) : null;
   const goaAlaskaPct = goaRows.length ? Math.round(pctOf(goaRows, isAlaska)) : null;
 
-  const rivers = useMemo(() => {
-    if (!cdt) return [];
-    return CWAK_RIVERS.map(([key, label]) => {
-      const rows = cdt.filter((r) => r.drainage === key && r.actual_count != null);
-      if (rows.length === 0) return null;
-      const used = rows.reduce((a, b) => (b.year > a.year ? b : a));
-      return { label, value: used.actual_count!, year: used.year };
-    }).filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [cdt]);
-  const escTotal = rivers.reduce((a, r) => a + r.value, 0);
-  const escYear = rivers.length ? Math.max(...rivers.map((r) => r.year)) : null;
-  const sqPx = (v: number) => (escTotal > 0 ? Math.max(46, Math.round(200 * Math.sqrt(v / escTotal))) : 200);
+  // ---- origin map: most recent year with BOTH BSAI genetics and matching
+  // western-river escapement (escapement lags genetics ~1 year). ----
+  const matchedYear = useMemo(() => {
+    if (!gsi || !cdt) return null;
+    const gYears = new Set(gsi.filter((r) => r.fmp_area === "BSAI").map((r) => r.year));
+    const eYears = new Set(
+      cdt.filter((r) => r.drainage === "Kuskokwim basin" && r.actual_count != null).map((r) => r.year),
+    );
+    const common = [...gYears].filter((y) => eYears.has(y));
+    return common.length ? Math.max(...common) : null;
+  }, [gsi, cdt]);
 
-  // River context: BSAI only, anchored on the most recent year with BOTH a
-  // genetic sample and published escapement (escapement lags genetics by a year).
-  const gsiYearSet = useMemo(() => new Set(allGsi.map((r) => r.year)), [allGsi]);
-  const ctxYear = escYear != null && gsiYearSet.has(escYear) ? escYear : gsiYear;
-  const ctxBsaiRows = useMemo(
-    () => (ctxYear != null ? allGsi.filter((r) => r.year === ctxYear && r.fmp_area === "BSAI") : []),
-    [allGsi, ctxYear],
-  );
-  const ctxWesternPct = ctxBsaiRows.length ? pctOf(ctxBsaiRows, (r) => WESTERN_AK.has(r.region)) : null;
-  const ctxUpperYukonPct = ctxBsaiRows.length ? pctOf(ctxBsaiRows, (r) => UPPER_YUKON.has(r.region)) : null;
-  const ctxCatch = ctxBsaiRows[0]?.total_catch ?? null;
-  const ctxCwakBycatch = ctxCatch != null && ctxWesternPct != null ? Math.round(ctxCatch * (ctxWesternPct / 100)) : null;
-  // Total bycatch across both areas for ctxYear (one total_catch per area per year).
-  const ctxTotalCatch = useMemo(() => {
-    if (ctxYear == null) return null;
-    const seen = new Map<string, number>();
-    for (const r of allGsi.filter((gr) => gr.year === ctxYear)) {
-      if (!seen.has(r.fmp_area)) seen.set(r.fmp_area, r.total_catch);
-    }
-    const t = [...seen.values()].reduce((a, b) => a + b, 0);
-    return t > 0 ? t : null;
-  }, [allGsi, ctxYear]);
-  const ctxWestPctOfTotal =
-    ctxCwakBycatch != null && ctxTotalCatch != null && ctxTotalCatch > 0
-      ? Math.round((ctxCwakBycatch / ctxTotalCatch) * 100)
-      : null;
+  const matched = useMemo(() => {
+    if (!gsi || matchedYear == null) return null;
+    const rows = gsi.filter((r) => r.year === matchedYear && r.fmp_area === "BSAI");
+    return rows.length ? { year: matchedYear, total: rows[0].total_catch, n: rows[0].n_samples } : null;
+  }, [gsi, matchedYear]);
+
+  const originNodes = useMemo<OriginNode[]>(() => {
+    if (!gsi || matchedYear == null) return [];
+    const escSum = (drainages: string[]): number | null => {
+      if (!cdt) return null;
+      let s = 0, hit = false;
+      for (const r of cdt) {
+        if (r.year === matchedYear && r.actual_count != null && drainages.includes(r.drainage)) {
+          s += r.actual_count;
+          hit = true;
+        }
+      }
+      return hit ? s : null;
+    };
+    return gsi
+      .filter((r) => r.year === matchedYear && r.fmp_area === "BSAI")
+      .map((r) => {
+        const xw = ESC_CROSSWALK[r.region];
+        return {
+          region: r.region,
+          fish: Math.round((r.total_catch ?? 0) * (r.mean_pct / 100)),
+          pct: r.mean_pct,
+          ciLow: r.lower_ci ?? null,
+          ciHigh: r.upper_ci ?? null,
+          escapement: xw ? escSum(xw.drainages) : null,
+          escapementNote: xw?.note,
+        };
+      })
+      .sort((a, b) => b.fish - a.fish);
+  }, [gsi, cdt, matchedYear]);
+
+  // Newer genetics that can't yet be year-matched to escapement — context only.
+  const latestGen = useMemo(() => {
+    if (!gsi) return null;
+    const bsai = gsi.filter((r) => r.fmp_area === "BSAI");
+    if (!bsai.length) return null;
+    const y = Math.max(...bsai.map((r) => r.year));
+    if (matchedYear != null && y <= matchedYear) return null;
+    const rows = bsai.filter((r) => r.year === y);
+    const topPct = rows.filter((r) => r.region === "Kuskokwim/Bristol Bay").reduce((a, r) => a + r.mean_pct, 0);
+    return { year: y, total: rows[0].total_catch, topPct };
+  }, [gsi, matchedYear]);
 
   // ---- presentational shaping ----
   const mortalityCols = removals
@@ -221,20 +256,17 @@ export default function ChinookSection() {
         )}
       </Block>
 
-      {/* BLOCK 4 — squares */}
-      {ctxCwakBycatch != null && rivers.length > 0 && (
+      {/* BLOCK 4 — origin map (river systems behind the bycatch) */}
+      {originNodes.length > 0 && matched && (
         <Block
           variant="alt"
-          label={`Bycatch in context${ctxYear ? ` · ${ctxYear}` : ""}`}
-          title="The Western-origin bycatch, set against river escapement."
-          note={<>In {ctxYear}, the Western-Alaska-origin bycatch was about <b>{escTotal > 0 ? Math.round((ctxCwakBycatch / escTotal) * 100) : 0}%</b> of the Yukon, Kuskokwim and Nushagak runs combined. The Canadian-origin upper Yukon was {ctxUpperYukonPct != null && ctxUpperYukonPct < 1 ? "under 1%" : `about ${ctxUpperYukonPct?.toFixed(0)}%`} of the bycatch.</>}
+          label={`Where the bycatch is from · ${matched.year} · mapped`}
+          title="The river systems behind the bycatch."
+          caption={<>Each circle sits on the river system its fish trace back to genetically, sized by the estimated number of {matched.year} Bering Sea Chinook bycatch fish of that origin — {k(matched.total)} fish in all, identified from {matched.n.toLocaleString()} sampled. Kuskokwim and Bristol Bay dominate; the rest is spread across the North Pacific rim, from Russia to the U.S. West Coast.</>}
+          note={<>Genetics are published about a year ahead of the matching escapement, so the map pairs the most recent year both exist for the western rivers — <b>{matched.year}</b>. The teal ring marks that year's counted escapement where ADF&amp;G publishes it; the North Alaska Peninsula and Norton Sound have none to pair, and the Yukon basin count combines U.S. and Canadian fish. These are counts at index projects, not full run reconstructions.{latestGen ? <> The newer {latestGen.year} genetics — not yet matchable to escapement — looked different: a larger bycatch of about {k(latestGen.total)} fish, roughly {Math.round(latestGen.topPct)}% Kuskokwim/Bristol Bay.</> : null}</>}
         >
-          <Squares
-            items={[
-              { px: sqPx(ctxCwakBycatch), color: ACCENT, val: k(ctxCwakBycatch), lbl: "Bycatch of Western Alaska origin", sub: `${ctxWestPctOfTotal ?? ctxWesternPct?.toFixed(0)}% of the ${ctxYear} bycatch (${ctxTotalCatch != null ? k(ctxTotalCatch) : ctxCatch != null ? k(ctxCatch) : "—"})` },
-              ...[...rivers].sort((a, b) => a.value - b.value).map((r) => ({ px: sqPx(r.value), color: TEAL, val: k(r.value), lbl: `${r.label} escapement`, sub: `${escYear ?? r.year}` })),
-            ]}
-          />
+          <OriginMap nodes={originNodes} year={matched.year} total={matched.total} nSamples={matched.n} />
+          <Source>Source · NOAA AFSC / NPFMC genetic stock ID (BSAI) + ADF&amp;G counted escapement · {matched.year}</Source>
         </Block>
       )}
 
@@ -251,6 +283,7 @@ export default function ChinookSection() {
           { strong: "Bycatch.", body: "Chinook taken incidentally in the federal groundfish fisheries (BSAI + GOA), from NMFS Prohibited Species Catch annual mortality estimates, 1991–2024. Pollock trawl is the dominant source. GOA pollock and non-pollock trawl fisheries operate under separate Chinook PSC limits — 18,316 and 6,684 for Central and Western GOA pollock respectively; 7,500 total for non-pollock GOA trawl." },
           { strong: "Every Chinook taken.", body: "Sums the published human-removal categories for the most recent year all reported: commercial and sport harvest plus subsistence (ADF&G), and bycatch (NMFS PSC). Excludes escapement and natural mortality; sport counts kept fish only." },
           { strong: 'Origin.', body: 'Genetic stock identification of the BSAI and GOA bycatch separately, by reporting group (NOAA AFSC / NPFMC), most recent year available for each area. The two fisheries are shown independently — their origin compositions differ substantially. “Western Alaska origin” sums the Kuskokwim, Bristol Bay, Yukon and Norton Sound groups; the Canadian upper Yukon is kept separate.' },
+          { strong: "Origin map.", body: "The mapped view pairs BSAI bycatch genetics with ADF&G counted escapement for the most recent year both are published (escapement lags genetics ~1 year). Circle area is estimated bycatch fish of each origin (total catch × genetic mean). The teal escapement ring sums counted escapement across each group's index projects — counted escapement, not a reconstructed run; the Yukon basin figure combines U.S. and Canadian fish; the North Alaska Peninsula and Norton Sound have no matched escapement published." },
         ]}
       />
 
